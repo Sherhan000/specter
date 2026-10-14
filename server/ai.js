@@ -1,7 +1,7 @@
 import { q, getKv } from './db.js'
 
 const KEY = process.env.GROQ_API_KEY
-const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+let models = [...new Set([process.env.GROQ_MODEL, 'llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'llama-3.1-8b-instant'].filter(Boolean))]
 export const aiOn = !!KEY
 
 const base = `Ты Спек, участник чата Specter. Общаешься как живой человек: коротко, по-разговорному, с юмором и подколками, но без злобы и оскорблений.
@@ -33,15 +33,22 @@ export async function reply(chatId, botId) {
     else msgs.push({ role: 'user', content: `${m.name}: ${m.body}`.slice(0, 1500) })
   }
   try {
-    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + KEY },
-      body: JSON.stringify({ model: MODEL, messages: msgs, temperature: 0.95, max_tokens: 300 }),
-      signal: AbortSignal.timeout(25000)
-    })
-    if (!r.ok) {
-      console.error('groq', r.status, (await r.text()).slice(0, 200))
-      return null
+    let r
+    while (models.length) {
+      const model = models[0]
+      const body = { model, messages: msgs, temperature: 0.95, max_tokens: 400 }
+      if (model.startsWith('openai/')) body.reasoning_effort = 'low'
+      r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + KEY },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(25000)
+      })
+      if (r.ok) break
+      const txt = (await r.text()).slice(0, 200)
+      console.error('groq', model, r.status, txt)
+      if ((r.status === 404 || r.status === 403 || /model/i.test(txt)) && models.length > 1) models.shift()
+      else return null
     }
     const j = await r.json()
     let t = j.choices?.[0]?.message?.content?.trim()
