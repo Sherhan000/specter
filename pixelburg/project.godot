@@ -1,0 +1,45 @@
+; Engine configuration file.
+config_version=5
+
+[application]
+
+config/name="Pixelburg"
+config/name_localized={
+"en": "Pixelburg",
+"ru": "Пиксельбург"
+}
+config/description="Cozy pixel-art city builder"
+config/version="1.3.0"
+run/main_scene="res://scenes/main.tscn"
+config/quit_on_go_back=false
+config/auto_accept_quit=false
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.43, 0.75, 0.94, 1)
+boot_splash/show_image=false
+config/icon="res://assets/store/icon_192.png"
+
+[autoload]
+
+Loc="*res://scripts/loc.gd"
+Game="*res://scripts/game.gd"
+Events="*res://scripts/events.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[gui]
+
+fonts/dynamic_fonts/use_oversampling=false
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+textures/vram_compression/import_etc2_astc=true
+environment/defaults/default_clear_color=Color(0.16, 0.42, 0.6, 1)
