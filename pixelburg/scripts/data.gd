@@ -71,6 +71,10 @@ const B := {
 		"pop": 100, "rent": 300, "cycle": 300, "upkeep": 140},
 	"tower": {"name": ["Небоскрёб", "Skyscraper"], "cat": "home", "zones": ["city"], "size": 2, "cost": 26000, "gems": 10, "lvl": 19, "time": 300,
 		"pop": 200, "rent": 480, "cycle": 300, "upkeep": 220},
+	"highrise": {"name": ["Жилая башня", "Residential Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 9500, "lvl": 13, "time": 210,
+		"pop": 75, "rent": 240, "cycle": 270, "upkeep": 100},
+	"sky_home": {"name": ["Жилой небоскрёб", "Residential Skyscraper"], "cat": "home", "zones": ["city"], "size": 3, "cost": 48000, "gems": 20, "lvl": 24, "time": 420,
+		"pop": 420, "rent": 900, "cycle": 360, "upkeep": 420},
 	# ------------------------------------------------ shops and offices (jobs, goods used, income per cycle)
 	"bakery": {"name": ["Пекарня", "Bakery"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 250, "lvl": 1, "time": 15,
 		"jobs": 2, "use": 6, "income": 30, "cycle": 90, "upkeep": 8},
@@ -96,6 +100,8 @@ const B := {
 		"jobs": 16, "use": 40, "income": 320, "cycle": 200, "upkeep": 90},
 	"hotel": {"name": ["Отель", "Hotel"], "cat": "shop", "zones": ["city", "leisure"], "size": 2, "cost": 14000, "gems": 4, "lvl": 15, "time": 240,
 		"jobs": 20, "use": 30, "income": 400, "cycle": 240, "upkeep": 110},
+	"sky_office": {"name": ["Офисный небоскрёб", "Office Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 52000, "gems": 20, "lvl": 25, "time": 420,
+		"jobs": 160, "use": 0, "income": 1500, "cycle": 360, "upkeep": 380},
 	"mall": {"name": ["Торговый центр", "Mall"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 20000, "gems": 8, "lvl": 18, "time": 300,
 		"jobs": 40, "use": 80, "income": 560, "cycle": 240, "upkeep": 160},
 	# ------------------------------------------------ production (jobs, goods out per cycle)
@@ -174,9 +180,9 @@ const B := {
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
-const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "villa", "apartments", "condo", "tower",
+const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "villa", "apartments", "condo", "highrise", "tower", "sky_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
-	"cinema", "hotel", "mall",
+	"cinema", "hotel", "mall", "sky_office",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"kindergarten", "school", "post_office", "fire_station", "police", "gym", "bank", "library", "court", "hospital", "town_hall", "parking",
 	"museum", "zoo", "funfair", "stadium",

@@ -415,5 +415,113 @@ def tower(L, o):
     return cv
 
 
+def spire(T, cx, cy, z, h, col="c8ccd0", beacon=True):
+    """A thin mast with a red aircraft beacon on top."""
+    x, y = T.pt(cx, cy)
+    T.cv.cylinder(x, y, 1.5, z, z + h, lambda a, v, nx, ny: solid_res(C(col), a.shape))
+    if beacon:
+        T.cv.ellipsoid(x, y, z + h, 3, 3, 3, lambda wx, wy, wz, nx, ny, nz: (np.broadcast_to(C("ff4040"), wx.shape + (3,)).copy(),
+                       np.ones(wx.shape, bool), np.broadcast_to(np.array([255, 60, 60, 255.0]), wx.shape + (4,)).copy()))
+
+
+# ====================================================================== highrise: tall residential block with a stone base
+def highrise(L, o):
+    floors = [10, 12, 14][L - 1]
+    fh = 30
+    pod = fh + 6
+    H = pod + floors * fh
+    cv = Canvas(2, H + 120)
+    T = Orient(cv, o)
+    seed = 131
+    wallc = ["e6d6bc", "ecdcc4", "e2e0da"][L - 1]
+    accent = ["b8644a", "a85a48", "6a7a8a"][L - 1]
+    # stone base: shops and lobby
+    podf = facade("stone", "cdbfa8", shop=(20, 120, 26), doors=[(150, 30, 28, "double_glass")], plinth=None, seed=seed,
+                  win=Win(w=20, h=18, sill=12, sp=30, margin=10, fh=pod, frame="3a3a40", group="work"), lit=0.7)
+    pods = facade("stone", "cdbfa8", win=Win(w=20, h=18, sill=12, sp=30, margin=10, fh=pod, frame="3a3a40", group="work"), seed=seed + 1)
+    box(T, 10, 40, 310, 270, 0, pod, front=podf, back=pods, left=pods, right=pods, top=flat_top("8a8884", "cdbfa8", 4))
+    canopy(T, 130, 200, 40, 20, 32, "2e3238", "2e3238", posts=False)
+    door(T, 150, 30, 40, 28)
+    entry(T, 165)
+    # main shaft with window rows and bands
+    win = Win(w=14, h=19, sill=8, sp=24, margin=12, fh=fh, frame="f6f2ea", group="flats", top_skip=4)
+    bands = [(fh * k - 1.5, fh * k + 1.5, "f2ece0") for k in range(1, floors + 1)]
+    front = facade("plaster", wallc, win=win, seed=seed + 2, plinth=None, bands=bands, cornice=("f2ece0", 5))
+    side = facade("plaster", wallc, win=Win(w=14, h=19, sill=8, sp=24, margin=14, fh=fh, frame="f6f2ea", group="flats", top_skip=4),
+                  seed=seed + 3, plinth=None, bands=bands, cornice=("f2ece0", 5))
+    s0, s1, f0, f1 = 40, 280, 70, 250
+    box(T, s0, f0, s1, f1, pod, H, front=front, back=side, left=side, right=side, top=flat_top("807c78", "e8e2d6", 4))
+    # accent piers frame the front like a column of loggias
+    acc = facade("plaster", accent, plinth=None, seed=seed + 4)
+    for a in (s0 - 2, s1 - 14):
+        T.box(a, f0 - 6, a + 16, f0, pod, H + 14, all=acc, top=flat_top("8a8884", accent, 3))
+    balconies(T, [s0 + 34, s0 + 160], f0, range(1, floors), fh, 40, 12, "glass", z_start=pod, col="f2ece0")
+    # stepped crown with a lit lantern
+    T.box(s0 + 40, f0 + 30, s1 - 40, f1 - 30, H, H + 34, all=facade("plaster", accent, plinth=None, seed=seed + 5, win=Win(
+        w=16, h=18, sill=8, sp=26, margin=12, fh=34, frame="f6f2ea", group="flats"), lit=0.9), top=flat_top("807c78", "e8e2d6", 3))
+    roof_units(T, s0, f0, s1, f1, H, seed, 3, stair=False)
+    if L >= 2:
+        spire(T, (s0 + s1) / 2, (f0 + f1) / 2, H + 34, 50 if L == 2 else 70)
+    for ss in (24, 296):
+        tree(T, ss, 24, "maple", 0.7, 70 + ss)
+    ground(T, 0, 0, 320, 40, kit.paving("c8c4bc", 12.0, 4))
+    lamp(T, 90, 14, "modern", 50)
+    lamp(T, 230, 14, "modern", 50, "light2")
+    return cv
+
+
+# ====================================================================== sky_home: stepped residential skyscraper
+def sky_home(L, o):
+    n1 = [18, 22, 26][L - 1]
+    n2 = [8, 10, 12][L - 1]
+    fh = 32
+    pod = 2 * fh
+    H1 = pod + n1 * fh
+    H2 = H1 + n2 * fh
+    cv = Canvas(3, H2 + 260)
+    T = Orient(cv, o)
+    seed = 151
+    stone = "e2d8c4"
+    bronze = "5a4a3e"
+    glass = ["7a9ab0", "6a8aa4", "5a7a98"][L - 1]
+    # podium: lobby, shops and a green roof terrace
+    podf = facade("stone", "d4c8b0", shop=(30, 150, 30), doors=[(190, 60, 32, "double_glass")], plinth=None, seed=seed, lit=0.7,
+                  win=Win(w=26, h=20, sill=12, sp=36, margin=10, fh=pod, frame="3a3a40", group="work"))
+    pods = facade("stone", "d4c8b0", win=Win(w=26, h=20, sill=12, sp=36, margin=10, fh=pod, frame="3a3a40", group="work"), seed=seed + 1)
+    box(T, 20, 80, 460, 450, 0, pod, front=podf, back=pods, left=pods, right=pods, top=flat_top("5e8a4e", "7aa860", 6))
+    canopy(T, 180, 280, 80, 26, 36, "2e3238", "2e3238", posts=False)
+    door(T, 210, 60, 80, 32)
+    entry(T, 240)
+    # lower shaft: warm stone, bronze frames, glass loggias
+    win = Win(w=22, h=24, sill=6, sp=32, margin=8, fh=fh, frame=bronze, style="vertical", tint=glass, group="flats", top_skip=3)
+    bands = [(fh * k - 1.5, fh * k + 1.5, "f4eee2") for k in range(1, n1 + n2 + 3)]
+    f1 = facade("concrete", stone, win=win, seed=seed + 2, plinth=None, bands=bands)
+    f2 = facade("concrete", stone, win=Win(w=22, h=24, sill=6, sp=32, margin=10, fh=fh, frame=bronze, style="vertical", tint=glass,
+                                           group="flats", top_skip=3), seed=seed + 3, plinth=None, bands=bands)
+    a0, a1, b0, b1 = 70, 410, 130, 420
+    box(T, a0, b0, a1, b1, pod, H1, front=f1, back=f2, left=f2, right=f2, top=flat_top("5e8a4e", "7aa860", 6))
+    balconies(T, [a0 + 40, a0 + 140, a0 + 240], b0, range(2, n1, 2), fh, 50, 14, "glass", z_start=pod, col="f4eee2")
+    # upper shaft, set back
+    c0, c1, d0, d1 = 110, 370, 170, 390
+    box(T, c0, d0, c1, d1, H1, H2, front=f1, back=f2, left=f2, right=f2, top=flat_top("807c78", "e8e2d6", 4))
+    balconies(T, [c0 + 30, c0 + 130], d0, range(1, n2), fh, 50, 14, "glass", z_start=H1, col="f4eee2")
+    # bronze fins down the corners of the upper shaft
+    fin = facade("metal", bronze, plinth=None, seed=seed + 4)
+    for a in (c0 - 4, c1 - 8):
+        T.box(a, d0 - 8, a + 12, d0, H1, H2 + 40, all=fin, top=flat_top("8a8884", bronze, 3))
+    # lit crown lantern
+    lan = facade("concrete", "d8dce0", win=Win(w=20, h=30, sill=2, sp=24, margin=4, fh=40, frame="9aa4ae", style="vertical",
+                                                tint="9ac0d8", group="work"), plinth=None, seed=seed + 5, lit=1.0)
+    T.box(c0 + 50, d0 + 40, c1 - 50, d1 - 40, H2, H2 + 44, all=lan, top=flat_top("8a8884", "d8dce0", 3))
+    spire(T, (c0 + c1) / 2, (d0 + d1) / 2, H2 + 44, 90)
+    roof_units(T, a0, b0, a1, b1, H1, seed, 3, stair=False)
+    for k, ss in enumerate((50, 140, 340, 430)):
+        tree(T, ss, 44, "maple", 0.8, 60 + k)
+    ground(T, 10, 0, 470, 80, kit.paving("c8c4bc", 12.0, 4))
+    lamp(T, 110, 20, "modern", 55)
+    lamp(T, 370, 20, "modern", 55, "light2")
+    return cv
+
+
 BUILDERS = {"house_small": house_small, "cottage": cottage, "bungalow": bungalow, "townhouse": townhouse,
-            "villa": villa, "apartments": apartments, "condo": condo, "tower": tower}
+            "villa": villa, "apartments": apartments, "condo": condo, "tower": tower, "highrise": highrise, "sky_home": sky_home}
