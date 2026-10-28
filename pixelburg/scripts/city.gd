@@ -984,7 +984,7 @@ func _set_ghost_tile(t: Vector2i) -> void:
 	ghost.offset = Vector2(m.o[0], m.o[1]) + Vector2(0, n * Iso.HY)
 	var why := Game.place_problem(place_id, t.x, t.y, move_uid)
 	var ok := why == ""
-	ghost.modulate = Color(1, 1, 1, 0.68) if ok else Color(1, 0.45, 0.45, 0.6)
+	ghost.modulate = Color(1, 1, 1, 0.8) if ok else Color(1, 0.72, 0.72, 0.7)
 	_show_cursors(_footprint(t, n), "cursor_ok" if ok else "cursor_bad")
 	# roads around the footprint glow so you can see the building will be connected
 	var around: Array[Vector2i] = []

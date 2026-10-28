@@ -4,6 +4,7 @@ import numpy as np
 from raster import C, U, Canvas, flat, solid_res, glow_res, nores
 from arch import Orient, facade, Win, roof_mat, flat_top, text_mask
 import kit
+from b_homes import spire
 from bkit import (door, entry, ground, tree, bush, hedge, fence, flowerbed, mailbox, lamp, bench, bins, box, slab,
                   post, canopy, steps, balconies, roof_units, parking_lot, glass_rail, awning, sign_board, pole_sign, blade_sign)
 
@@ -322,6 +323,54 @@ def office(L, o):
     return cv
 
 
+# ====================================================================== sky_office: glass office skyscraper
+def sky_office(L, o):
+    floors = [24, 30, 36][L - 1]
+    fh = 32
+    pod = 2 * fh + 8
+    H = pod + floors * fh
+    cv = Canvas(3, H + 240)
+    T = Orient(cv, o)
+    seed = 351
+    tint = ["4a7a9a", "3a6a8a", "2e5a7e"][L - 1]
+    # glass lobby podium with a big canopy
+    lob = facade("concrete", "c8ccd0", win=Win(w=30, h=44, sill=4, sp=34, margin=6, fh=pod, frame="8a96a2", style="vertical",
+                                               tint="7ab0d0", group="work", top_skip=6), plinth=("4a4a50", 6), seed=seed, lit=0.9,
+                 doors=[(200, 60, 40, "double_glass")])
+    lob2 = facade("concrete", "c8ccd0", win=Win(w=30, h=44, sill=4, sp=34, margin=6, fh=pod, frame="8a96a2", style="vertical",
+                                                tint="7ab0d0", group="work", top_skip=6), plinth=("4a4a50", 6), seed=seed + 1, lit=0.7)
+    box(T, 20, 90, 460, 420, 0, pod, front=lob, back=lob2, left=lob2, right=lob2, top=flat_top("8a8884", "c8ccd0", 5))
+    canopy(T, 170, 300, 90, 40, 46, "2a2e34", "2a2e34", posts=False)
+    door(T, 210, 60, 90, 40)
+    entry(T, 240)
+    # curtain-wall shaft with floor lines
+    win = Win(w=28, h=26, sill=3, sp=31, margin=4, fh=fh, frame="8a96a2", style="vertical", tint=tint, group="work", top_skip=2)
+    cw = facade("concrete", "c8d0d8", win=win, plinth=None, seed=seed + 2, lit=0.5,
+                bands=[(fh * k - 2, fh * k + 2, "dce2e8") for k in range(floors + 3)])
+    s0, s1, f0, f1 = 90, 390, 150, 410
+    box(T, s0, f0, s1, f1, pod, H, all=cw, top=flat_top("7a7874", "dce2e8", 4))
+    # light stone fins on the corners that rise above the roof like a crown
+    fin = facade("concrete", "e4e8ec", plinth=None, seed=seed + 3)
+    for a in (s0 - 6, s1 - 8):
+        for b in (f0 - 6, f1 - 8):
+            T.box(a, b, a + 14, b + 14, pod, H + 50, all=fin, top=flat_top("8a8884", "e4e8ec", 3))
+    # mechanical crown, louvres and mast
+    cr = facade("metal", "b8c0c8", plinth=None, seed=seed + 4, win=Win(w=10, h=26, sill=6, sp=16, margin=6, fh=40, frame="6a727a",
+                                                                          group="work"), lit=0.9)
+    T.box(s0 + 50, f0 + 50, s1 - 50, f1 - 50, H, H + 56, all=cr, top=flat_top("8a8884", "c8ccd0", 3))
+    spire(T, (s0 + s1) / 2, (f0 + f1) / 2, H + 56, 90)
+    sign_board(T, (s0 + s1) / 2 - 36, f0 - 2, H - 44, "OFFICE", 14, "2a2e34", "e8eef4", depth=2)
+    # plaza
+    ground(T, 10, 0, 470, 90, kit.paving("c4c0b8", 12.0, 6))
+    for k, ss in enumerate((50, 120, 360, 430)):
+        tree(T, ss, 50, "maple", 0.7, 80 + k)
+    bench(T, 150, 45, "s")
+    bench(T, 320, 45, "s")
+    lamp(T, 90, 20, "modern", 60)
+    lamp(T, 390, 20, "modern", 60, "light2")
+    return cv
+
+
 BUILDERS = {"bakery": bakery, "cafe": cafe, "flowershop": flowershop, "pizzeria": pizzeria, "boutique": boutique,
             "pharmacy": pharmacy, "gas_station": gas_station, "supermarket": supermarket, "restaurant": restaurant,
-            "cinema": cinema, "mall": mall, "hotel": hotel, "office": office}
+            "cinema": cinema, "mall": mall, "hotel": hotel, "office": office, "sky_office": sky_office}
