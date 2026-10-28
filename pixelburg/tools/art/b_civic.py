@@ -685,10 +685,137 @@ def pond(L, o):
     return cv
 
 
+# ====================================================================== utilities (power, water)
+def solar_top(u, v, L, D, *_):
+    """Blue photovoltaic cells in a silver frame."""
+    shape = u.shape
+    rgb = np.broadcast_to(C("1e3a74"), shape + (3,)).copy()
+    rgb *= (0.9 + 0.2 * (v / max(D, 1)))[..., None]
+    grid = ((u % 6) < 0.7) | ((v % 6) < 0.7)
+    rgb[grid] = C("7a98c8")
+    frame = (u < 1.6) | (v < 1.6) | (u > L - 1.6) | (v > D - 1.6)
+    rgb[frame] = C("c8ccd0")
+    return rgb, nores(shape), None
+
+
+def solar_panel(L, o):
+    cv = Canvas(1, 50)
+    T = Orient(cv, o)
+    ground(T, 0, 0, 160, 160, kit.gravel("b0a48c"))
+    rows = 2 + (L >= 2)
+    cols = 3 if L < 3 else 4
+    pw = 140.0 / cols - 6
+    for r in range(rows):
+        f0 = 28 + r * (112.0 / rows)
+        for c in range(cols):
+            s0 = 10 + c * (140.0 / cols) + 3
+            for sx in (s0 + 5, s0 + pw - 5):
+                post(T, sx, f0 + 12, 0, 12, "8a8e94", 2.4)
+            T.box(s0, f0, s0 + pw, f0 + 24, 12, 16, front=flat("c8ccd0", 2), back=flat("8a8e94", 2),
+                  left=flat("8a8e94", 2), right=flat("c8ccd0", 2), top=solar_top)
+    # battery cabinet and inverter
+    T.box(118, 6, 150, 20, 0, 18, front=flat("e8e4dc", 3), back=flat("c8c4bc", 3), left=flat("c8c4bc", 3), right=flat("d8d4cc", 3),
+          top=flat("b8b4ac", 3))
+    T.box(122, 4, 130, 6, 6, 14, all=flat("2a8a4a", 3), top=flat("2a8a4a", 3))
+    fence(T, 4, 156, 4, "s", "8a8e94", "picket", 10) if False else None
+    entry(T, 80)
+    lamp(T, 14, 14, "classic", 36)
+    return cv
+
+
+def banded(col_a, col_b, band=10.0):
+    def side(a, v, nx, ny):
+        k = ((np.floor(v / band) % 2) == 0)[..., None]
+        return (np.where(k, C(col_a), C(col_b)) * (0.9 + 0.1 * np.cos(a * 8))[..., None], nores(a.shape), None)
+    return side
+
+
+def water_station(L, o):
+    cv = Canvas(2, 190)
+    T = Orient(cv, o)
+    ground(T, 0, 0, 320, 120, kit.paving("c4c0b4", 8.0))
+    # pump house
+    fr = facade("plaster", "dfe8ec", doors=[(60, 36, 44, "panel", "3a5a8a")], seed=611, plinth=("6a7a8a", 5),
+                win=Win(w=16, h=14, sill=22, sp=30, margin=12, fh=40, frame="f4f4f4", group="work"),
+                signs=[(110, 50, "WATER", 7, "2a5a9a", "ffffff", False)])
+    sd = facade("plaster", "dfe8ec", seed=612, plinth=("6a7a8a", 5),
+                win=Win(w=16, h=14, sill=22, sp=30, margin=12, fh=40, frame="f4f4f4", group="work"))
+    box(T, 20, 70, 200, 190, 0, 56, front=fr, back=sd, left=sd, right=sd, top=flat_top("7a8a9a", "dfe8ec", 3))
+    T.gable(18, 68, 202, 192, 56, 22, roof_mat("3a5a8a", "metal"), dict(front=sd, all=sd), ridge="s", o=3)
+    door(T, 60, 36, 70, 44)
+    entry(T, 78)
+    # tank tower
+    tx, tf = 262, 150
+    for dx, df in ((-16, -16), (16, -16), (-16, 16), (16, 16)):
+        post(T, tx + dx, tf + df, 0, 70, "6a6e76", 3.0)
+    for z in (22, 46):
+        T.box(tx - 17, tf - 17, tx + 17, tf + 17, z, z + 2, all=flat("6a6e76", 2), top=flat("6a6e76", 2))
+    x, y = T.pt(tx, tf)
+    cv.cylinder(x, y, 26, 70, 120, banded("3a7ac0", "5a9ad8", 14.0), lambda a, b: solid_res(C("2a5a98"), a.shape))
+    cv.ellipsoid(x, y, 120, 26, 26, 14, lambda wx, wy, wz, nx, ny, nz: solid_res(C("2a5a98"), wx.shape), cut_z=120)
+    post(T, tx, tf, 134, 146, "8a8e94", 1.2)
+    # pipes and a hydrant
+    T.box(200, 110, 240, 118, 0, 6, all=flat("8a8e94", 2), top=flat("a8acb0", 2))
+    T.box(200, 110, 208, 160, 0, 6, all=flat("8a8e94", 2), top=flat("a8acb0", 2))
+    for k in range(2):
+        xx, yy = T.pt(30 + k * 40, 40)
+        cv.cylinder(xx, yy, 3, 0, 10, lambda a, v, nx, ny: solid_res(C("2a5aa8"), a.shape), lambda a, b: solid_res(C("c8d8e8"), a.shape))
+    if L >= 2:
+        x2, y2 = T.pt(262, 70)
+        cv.cylinder(x2, y2, 14, 0, 34, banded("3a7ac0", "5a9ad8", 10.0), lambda a, b: solid_res(C("2a5a98"), a.shape))
+    tree(T, 30, 220, "lime", 0.8, 611)
+    lamp(T, 220, 24, "classic", 42)
+    return cv
+
+
+def pylon(T, s, f, h=78):
+    for dx in (-5, 5):
+        post(T, s + dx, f, 0, h, "7a7e86", 1.6)
+    for z in (h - 6, h - 24, 24):
+        T.box(s - 14 if z > 30 else s - 6, f - 1, s + 14 if z > 30 else s + 6, f + 1, z, z + 2, all=flat("7a7e86", 2), top=flat("7a7e86", 2))
+
+
+def power_plant(L, o):
+    cv = Canvas(2, 230)
+    T = Orient(cv, o)
+    H = 70
+    ground(T, 0, 0, 320, 90, kit.asphalt_lot("62646a"))
+    hall = facade("metal", "d4d8dc", doors=[(50, 40, 44, "shutter", "8a8e94")], plinth=("4a4e56", 6), seed=621,
+                  win=Win(w=36, h=10, sill=H - 22, sp=48, margin=18, fh=200, frame="5a5e66", group="work"),
+                  bands=[(H - 30, H - 26, "e8c020")], signs=[(130, 46, "POWER", 8, "e8c020", "2a2a30", False)])
+    sd = facade("metal", "d4d8dc", plinth=("4a4e56", 6), seed=622,
+                win=Win(w=36, h=10, sill=H - 22, sp=48, margin=18, fh=200, frame="5a5e66", group="work"),
+                bands=[(H - 30, H - 26, "e8c020")])
+    box(T, 14, 100, 214, 270, 0, H, front=hall, back=sd, left=sd, right=sd, top=flat_top("8a8e94", "d4d8dc", 3))
+    door(T, 50, 40, 100, 44)
+    entry(T, 70)
+    # stacks
+    for k, (ss, ff) in enumerate(((60, 230), (130, 230))[: 1 + (L >= 2)]):
+        x, y = T.pt(ss, ff)
+        cv.cylinder(x, y, 10, H, 180, banded("c8342a", "f4f0e8", 14.0), lambda a, b: solid_res(C("2a2222"), a.shape))
+        cv.mark("smoke%d" % k, x, y, 182)
+    # turbine drum on the roof
+    xr, yr = T.pt(170, 180)
+    cv.cylinder(xr, yr, 14, H, H + 26, banded("a8acb4", "c4c8d0", 8.0), lambda a, b: solid_res(C("8a8e96"), a.shape))
+    # transformer yard with pylon
+    T.box(226, 110, 310, 220, 0, 2, all=flat("a8a498", 3), top=flat("a8a498", 3))
+    for k, (ss, ff) in enumerate(((240, 130), (270, 130), (240, 180), (270, 180))):
+        T.box(ss, ff, ss + 20, ff + 20, 2, 24, front=flat("7a8a90", 3), back=flat("6a7a80", 3), left=flat("6a7a80", 3), right=flat("7a8a90", 3),
+              top=flat("5a6a70", 3))
+        for dx in (4, 10, 16):
+            post(T, ss + dx, ff + 10, 24, 32, "e8e4dc", 2.6)
+    pylon(T, 296, 150)
+    T.box(222, 106, 224, 224, 0, 14, all=flat("6a6e76", 2), top=flat("6a6e76", 2))
+    T.box(222, 106, 312, 108, 0, 14, all=flat("6a6e76", 2), top=flat("6a6e76", 2))
+    lamp(T, 24, 40, "classic", 42)
+    return cv
+
+
 BUILDERS = {"school": school, "kindergarten": kindergarten, "library": library, "museum": museum,
             "fire_station": fire_station, "police": police, "hospital": hospital, "bank": bank, "court": court,
             "town_hall": town_hall, "post_office": post_office, "gym": gym, "stadium": stadium, "zoo": zoo,
-            "funfair": funfair, "parking": parking, "tree": tree_lot, "flowerbed": flowerbed, "bench": square,
+            "funfair": funfair, "parking": parking, "solar_panel": solar_panel, "water_station": water_station,
+            "power_plant": power_plant, "tree": tree_lot, "flowerbed": flowerbed, "bench": square,
             "fountain": fountain, "statue": statue, "park": park, "playground": playground, "plaza": plaza, "pond": pond}
 
 

@@ -65,7 +65,7 @@ func setup(p_uid: int, decal_layer: Node2D, shadow_layer: Node2D) -> void:
 	add_child(sprite)
 	rooms = Sprite2D.new()
 	rooms.centered = false
-	rooms.material = Assets.rooms_mat
+	rooms.material = Assets.city_rooms_mat
 	add_child(rooms)
 	glow = Sprite2D.new()
 	glow.centered = false
@@ -304,7 +304,7 @@ func _update_garland(b: Dictionary) -> void:
 
 func _process(delta: float) -> void:
 	_anim_t += delta
-	var night := Game.night_amount()
+	var night := Game.light_level()
 	glow.modulate.a = night * openness
 	_room_now = _room_now.lerp(room_levels, minf(1.0, delta * 3.0))
 	rooms.modulate = Color(_room_now.x, _room_now.y, _room_now.z, _room_now.w)

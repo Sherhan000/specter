@@ -25,7 +25,7 @@ const CIVIL := ["man", "woman", "man", "woman", "teen", "student"]
 const JOB_KINDS := {
 	"police": "police", "hospital": "doctor", "fire_station": "firefighter", "school": "business",
 	"farm": "farmer", "orchard": "farmer", "greenhouse": "farmer", "ranch": "farmer", "warehouse": "builder",
-	"sawmill": "builder", "workshop": "builder", "factory": "builder", "logistics": "builder",
+	"sawmill": "builder", "workshop": "builder", "power_plant": "builder", "water_station": "builder", "solar_panel": "builder", "factory": "builder", "logistics": "builder",
 	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "post_office": "postman",
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
