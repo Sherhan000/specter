@@ -6,6 +6,17 @@
 - Исправлено для телефонов: белые дороги, прокрутка магазина/настроек, вылет окна животных.
 - AAB отправлен в закрытое тестирование Google Play (нужно 12 тестировщиков на 14 дней).
 
+## Windows .exe
+- Пресет «Windows Desktop» в export_presets.cfg (x86_64, embed_pck, `build/pixelburg.exe`). `build/` в .gitignore.
+- Нужны Godot 4.7.2 и export templates 4.7.2 (github.com/godotengine/godot-builds, релиз 4.7.2-stable).
+- Сборка из корня pixelburg/:
+  `godot --headless --import`
+  `godot --headless res://tools/dev/logic_test.tscn` (должно быть «DONE: 0 failed»)
+  `godot --headless --export-release "Windows Desktop" build/pixelburg.exe`
+- На Linux иконка/метаданные в .exe не вшиваются (нет rcedit) — на Windows сборка сама их применит; игре это не мешает.
+- logic_test впервые запущен: ошибок GDScript (электричество/вода) нет; исправлен порядок в самом тесте (проверка жителей до блока «losing»).
+- .exe не запускался на Windows — проверить вручную.
+
 ## Идеи на следующие версии
 - Таджикский язык, местные здания (чайхана, базар), горы Памира.
 - Реклама за изумруды (AdMob) — потребует обновить политику и «Безопасность данных».

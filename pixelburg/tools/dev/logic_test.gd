@@ -243,6 +243,11 @@ func _ready() -> void:
 	check(Game.import_code(code) and Game.coins == coins_saved, "backup code restores the city")
 	check(not Game.import_code("garbage"), "bad code rejected")
 
+	# ------------------------------------------------ life
+	await get_tree().create_timer(1.0).timeout
+	check(city.life.persons.size() > 0, "residents created (%d)" % city.life.persons.size())
+	check(city.life.cars.size() > 0, "cars in town (%d)" % city.life.cars.size())
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:
@@ -252,11 +257,6 @@ func _ready() -> void:
 	Game.happy = 0.0
 	Game._check_lose()
 	check(Game.lost, "losing when happiness is 0 and residents left")
-
-	# ------------------------------------------------ life
-	await get_tree().create_timer(1.0).timeout
-	check(city.life.persons.size() > 0, "residents created (%d)" % city.life.persons.size())
-	check(city.life.cars.size() > 0, "cars in town (%d)" % city.life.cars.size())
 
 	print("\n%s: %d failed" % ["DONE" if fails == 0 else "FAILURES", fails])
 	get_tree().quit(fails)
