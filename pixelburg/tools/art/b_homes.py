@@ -1,7 +1,7 @@
 """Homes at real scale. Each builder(L, o) returns a Canvas: L = level 1..3, o = orientation."""
 import numpy as np
 
-from raster import C, U, Canvas, flat, solid_res
+from raster import C, U, Canvas, flat, solid_res, glow_res
 from arch import Orient, facade, Win, roof_mat, flat_top
 import kit
 from bkit import (door, entry, ground, tree, bush, hedge, fence, flowerbed, mailbox, lamp, bench, bins, box, slab,
@@ -414,6 +414,163 @@ def tower(L, o):
     lamp(T, 220, 12, "modern", 50, "light2")
     return cv
 
+# ====================================================================== khrushchevka: five-storey panel block, shop on the ground floor
+def khrushchevka(L, o):
+    floors = [4, 5, 5][L - 1]
+    fh = 30
+    H = floors * fh + 6
+    cv = Canvas(2, H + 80)
+    T = Orient(cv, o)
+    seed = 131
+    wallc = ["d6d0bc", "c8d0c4", "e0d4b8"][L - 1]
+    s0, s1, f0, f1 = 20, 300, 80, 200
+    win = Win(w=12, h=16, sill=9, sp=24, margin=10, fh=fh, frame="f2efe8", group="flats")
+    seam = [(fh * k - 1, fh * k + 1, "b4ae9c") for k in range(1, floors)]
+    front = facade("plaster", wallc, win=win, shop=(40, 190, 24), doors=[(212, 14, 24, "glass"), (252, 14, 24, "glass")], seed=seed,
+                   plinth=("7a7268", 6), bands=seam, cornice=("c8c2b0", 4))
+    side = facade("plaster", wallc, win=Win(w=12, h=16, sill=9, sp=24, margin=20, fh=fh, frame="f2efe8", group="flats"), seed=seed + 1,
+                  plinth=("7a7268", 6), bands=seam, cornice=("c8c2b0", 4))
+    back = facade("plaster", wallc, win=win, seed=seed + 2, plinth=("7a7268", 6), bands=seam, cornice=("c8c2b0", 4))
+    box(T, s0, f0, s1, f1, 0, H, front=front, back=back, left=side, right=side, top=flat_top("807c78", "c8c2b0", 3))
+    roof_units(T, s0, f0, s1, f1, H, seed, 3, tank=L == 1)
+    balconies(T, [s0 + 200, s0 + 240], f0, range(2, floors), fh, 14, 10, "f2efe8")
+    # shop awning and entrances
+    canopy(T, s0 + 40, s0 + 190, f0, 10, 28, "c8342a", "c8342a", posts=False)
+    for ds in (s0 + 212, s0 + 252):
+        canopy(T, ds - 4, ds + 18, f0, 12, 28, "e8e2d6", "6a6e76", posts=False)
+        steps(T, ds - 2, ds + 16, f0, 2, 3)
+        door(T, ds, 14, f0, 24)
+    entry(T, s0 + 219)
+    ground(T, 10, 0, 310, f0, kit.paving("b8b0a4", 8.0))
+    for ss in (30, 120, 290):
+        tree(T, ss, 40, "lime", 0.8, 140 + ss)
+    bench(T, 150, 44, "s")
+    lamp(T, 110, 14, "modern", 45)
+    tree(T, 10, 140, "maple", 0.9, 150)
+    parking_lot(T, 20, 214, 300, 300, "s", 28)
+    return cv
+
+
+# ====================================================================== panel block: nine-plus storeys, shops below
+def panel_block(L, o):
+    floors = [9, 12, 16][L - 1]
+    fh = 28
+    H = floors * fh + 6
+    cv = Canvas(2, H + 80)
+    T = Orient(cv, o)
+    seed = 141
+    wallc = ["c8ccd0", "d8d4c8", "bcc4cc"][L - 1]
+    accent = ["8a9aa8", "b4644a", "5a7a9a"][L - 1]
+    s0, s1, f0, f1 = 20, 300, 70, 190
+    win = Win(w=12, h=15, sill=8, sp=22, margin=10, fh=fh, frame="f2efe8", group="flats")
+    seam = [(fh * k - 1, fh * k + 1, "9ea2a6") for k in range(1, floors)]
+    front = facade("plaster", wallc, win=win, shop=(30, 210, 22), doors=[(232, 14, 24, "glass")], seed=seed, plinth=("6a6e72", 6),
+                   bands=seam, cornice=("a8acb0", 4))
+    side = facade("plaster", wallc, win=Win(w=12, h=15, sill=8, sp=22, margin=24, fh=fh, frame="f2efe8", group="flats"), seed=seed + 1,
+                  plinth=("6a6e72", 6), bands=seam, cornice=("a8acb0", 4))
+    back = facade("plaster", wallc, win=win, seed=seed + 2, plinth=("6a6e72", 6), bands=seam, cornice=("a8acb0", 4))
+    box(T, s0, f0, s1, f1, 0, H, front=front, back=back, left=side, right=side, top=flat_top("807c78", "c8c2b0", 3))
+    # coloured stair core stripe
+    stripe = facade("plaster", accent, win=Win(w=8, h=15, sill=8, sp=22, margin=7, fh=fh, frame="f2efe8", group="flats"), plinth=None,
+                    seed=seed + 3)
+    box(T, s0 + 220, f0 - 4, s0 + 262, f0, fh, H, front=stripe, back=stripe, left=stripe, right=stripe)
+    roof_units(T, s0, f0, s1, f1, H, seed, 4, tank=L == 1)
+    balconies(T, [s0 + 80, s0 + 130], f0, range(2, floors), fh, 24, 10, "glass" if L >= 2 else "f2efe8")
+    canopy(T, s0 + 30, s0 + 210, f0, 10, 26, "2e3238", "2e3238", posts=False)
+    canopy(T, s0 + 228, s0 + 250, f0, 12, 28, "e8e2d6", "6a6e76", posts=False)
+    steps(T, s0 + 230, s0 + 248, f0, 2, 3)
+    door(T, s0 + 232, 14, f0, 24)
+    entry(T, s0 + 239)
+    ground(T, 10, 0, 310, f0, kit.paving("b4b0aa", 8.0))
+    for ss in (40, 150, 290):
+        tree(T, ss, 36, "lime", 0.8, 160 + ss)
+    bench(T, 110, 46, "s")
+    lamp(T, 220, 16, "modern", 45)
+    parking_lot(T, 20, 204, 300, 300, "s", 28)
+    if L >= 2:
+        bins(T, 300, 200)
+    return cv
+
+
+# ====================================================================== dormitory: long four-storey block with a bright entrance
+def dorm(L, o):
+    floors = [3, 4, 5][L - 1]
+    fh = 30
+    H = floors * fh + 6
+    cv = Canvas(2, H + 80)
+    T = Orient(cv, o)
+    seed = 151
+    wallc = ["c8a888", "b8605a", "d4c8b0"][L - 1]
+    mat = "brick" if L < 3 else "plaster"
+    s0, s1, f0, f1 = 10, 310, 80, 190
+    win = Win(w=14, h=16, sill=9, sp=20, margin=8, fh=fh, frame="f2efe8", group="flats")
+    front = facade(mat, wallc, win=win, doors=[(143, 20, 26, "double_glass")], seed=seed, plinth=("6a6460", 6),
+                   bands=[(fh * k - 1, fh * k + 1, "e0d8c8") for k in range(1, floors)], cornice=("e8e2d6", 5))
+    side = facade(mat, wallc, win=Win(w=14, h=16, sill=9, sp=20, margin=18, fh=fh, frame="f2efe8", group="flats"), seed=seed + 1,
+                  plinth=("6a6460", 6), cornice=("e8e2d6", 5))
+    box(T, s0, f0, s1, f1, 0, H, front=front, back=front, left=side, right=side, top=flat_top("7a7672", "d8d2c6", 4))
+    roof_units(T, s0, f0, s1, f1, H, seed, 4, tank=L == 1)
+    # glazed entrance block
+    glass = facade("concrete", "e8e6e2", win=Win(w=18, h=20, sill=4, sp=24, margin=6, fh=fh, frame="2e3238", style="vertical", group="flats"),
+                   doors=[(24, 20, 26, "double_glass")], plinth=None, seed=seed + 2)
+    box(T, 130, f0 - 14, 190, f0, 0, H + 10, front=glass, back=glass, left=glass, right=glass, top=flat_top("5a5e66", "e8e6e2", 3))
+    door(T, 154, 20, f0 - 14, 26)
+    entry(T, 164)
+    ground(T, 120, 0, 200, f0 - 14, kit.paving("b8b0a4", 8.0))
+    # bike racks, benches, lamps
+    bench(T, 60, 46, "s")
+    bench(T, 250, 46, "s")
+    lamp(T, 110, 14, "modern", 45)
+    lamp(T, 210, 14, "modern", 45, "light2")
+    for ss in (24, 290):
+        tree(T, ss, 40, "lime", 0.85, 170 + ss)
+    hedge(T, 20, 20, 110, 28, 9, 1)
+    hedge(T, 210, 20, 300, 28, 9, 2)
+    parking_lot(T, 40, 210, 280, 290, "s", 24)
+    return cv
+
+
+# ====================================================================== maternity hospital: soft pastel wing with a stork-blue sign
+def maternity(L, o):
+    floors = [2, 3, 4][L - 1]
+    fh = 32
+    H = floors * fh + 4
+    cv = Canvas(2, H + 80)
+    T = Orient(cv, o)
+    seed = 161
+    wallc = ["f2dcd0", "f4e4d4", "f6e8e0"][L - 1]
+    trim = "e8a8a0"
+    win = Win(w=18, h=17, sill=9, sp=28, margin=10, fh=fh, frame="f8f6f2", style="vertical", group="work", shutters=None)
+    bands = [(fh * k - 2, fh * k + 1, "f8f2ea") for k in range(1, floors)]
+    fr = facade("plaster", wallc, win=win, doors=[(110, 36, 28, "double_glass")], seed=seed, plinth=("a8948a", 6), bands=bands,
+                cornice=("f8f2ea", 5))
+    sd = facade("plaster", wallc, win=win, seed=seed + 1, plinth=("a8948a", 6), bands=bands, cornice=("f8f2ea", 5))
+    box(T, 30, 100, 290, 210, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("8a8e94", "f6e8e0", 4))
+    # side wings
+    wing = facade("plaster", wallc, win=win, seed=seed + 2, plinth=("a8948a", 6), cornice=("f8f2ea", 5))
+    for k, (a, b) in enumerate(((30, 90), (230, 290))):
+        box(T, a, 70, b, 100, 0, H - fh // 2, all=wing, top=flat_top("8a8e94", "f6e8e0", 3))
+    # pink band and heart sign
+    heart = lambda u, v, LL, HH: glow_res("e86a8a", u.shape)
+    T.box(140, 96, 180, 100, H - 26, H - 14, all=heart, top=flat("e86a8a"))
+    T.box(150, 96, 170, 100, H - 14, H - 8, all=heart, top=flat("e86a8a"))
+    canopy(T, 90, 230, 100, 28, 34, "f8f2ea", trim, posts=True)
+    door(T, 130, 36, 100, 28)
+    entry(T, 148)
+    steps(T, 120, 200, 100, 2, 3)
+    ground(T, 20, 0, 300, 100, kit.paving("d4ccbc", 12.0, 4))
+    roof_units(T, 30, 100, 290, 210, H, seed, 3, stair=False)
+    # garden behind with pram path
+    for k, ss in enumerate((20, 300)):
+        tree(T, ss, 130, "lime", 0.9, 180 + k)
+    flowerbed(T, 60, 40, 130, 70, 3)
+    flowerbed(T, 200, 40, 270, 70, 4)
+    lamp(T, 60, 20, "classic", 45, "light0")
+    lamp(T, 260, 20, "classic", 45, "light1")
+    T.box(236, 20, 258, 60, 0, 22, all=flat("f4f6f8", 3), top=flat("e8342a"))  # ambulance
+    return cv
+
 
 BUILDERS = {"house_small": house_small, "cottage": cottage, "bungalow": bungalow, "townhouse": townhouse,
-            "villa": villa, "apartments": apartments, "condo": condo, "tower": tower}
+            "villa": villa, "apartments": apartments, "condo": condo, "tower": tower,
+            "khrushchevka": khrushchevka, "panel_block": panel_block, "dorm": dorm, "maternity": maternity}
