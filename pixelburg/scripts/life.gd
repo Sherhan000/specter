@@ -91,6 +91,82 @@ func buildings_changed() -> void:
 	_dirty = true
 
 
+## A building was picked up and put down elsewhere: routes, car spots and doors that
+## pointed at the old place must follow it, or people walk into an empty lot.
+func building_moved(uid: int) -> void:
+	_dirty = true
+	var acc := _sidewalk_access(uid)
+	for w in walkers.duplicate():
+		if not is_instance_valid(w) or w.done or w.person == null or w.pts.is_empty():
+			continue
+		var p: Person = w.person
+		var last: Dictionary = w.pts.back()
+		if w.pts[0].get("door", 0) == uid and w.i <= 2:
+			# just stepped out of the old door: start the trip again from the new one
+			_drop_walker(w)
+			p.where = uid
+			_start_trip(p, p.dest, p.dest_stay)
+		elif last.get("enter", 0) == uid:
+			_reroute_walker(w, uid, acc)
+	# the family car follows the home it belongs to
+	for car in cars:
+		if not is_instance_valid(car) or car.owner_home != uid or car.state != "parked":
+			continue
+		var headed := false
+		for w in walkers:
+			if is_instance_valid(w) and not w.pts.is_empty() and w.pts.back().get("car", null) == car:
+				headed = true
+		if headed:
+			continue
+		var sp := find_spot(uid, car)
+		if sp.is_empty():
+			continue
+		if spots.get(car.home_spot) == car:
+			spots.erase(car.home_spot)
+		if spots.get(car.spot[0]) == car:
+			spots.erase(car.spot[0])
+		car.home_spot = sp[0]
+		car.park_at(sp)
+		spots[sp[0]] = car
+	for car in cars:
+		if is_instance_valid(car) and car.owner_home == uid and car.state != "parked":
+			car.home_spot = ""
+
+
+func _drop_walker(w: Walker) -> void:
+	if w.crossing != Vector3i(-1, -1, -1):
+		crossing_done(w.crossing)
+		w.crossing = Vector3i(-1, -1, -1)
+	walkers.erase(w)
+	w.person.walker = null
+	w.done = true
+	w.queue_free()
+
+
+## Send a walker that is already on its way to the new entrance of building `uid`.
+func _reroute_walker(w: Walker, uid: int, acc: Dictionary) -> void:
+	var p: Person = w.person
+	var route := []
+	if not acc.is_empty() and walk.get_point_count() > 0:
+		var id := walk.get_closest_point(w.g)
+		var tile := Vector2i((id / 4) % Data.MAP, (id / 4) / Data.MAP)
+		route = walk_route({"tile": tile, "side": -1, "point": w.g, "corners": [id % 4]}, acc)
+	if route.is_empty():
+		# no sidewalk to the new place: they still get home, unseen
+		_drop_walker(w)
+		p.where = uid
+		p.stay = p.dest_stay
+		return
+	if w.crossing != Vector3i(-1, -1, -1):
+		crossing_done(w.crossing)
+		w.crossing = Vector3i(-1, -1, -1)
+	var door_to: Vector2 = city.views[uid].door_grid() if city.views.has(uid) else acc.entry
+	route.append({"p": acc.entry})
+	route.append({"p": door_to, "enter": uid})
+	w.pts = route
+	w.i = 1
+
+
 static func _street(t: String) -> bool:
 	return t != "highway" and t != "country"
 

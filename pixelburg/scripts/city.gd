@@ -259,7 +259,7 @@ func _on_building_moved(uid: int) -> void:
 		views.erase(uid)
 	_add_view(uid)
 	views[uid].pop_in()
-	life.buildings_changed()
+	life.building_moved(uid)
 
 
 func _on_roads_changed() -> void:
