@@ -40,6 +40,12 @@ const MOVE_COST := 0       ## moving a building is free, only its old spot must 
 const CATCH_COST := 80
 const ZOO_ANIMALS := 5
 const WORKFORCE := 0.6     ## share of residents who work
+const POWER_FREE := 3.0    ## kW from the village's old generator: enough for the first houses and lamps
+const WATER_FREE := 40     ## residents served by the village wells
+const POWER_HOME := 0.1    ## kW per resident
+const POWER_JOB := 0.3     ## kW per worker (plus POWER_BASE per business)
+const POWER_BASE := 1.0
+const POWER_LAMP := 0.25   ## kW per street lamp
 
 const ROADS := {
 	"dirt": {"name": ["Грунтовка", "Dirt road"], "cost": 6, "upkeep": 0.2, "row": 2, "speed": 0.75},
@@ -154,6 +160,12 @@ const B := {
 		"jobs": 8, "upkeep": 60, "svc": "health", "radius": 18, "happy": 8},
 	"town_hall": {"name": ["Ратуша", "Town Hall"], "cat": "service", "zones": ["city"], "size": 3, "cost": 15000, "gems": 10, "lvl": 13, "time": 240,
 		"jobs": 8, "upkeep": 70, "svc": "gov", "radius": 999, "happy": 6},
+	"water_station": {"name": ["Водонапорная станция", "Water Station"], "cat": "service", "zones": ["city", "industry", "farm"], "size": 2, "cost": 2200, "lvl": 4, "time": 80,
+		"jobs": 3, "upkeep": 28, "svc": "water", "radius": 0, "happy": 2, "water": 160},
+	"power_plant": {"name": ["Электростанция", "Power Plant"], "cat": "service", "zones": ["industry", "city"], "size": 2, "cost": 5200, "lvl": 6, "time": 120,
+		"jobs": 8, "upkeep": 48, "svc": "power", "radius": 0, "happy": 0, "power": 120},
+	"solar_panel": {"name": ["Солнечные панели", "Solar Panels"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 650, "lvl": 2, "time": 20,
+		"jobs": 1, "upkeep": 3, "svc": "solar", "radius": 0, "happy": 1, "power": 8, "store": 48},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
 		"jobs": 1, "upkeep": 6, "svc": "parking", "radius": 6, "happy": 2},
 	# ------------------------------------------------ leisure businesses (tickets)
@@ -192,6 +204,7 @@ const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
+	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]

@@ -259,7 +259,7 @@ func _on_building_moved(uid: int) -> void:
 		views.erase(uid)
 	_add_view(uid)
 	views[uid].pop_in()
-	life.buildings_changed()
+	life.building_moved(uid)
 
 
 func _on_roads_changed() -> void:
@@ -358,7 +358,7 @@ const SKY_NIGHT := [Color(0.03, 0.05, 0.12), Color(0.12, 0.16, 0.28)]
 func _update_daylight() -> void:
 	var tint := Game.world_tint()
 	var night := Game.night_amount()
-	Assets.set_daylight(tint, night)
+	Assets.set_daylight(tint, night, Game.light_level())
 	var h := Game.day_time * 24.0
 	var dusk := clampf(1.0 - absf(h - 19.6) / 1.6, 0.0, 1.0) + clampf(1.0 - absf(h - 6.0) / 1.2, 0.0, 1.0) * 0.7
 	var zen := SKY_DAY[0].lerp(SKY_DUSK[0], dusk).lerp(SKY_NIGHT[0], night)

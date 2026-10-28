@@ -275,6 +275,10 @@ func city_info() -> void:
 	_row(cv, "pop", Loc.t("ci_pop"), "%s / %s" % [Loc.num(Game.pop), Loc.num(Game.capacity)])
 	_row(cv, "jobs", Loc.t("ci_jobs"), "%s / %s" % [Loc.num(Game.workers), Loc.num(Game.jobs)])
 	_row(cv, "unhappy", Loc.t("ci_unemp"), "%d%%" % int(Game.unemployment * 100), Color("b83a2a") if Game.unemployment > 0.1 else Color("3a2a1e"))
+	_row(cv, "storm", Loc.t("ci_power"), "%d / %d kW" % [int(Game.power_supply), int(Game.power_demand)],
+		Color("b83a2a") if Game.power_ratio < 0.85 else Color("3a2a1e"))
+	_row(cv, "rain", Loc.t("ci_water"), "%s / %s" % [Loc.num(Game.water_supply), Loc.num(Game.water_demand)],
+		Color("b83a2a") if Game.water_ratio < 0.9 else Color("3a2a1e"))
 	_row(cv, "happy", Loc.t("happy"), "%d%% → %d%%" % [int(Game.happy), int(Game.happy_target)])
 	_row(cv, "reputation", Loc.t("rep"), str(int(Game.rep)))
 	if Events.election_day > 0 and not Events.flags.get("election_done", false):

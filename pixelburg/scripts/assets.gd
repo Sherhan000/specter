@@ -14,6 +14,7 @@ static var _faces := {}
 static var world_mat: ShaderMaterial
 static var sway_mat: ShaderMaterial
 static var glow_mat: CanvasItemMaterial
+static var city_rooms_mat: ShaderMaterial
 static var rooms_mat: ShaderMaterial
 static var shadow_mat: ShaderMaterial
 static var night_mat: ShaderMaterial
@@ -156,17 +157,23 @@ static func init_materials() -> void:
 	glow_mat.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	rooms_mat = ShaderMaterial.new()
 	rooms_mat.shader = load("res://shaders/rooms.gdshader")
+	city_rooms_mat = ShaderMaterial.new()
+	city_rooms_mat.shader = rooms_mat.shader
 	shadow_mat = ShaderMaterial.new()
 	shadow_mat.shader = load("res://shaders/shadow.gdshader")
 	night_mat = ShaderMaterial.new()
 	night_mat.shader = load("res://shaders/night_glow.gdshader")
 
 
-static func set_daylight(tint: Color, night: float) -> void:
+## night drives shadows and the far villages; lit is the electric light of the city (needs current).
+static func set_daylight(tint: Color, night: float, lit := -1.0) -> void:
+	if lit < 0.0:
+		lit = night
 	for m in [world_mat, sway_mat]:
 		m.set_shader_parameter("tint", Vector3(tint.r, tint.g, tint.b))
 	rooms_mat.set_shader_parameter("night", night)
-	night_mat.set_shader_parameter("night", night)
+	city_rooms_mat.set_shader_parameter("night", lit)
+	night_mat.set_shader_parameter("night", lit)
 	shadow_mat.set_shader_parameter("strength", clampf(1.0 - night * 1.4, 0.0, 1.0))
 
 

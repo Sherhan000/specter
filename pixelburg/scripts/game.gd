@@ -49,6 +49,18 @@ var day_time := 0.29
 var tax := Data.TAX_DEFAULT
 var rep := 50.0
 var happy := 55.0
+var power_supply := 0.0      ## kW produced right now (village generator + plants + solar by sun and weather)
+var power_demand := 0.0      ## kW used by homes, businesses and street lamps
+var power_ratio := 1.0       ## share of the demand that is covered (1 while the batteries last)
+var light_power := 1.0       ## power_ratio, eased: how bright the lights of the city are
+var power_store := 0.0       ## kWh in the solar batteries
+var power_cap := 0.0
+var water_supply := 0
+var water_demand := 0
+var water_ratio := 1.0
+var _plant_kw := 0.0
+var _solar_kw := 0.0
+var _demand_kw := 0.0
 var peak_pop := 0
 var caught: Array = []       ## species names of animals caught for the zoo
 var weather := "clear"
@@ -309,7 +321,7 @@ func to_dict() -> Dictionary:
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
 		"caught": caught, "weather": weather, "weather_until": weather_until, "mood": mood,
 		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "tutorial": tutorial, "lost": lost,
-		"events": Events.to_dict(),
+		"events": Events.to_dict(), "power_store": power_store,
 	}
 
 
@@ -399,6 +411,7 @@ func from_dict(p: Dictionary) -> bool:
 	caught = p.get("caught", []).map(func(v): return str(v))
 	weather = str(p.get("weather", "clear"))
 	weather_until = int(p.get("weather_until", 0))
+	power_store = float(p.get("power_store", 0.0))
 	mood = p.get("mood", [])
 	ledger = p.get("ledger", [])
 	today = p.get("today", _empty_day())
@@ -504,6 +517,7 @@ func _process(delta: float) -> void:
 
 func _advance_time(delta: float) -> void:
 	var prev_hour := hour()
+	_update_power(delta)
 	day_time += delta / Data.DAY_LENGTH
 	if day_time >= 1.0:
 		day_time -= 1.0
@@ -524,6 +538,10 @@ func _on_hour() -> void:
 		_pick_weather()
 	recalc()
 	_check_lose()
+	if hour() == 9 and water_ratio < 0.85:
+		toast.emit(Loc.t("water_low"))
+	elif hour() == 21 and light_power < 0.85:
+		toast.emit(Loc.t("power_low"))
 	hour_passed.emit(hour())
 	Events.on_hour(hour())
 
@@ -819,6 +837,7 @@ func recalc() -> void:
 			"decor":
 				infl.append(uid)
 	peak_pop = maxi(peak_pop, pop)
+	_recalc_utilities()
 	workforce = int(pop * Data.WORKFORCE)
 	workers = mini(workforce, jobs)
 	staff = 1.0 if jobs == 0 else clampf(float(workers) / jobs, 0.15, 1.0)
@@ -878,6 +897,10 @@ func recalc() -> void:
 				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9}[key]
 				h += v
 				reasons.append(["r_" + key, v])
+		if water_ratio < 0.9:
+			var wp := int(round((1.0 - water_ratio) * 20.0))
+			h -= wp
+			reasons.append(["r_water", -wp])
 		if has_gov:
 			h += 6
 		if fun > 0:
@@ -1040,6 +1063,56 @@ func is_intersection(c: Vector2i) -> bool:
 		if net.has(c + d):
 			n += 1
 	return n >= 3
+
+
+# ====================================================================== power & water
+func _recalc_utilities() -> void:
+	_plant_kw = 0.0
+	_solar_kw = 0.0
+	_demand_kw = lamps.size() * Data.POWER_LAMP
+	power_cap = 0.0
+	water_supply = Data.WATER_FREE
+	water_demand = 0
+	for uid in buildings:
+		var b: Dictionary = buildings[uid]
+		var d: Dictionary = Data.B[b.id]
+		if not b.built or not _works(uid):
+			continue
+		if d.cat == "home":
+			_demand_kw += b.occ * Data.POWER_HOME
+			water_demand += b.occ
+		elif d.cat != "decor":
+			_demand_kw += Data.POWER_BASE + Data.stat(b.id, "jobs", b.lvl) * Data.POWER_JOB
+		if d.has("power"):
+			if d.get("svc", "") == "solar":
+				_solar_kw += Data.stat(b.id, "power", b.lvl)
+				power_cap += Data.stat(b.id, "store", b.lvl)
+			else:
+				_plant_kw += Data.stat(b.id, "power", b.lvl)
+		if d.has("water"):
+			water_supply += Data.stat(b.id, "water", b.lvl)
+	water_ratio = 1.0 if water_demand <= water_supply else water_supply / float(water_demand)
+	power_store = minf(power_store, power_cap)
+	_update_power(0.0)
+
+
+## Solar panels follow the sun and the clouds; the batteries carry the city through the night.
+func _update_power(delta: float) -> void:
+	var sun := clampf(1.0 - night_amount() * 1.2, 0.0, 1.0)
+	sun *= {"cloudy": 0.6, "rain": 0.35, "storm": 0.2, "snow": 0.45, "fog": 0.5}.get(weather, 1.0)
+	power_supply = Data.POWER_FREE + _plant_kw + _solar_kw * sun
+	power_demand = _demand_kw
+	power_store = clampf(power_store + (power_supply - power_demand) * delta * 24.0 / Data.DAY_LENGTH, 0.0, power_cap)
+	if power_demand <= power_supply or power_store > 0.0:
+		power_ratio = 1.0
+	else:
+		power_ratio = clampf(power_supply / power_demand, 0.0, 1.0)
+	light_power = move_toward(light_power, power_ratio, delta * 0.6) if delta > 0.0 else power_ratio
+
+
+## How brightly the electric light shines: only when it is dark (night, storm) and only with current.
+func light_level() -> float:
+	return night_amount() * light_power
 
 
 # ====================================================================== rules

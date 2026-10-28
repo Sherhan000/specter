@@ -990,7 +990,12 @@ func _refresh_info() -> void:
 			_stat("goods", "%d/%s" % [Data.stat(b.id, "out", lv), Loc.duration(d.cycle)])
 		"service":
 			_stat("jobs", str(Data.stat(b.id, "jobs", lv)))
-			_stat("happy", "+%d" % Data.stat(b.id, "happy", lv))
+			if d.has("power"):
+				_stat("storm", "+%d kW" % Data.stat(b.id, "power", lv))
+			elif d.has("water"):
+				_stat("rain", "+%d" % Data.stat(b.id, "water", lv))
+			else:
+				_stat("happy", "+%d" % Data.stat(b.id, "happy", lv))
 		"decor":
 			_stat("happy", "+%d" % Data.stat(b.id, "happy", lv))
 	if b.priv == "" and d.cat != "decor":
