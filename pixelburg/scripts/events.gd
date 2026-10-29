@@ -308,12 +308,12 @@ func _proposal() -> void:
 func _disasters(_h: int) -> void:
 	if Game.pop < 30:
 		return
-	var fire_p := 0.012 * (2.0 if Game.rules.get("fire", false) else 1.0)
+	var fire_p := 0.012 * (2.0 if Game.rules.get("fire", false) else 1.0) * Game.law_mult("fire")
 	if Game.weather == "storm":
 		fire_p *= 2.0
 	if _rng.randf() < fire_p:
 		start_fire()
-	if Game.pop >= 100 and _rng.randf() < 0.02:
+	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.law_mult("crime"):
 		var caught := Game.has_service("police")
 		if caught:
 			Game.add_rep(2)

@@ -517,6 +517,8 @@ static func lane_for(type: String, kind: String) -> float:
 			return 0.35 if kind in ["truck", "bus", "garbage", "delivery"] else 0.12
 		"dirt":
 			return 0.09
+		"boulevard":
+			return 0.125
 	return 0.105
 
 

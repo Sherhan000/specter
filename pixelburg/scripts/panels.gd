@@ -299,7 +299,45 @@ func city_info() -> void:
 		for m in Game.mood:
 			_row(v, "", Loc.t("mood_" + str(m.why)), ("+" if int(m.v) > 0 else "") + str(int(m.v)),
 				Color("2a7a2a") if int(m.v) > 0 else Color("b83a2a"))
-	hud.popup(Loc.t("city"), "", [[Loc.t("close"), "blue", Callable()]], v)
+	hud.popup(Loc.t("city"), "", [[Loc.t("laws"), "purple", laws], [Loc.t("close"), "blue", Callable()]], v)
+
+
+## Laws: pass one from the ready list or repeal a passed one.
+func laws() -> void:
+	var v := _vbox(5)
+	hud.text(Loc.t("laws_note") % [Game.laws.size(), Data.MAX_LAWS, Data.LAW_COST], v, 11, Color("8a6a4a"), _w() - 20)
+	for id in Data.LAW_ORDER:
+		var l: Dictionary = Data.LAWS[id]
+		var on := Game.has_law(id)
+		var c := _card(v, 4)
+		var h := _hbox(6)
+		c.add_child(h)
+		hud.icon_rect("ok" if on else "law", h)
+		var lv := _vbox(1)
+		lv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(lv)
+		hud.title(Loc.pick(l.name), lv, 12, Color("2a5a2a") if on else Color("7a2a1a"))
+		hud.text(_law_effects(l), lv, 10, Color("3a2a1e"), _w() - 150)
+		var can := on or (Game.laws.size() < Data.MAX_LAWS and Game.coins >= Data.LAW_COST)
+		var b: Button = hud.button(Loc.t("law_off") if on else Loc.t("law_on") % Data.LAW_COST, "", "red" if on else ("green" if can else "grey"), func():
+			Game.toggle_law(id)
+			laws())
+		b.disabled = not can
+		h.add_child(b)
+	hud.popup(Loc.t("laws"), "", [[Loc.t("back"), "blue", city_info]], v)
+
+
+func _law_effects(l: Dictionary) -> String:
+	var out: PackedStringArray = []
+	for k in ["happy", "rep", "daily"]:
+		if l.has(k):
+			var n: float = l[k]
+			out.append(Loc.t("lawfx_" + k) % [("+" if n > 0 and k != "daily" else "") + str(n if k == "rep" else int(n))])
+	for k in ["biz", "tour", "power", "water", "fire", "crime"]:
+		if l.has(k):
+			var pc := int(round((float(l[k]) - 1.0) * 100.0))
+			out.append(Loc.t("lawfx_" + k) % [("+" if pc > 0 else "") + str(pc) + "%"])
+	return ", ".join(out)
 
 
 func building_details(uid: int) -> void:

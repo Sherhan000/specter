@@ -1,7 +1,7 @@
 """Shops, offices and hotels at real scale."""
 import numpy as np
 
-from raster import C, U, Canvas, flat, solid_res, glow_res, nores
+from raster import C, U, Canvas, flat, solid_res, glow_res, nores, hash2
 from arch import Orient, facade, Win, roof_mat, flat_top, text_mask
 import kit
 from b_homes import spire
@@ -371,6 +371,109 @@ def sky_office(L, o):
     return cv
 
 
+# ====================================================================== sky_heli: glass skyscraper with a helipad and a helicopter on the roof
+def _helipad(u, v, L, D):
+    shape = u.shape
+    rgb = np.broadcast_to(C("4a4c52"), shape + (3,)).copy()
+    rgb += ((hash2(np.floor(u / 2), np.floor(v / 2), 9) - 0.5) * 8)[..., None]
+    cx, cy = L / 2, D / 2
+    r = np.hypot(u - cx, v - cy)
+    rgb[np.abs(r - min(L, D) * 0.4) < 3] = C("e8c040")
+    du, dv = np.abs(u - cx), np.abs(v - cy)
+    hl = ((du > 16) & (du < 26) & (dv < 34)) | ((du <= 16) & (dv < 5))
+    rgb[hl] = C("f0f0ec")
+    edge = (u < 4) | (v < 4) | (u > L - 4) | (v > D - 4)
+    rgb[edge] = C("d8d8d4")
+    res = nores(shape)
+    em = None
+    lights = edge & ((np.floor((u + v) / 6) % 4) == 0)
+    if lights.any():
+        res = lights
+        em = np.zeros(shape + (4,))
+        em[lights] = [120, 255, 120, 255]
+        rgb[lights] = C("9aff9a")
+    return rgb, res, em
+
+
+def _helicopter(T, s, f, z, col="c8382a", k=1.6):
+    cv = T.cv
+    x, y = T.pt(s, f)
+    x -= 24 * k  # the tail is long: keep the whole machine on the pad
+    body, white, dark = C(col), C("f2f0ea"), C("2a2e36")
+
+    def shell(wx, wy, wz, nx, ny, nz):
+        rgb = np.broadcast_to(body, wx.shape + (3,)).copy()
+        rgb[np.abs(wz - (z + 16 * k)) < 2] = white
+        glass = (wx < x - 12 * k) & (wz > z + 15 * k)
+        rgb[glass] = C("3a5a7a") + (nz[glass, None] * 40)
+        return rgb, nores(wx.shape), None
+    # skids and struts
+    for dy in (-11, 11):
+        cv.box(x - 34 * k, y + dy * k - 1.5 * k, z, x + 30 * k, y + dy * k + 1.5 * k, z + 2.5 * k, flat("3a3c40"), flat("3a3c40"), flat("5a5c60"))
+        for dx in (-18, 14):
+            cv.box(x + dx * k, y + dy * 0.8 * k - 1 * k, z + 2.5 * k, x + dx * k + 2 * k, y + dy * 0.8 * k + 1 * k, z + 9 * k, flat("3a3c40"), flat("3a3c40"), flat("3a3c40"))
+    cv.ellipsoid(x, y, z + 19 * k, 34 * k, 13 * k, 12 * k, shell)
+    # tail boom, fin and tail rotor
+    cv.box(x + 26 * k, y - 2.5 * k, z + 20 * k, x + 82 * k, y + 2.5 * k, z + 25 * k, flat(col), flat(col), flat(col))
+    cv.box(x + 78 * k, y - 1 * k, z + 20 * k, x + 86 * k, y + 1 * k, z + 44 * k, flat("f2f0ea"), flat("f2f0ea"), flat("f2f0ea"))
+    cv.box(x + 80 * k, y + 1 * k, z + 26 * k, x + 82 * k, y + 3 * k, z + 42 * k, flat("2a2e36"), flat("2a2e36"), flat("2a2e36"))
+    # mast and main rotor
+    cv.cylinder(x, y, 2.5 * k, z + 30 * k, z + 37 * k, lambda a, v, nx, ny: solid_res(dark, a.shape))
+    blade = flat("2a2e36", 2)
+    cv.box(x - 58 * k, y - 2 * k, z + 37 * k, x + 58 * k, y + 2 * k, z + 38.5 * k, blade, blade, blade)
+    cv.box(x - 2 * k, y - 58 * k, z + 37 * k, x + 2 * k, y + 58 * k, z + 38.5 * k, blade, blade, blade)
+    # red beacon on the tail
+    cv.ellipsoid(x + 84 * k, y, z + 45 * k, 2 * k, 2 * k, 2 * k, lambda wx, wy, wz, nx, ny, nz: glow_res("ff4040", wx.shape))
+
+
+def sky_heli(L, o):
+    floors = [26, 32, 38][L - 1]
+    fh = 32
+    pod = 2 * fh + 8
+    H = pod + floors * fh
+    cv = Canvas(3, H + 200)
+    T = Orient(cv, o)
+    seed = 371
+    tint = ["5a7a8a", "4a6a7e", "3a5a72"][L - 1]
+    lob = facade("concrete", "d0d0cc", win=Win(w=30, h=44, sill=4, sp=34, margin=6, fh=pod, frame="7a8692", style="vertical",
+                                               tint="8ab8d0", group="work", top_skip=6), plinth=("3a3a40", 6), seed=seed, lit=0.9,
+                 doors=[(200, 60, 40, "double_glass")])
+    lob2 = facade("concrete", "d0d0cc", win=Win(w=30, h=44, sill=4, sp=34, margin=6, fh=pod, frame="7a8692", style="vertical",
+                                                tint="8ab8d0", group="work", top_skip=6), plinth=("3a3a40", 6), seed=seed + 1, lit=0.7)
+    box(T, 20, 90, 460, 420, 0, pod, front=lob, back=lob2, left=lob2, right=lob2, top=flat_top("8a8884", "d0d0cc", 5))
+    canopy(T, 170, 300, 90, 40, 46, "2a2e34", "2a2e34", posts=False)
+    door(T, 210, 60, 90, 40)
+    entry(T, 240)
+    # dark glass shaft with steel bands every few floors
+    win = Win(w=28, h=26, sill=3, sp=31, margin=4, fh=fh, frame="5a646e", style="vertical", tint=tint, group="work", top_skip=2)
+    cw = facade("concrete", "9aa4ae", win=win, plinth=None, seed=seed + 2, lit=0.5,
+                bands=[(fh * k - 3, fh * k + 3, "c8ccd0") for k in range(0, floors + 3, 4)])
+    s0, s1, f0, f1 = 80, 400, 140, 420
+    box(T, s0, f0, s1, f1, pod, H, all=cw, top=flat_top("6a6864", "c8ccd0", 4))
+    sign_board(T, (s0 + s1) / 2 - 36, f0 - 2, H - 44, "SKY", 14, "2a2e34", "e8eef4", depth=2)
+    # helipad deck on legs above the roof, with a rail and a lift hut
+    deck = 14
+    x0, y0, x1, y1 = T.rect(s0 + 10, f0 + 10, s1 - 10, f1 - 10)
+    cv.box(x0, y0, H + deck - 3, x1, y1, H + deck, flat("8a8c90"), flat("8a8c90"), _helipad)
+    for a in (s0 + 20, s1 - 30):
+        for b in (f0 + 20, f1 - 30):
+            T.box(a, b, a + 10, b + 10, H, H + deck - 3, all=flat("5a5c60"), top=flat("5a5c60"))
+    T.box(s0 + 14, f1 - 70, s0 + 60, f1 - 14, H, H + deck + 30, all=facade("metal", "b8c0c8", plinth=None, seed=seed + 5),
+          top=flat_top("8a8884", "c8ccd0", 3))
+    hs, hf = (s0 + s1) / 2, (f0 + f1) / 2
+    _helicopter(T, hs, hf, H + deck)
+    spire(T, s1 - 16, f1 - 16, H + deck, 40)
+    # plaza
+    ground(T, 10, 0, 470, 90, kit.paving("c4c0b8", 12.0, 6))
+    for k, ss in enumerate((50, 120, 360, 430)):
+        tree(T, ss, 50, "maple", 0.7, 90 + k)
+    bench(T, 150, 45, "s")
+    bench(T, 320, 45, "s")
+    lamp(T, 90, 20, "modern", 60)
+    lamp(T, 390, 20, "modern", 60, "light2")
+    return cv
+
+
 BUILDERS = {"bakery": bakery, "cafe": cafe, "flowershop": flowershop, "pizzeria": pizzeria, "boutique": boutique,
             "pharmacy": pharmacy, "gas_station": gas_station, "supermarket": supermarket, "restaurant": restaurant,
-            "cinema": cinema, "mall": mall, "hotel": hotel, "office": office, "sky_office": sky_office}
+            "cinema": cinema, "mall": mall, "hotel": hotel, "office": office, "sky_office": sky_office, "sky_heli": sky_heli}

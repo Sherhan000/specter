@@ -51,10 +51,11 @@ const ROADS := {
 	"dirt": {"name": ["Грунтовка", "Dirt road"], "cost": 6, "upkeep": 0.2, "row": 2, "speed": 0.75},
 	"asphalt": {"name": ["Асфальт", "Asphalt"], "cost": 18, "upkeep": 0.5, "row": 3, "speed": 1.0},
 	"stone": {"name": ["Брусчатка", "Cobblestone"], "cost": 30, "upkeep": 0.8, "row": 4, "speed": 0.9},
+	"boulevard": {"name": ["Бульвар", "Boulevard"], "cost": 45, "upkeep": 1.2, "row": 7, "speed": 1.1},
 	"highway": {"name": ["Трасса", "Highway"], "cost": 0, "upkeep": 0.0, "row": 5, "speed": 1.6},
 	"country": {"name": ["Загородная дорога", "Country road"], "cost": 0, "upkeep": 0.0, "row": 6, "speed": 1.25},
 }
-const ROAD_ORDER := ["dirt", "asphalt", "stone"]
+const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard"]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
 ## zones: where it may be built. upkeep: coins per in-game day (salaries for services).
@@ -114,6 +115,8 @@ const B := {
 		"jobs": 20, "use": 30, "income": 400, "cycle": 240, "upkeep": 110},
 	"sky_office": {"name": ["Офисный небоскрёб", "Office Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 52000, "gems": 20, "lvl": 25, "time": 420,
 		"jobs": 160, "use": 0, "income": 1500, "cycle": 360, "upkeep": 380},
+	"sky_heli": {"name": ["Небоскрёб с вертолётной площадкой", "Helipad Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 62000, "gems": 24, "lvl": 26, "time": 480,
+		"jobs": 180, "use": 0, "income": 1800, "cycle": 360, "upkeep": 420},
 	"mall": {"name": ["Торговый центр", "Mall"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 20000, "gems": 8, "lvl": 18, "time": 300,
 		"jobs": 40, "use": 80, "income": 560, "cycle": 240, "upkeep": 160},
 	# ------------------------------------------------ production (jobs, goods out per cycle)
@@ -202,7 +205,7 @@ const B := {
 }
 const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "tower", "sky_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
-	"cinema", "hotel", "mall", "sky_office",
+	"cinema", "hotel", "mall", "sky_office", "sky_heli",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "parking",
@@ -214,6 +217,22 @@ const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", 
 const ANIMALS := ["deer", "rabbit", "fox", "boar", "wolf", "bear"]
 ## lots people walk through (their props are drawn as part of the building)
 const WALKABLE := ["park", "plaza", "bench", "fountain", "statue", "playground", "pond", "flowerbed", "zoo", "funfair"]
+
+## Laws the mayor can pass and repeal from a fixed list. Effects: happy (city mood), daily (coins a day),
+## rep (reputation a day), biz/tour (business tax and tourism ×), power/water (demand ×), fire/crime (risk ×).
+const LAW_COST := 150   ## one-off cost to pass a law
+const MAX_LAWS := 4
+const LAW_ORDER := ["free_bus", "eco_fee", "fire_code", "curfew", "save_power", "save_water", "city_ads", "short_week"]
+const LAWS := {
+	"free_bus": {"name": ["Бесплатный автобус", "Free buses"], "happy": 4, "daily": 120},
+	"eco_fee": {"name": ["Экологический сбор", "Eco fee"], "biz": 1.1, "happy": -2, "rep": 0.3},
+	"fire_code": {"name": ["Пожарные нормы", "Fire code"], "fire": 0.5, "daily": 80},
+	"curfew": {"name": ["Комендантский час", "Curfew"], "crime": 0.4, "happy": -4, "tour": 0.8},
+	"save_power": {"name": ["Экономия электричества", "Power saving"], "power": 0.85, "happy": -2},
+	"save_water": {"name": ["Экономия воды", "Water saving"], "water": 0.8, "happy": -1},
+	"city_ads": {"name": ["Реклама города", "City ads"], "tour": 1.3, "rep": 0.2, "daily": 100},
+	"short_week": {"name": ["Четырёхдневка", "Four-day week"], "happy": 6, "biz": 0.85},
+}
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget"]

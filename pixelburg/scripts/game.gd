@@ -90,6 +90,7 @@ var happy_target := 55.0
 var home_happy := {}         ## uid -> int
 var home_reasons := {}       ## uid -> Array of [text key, value]
 var rules := {}              ## rule -> true if broken
+var laws: Array = []         ## passed laws (Data.LAWS ids)
 var jam_tiles := {}          ## traffic-light cluster tiles
 var natural_trees := {}
 var phase := ""
@@ -225,6 +226,7 @@ func new_game() -> void:
 	next_uid = 1
 	cleared_trees = {}
 	claimed = []
+	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
 	day = 1
 	day_time = 0.29
@@ -317,7 +319,7 @@ func to_dict() -> Dictionary:
 		"lamps": lamps.keys().map(func(v): return [v.x, v.y, lamps[v]]),
 		"cleared": cleared_trees.keys().map(func(v): return [v.x, v.y]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
-		"next_uid": next_uid, "claimed": claimed, "stats": stats, "settings": settings, "profile": profile,
+		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
 		"caught": caught, "weather": weather, "weather_until": weather_until, "mood": mood,
 		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "tutorial": tutorial, "lost": lost,
@@ -370,6 +372,7 @@ func from_dict(p: Dictionary) -> bool:
 	xp = int(p.xp)
 	level = int(p.level)
 	plots = p.plots.map(func(v): return _v2(v))
+	laws = Array(p.get("laws", [])).filter(func(l): return Data.LAWS.has(str(l))).map(func(l): return str(l))
 	roads = {}
 	for v in p.roads:
 		roads[_v2(v)] = str(v[2]) if Data.ROADS.has(str(v[2])) else "asphalt"
@@ -553,6 +556,7 @@ func _end_of_day() -> void:
 		var b: Dictionary = buildings[uid]
 		if b.priv != "" and b.built and not b.closed and not b.dmg:
 			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0)
+	biz_tax = int(biz_tax * law_mult("biz"))
 	if biz_tax > 0:
 		_earn("taxes", biz_tax)
 	if is_connected_to_highway():
@@ -561,6 +565,7 @@ func _end_of_day() -> void:
 			var b: Dictionary = buildings[uid]
 			if Data.B[b.id].cat == "fun" and _works(uid):
 				tour += 60 * b.lvl
+		tour = int(tour * law_mult("tour"))
 		if tour > 0:
 			_earn("tourism", tour)
 		if goods > 400:
@@ -574,6 +579,8 @@ func _end_of_day() -> void:
 	# ---- expenses
 	_spend("upkeep", daily_upkeep())
 	_spend("roads", daily_roads())
+	_spend("laws", int(law_sum("daily")))
+	add_rep(law_sum("rep"))
 	if not loan.is_empty():
 		var pay_now: int = mini(int(loan.daily), int(loan.left))
 		_spend("loan", pay_now)
@@ -845,7 +852,7 @@ func recalc() -> void:
 	_check_rules()
 	home_happy.clear()
 	home_reasons.clear()
-	var global := 45 + mood_total() + weather_mood() - int(round((tax - Data.TAX_DEFAULT) * 2.2)) - int(unemployment * 22.0)
+	var global := 45 + mood_total() + int(law_sum("happy")) + weather_mood() - int(round((tax - Data.TAX_DEFAULT) * 2.2)) - int(unemployment * 22.0)
 	for r in rules:
 		if rules[r]:
 			global -= 2
@@ -918,6 +925,8 @@ func recalc() -> void:
 		var rt := _road_type_near(b.x, b.y, n)
 		if rt == "stone":
 			h += 2
+		elif rt == "boulevard":
+			h += 3
 		elif rt == "dirt":
 			h -= 2
 			reasons.append(["r_dirt", -2])
@@ -1091,6 +1100,7 @@ func _recalc_utilities() -> void:
 				_plant_kw += Data.stat(b.id, "power", b.lvl)
 		if d.has("water"):
 			water_supply += Data.stat(b.id, "water", b.lvl)
+	water_demand = int(water_demand * law_mult("water"))
 	water_ratio = 1.0 if water_demand <= water_supply else water_supply / float(water_demand)
 	power_store = minf(power_store, power_cap)
 	_update_power(0.0)
@@ -1101,7 +1111,7 @@ func _update_power(delta: float) -> void:
 	var sun := clampf(1.0 - night_amount() * 1.2, 0.0, 1.0)
 	sun *= {"cloudy": 0.6, "rain": 0.35, "storm": 0.2, "snow": 0.45, "fog": 0.5}.get(weather, 1.0)
 	power_supply = Data.POWER_FREE + _plant_kw + _solar_kw * sun
-	power_demand = _demand_kw
+	power_demand = _demand_kw * law_mult("power")
 	power_store = clampf(power_store + (power_supply - power_demand) * delta * 24.0 / Data.DAY_LENGTH, 0.0, power_cap)
 	if power_demand <= power_supply or power_store > 0.0:
 		power_ratio = 1.0
@@ -1161,6 +1171,41 @@ func _check_rules() -> void:
 	rules["health"] = pop > 500 and not have.has("health")
 	rules["decor"] = pop > 40 and decor_n * 30 < pop
 	rules["budget"] = coins < 0
+
+
+# ====================================================================== laws
+func has_law(id: String) -> bool:
+	return id in laws
+
+
+## Sum of an additive law effect over the passed laws.
+func law_sum(key: String) -> float:
+	var t := 0.0
+	for l in laws:
+		t += float(Data.LAWS[l].get(key, 0.0))
+	return t
+
+
+## Product of a multiplier law effect over the passed laws.
+func law_mult(key: String) -> float:
+	var t := 1.0
+	for l in laws:
+		t *= float(Data.LAWS[l].get(key, 1.0))
+	return t
+
+
+## Pass or repeal a law. Passing costs Data.LAW_COST; repealing is free.
+func toggle_law(id: String) -> bool:
+	if has_law(id):
+		laws.erase(id)
+	else:
+		if laws.size() >= Data.MAX_LAWS or coins < Data.LAW_COST:
+			return false
+		_spend("laws", Data.LAW_COST)
+		laws.append(id)
+	_recalc_utilities()
+	recalc()
+	return true
 
 
 func broken_rules() -> int:

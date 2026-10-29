@@ -141,7 +141,7 @@ vec3 terrain(vec2 g, out float water_mask) {
 }
 
 // ------------------------------------------------------------------ roads
-// returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street
+// returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street, 7 boulevard
 vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	int type = d.r;
 	int arms = d.g & 15;
@@ -267,6 +267,21 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 			float st = fract(m.x * 3.0);
 			float mark = (1.0 - smoothstep(0.008, 0.016, min(st, 1.0 - st))) * (cobble ? 0.0 : 1.0);
 			c = mix(c, PAINT, mark * 0.85);
+		} else if (type == 7 && m.z > 0.0 && (arms == 10 || arms == 5 || m.z > 1.5)) {
+			// boulevard: a green median with low curbs and small round shrubs instead of the centre line
+			float off = abs(m.y - 0.5);
+			float tw = 1.0 - smoothstep(0.02, 0.05, abs(off - 0.125));
+			c *= 1.0 - tw * 0.06;
+			float lane = (1.0 - smoothstep(0.003, 0.006, abs(off - 0.2))) * step(fract(m.x * 3.0), 0.5);
+			c = mix(c, PAINT, lane * 0.5);
+			if (off < 0.05) {
+				vec3 gm = tex_g(0.0, g, 0.5) * 1.05;
+				float sp = fract(m.x * 2.0) - 0.5;
+				float bush = 1.0 - smoothstep(0.025, 0.035, length(vec2(sp * 0.5, off)));
+				gm = mix(gm, gm * vec3(0.6, 0.8, 0.55), bush);
+				gm = mix(gm, CURB, 1.0 - smoothstep(0.004, 0.009, 0.05 - off));
+				c = gm;
+			}
 		} else if (!cobble) {
 			// wear in the wheel tracks, centre line
 			if (m.z > 0.0 && (arms == 10 || arms == 5 || m.z > 1.5)) {
