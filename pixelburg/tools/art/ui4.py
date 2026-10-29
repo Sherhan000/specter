@@ -100,6 +100,8 @@ def bubble(out):
     c.line_to(cx, h - 6)
     c.line_to(cx + 14, cy + r - 8)
     c.close_path()
+    c.set_source_rgba(1, 1, 1, 1)
+    c.fill()
     c.arc(cx, cy, r, 0, 2 * math.pi)
     c.set_source_rgba(1, 1, 1, 1)
     c.fill()

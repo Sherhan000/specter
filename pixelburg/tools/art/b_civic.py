@@ -291,9 +291,9 @@ def town_hall(L, o):
                 decals=[(10, 50, 150, 190, "f8f4e8"), (29, 31, 160, 182, "2a2a30"), (20, 40, 169, 171, "2a2a30")])
     box(T, 210, 240, 270, 300, H, H + 140, all=tw)
     T.hip(210, 240, 270, 300, H + 140, 40, roof_mat("4a6a6a", "metal"), o=3)
-    # plaza with a fountain and flags
+    # plaza with a fountain and flags (off to the side, clear of the straight path from the sidewalk to the door)
     ground(T, 20, 0, 460, 160, kit.paving("d8d0c0", 14.0, 6))
-    x, y = T.pt(240, 70)
+    x, y = T.pt(300, 70)
     T.cv.cylinder(x, y, 30, 0, 6, lambda a, v, nx, ny: solid_res(C("e8e4dc"), a.shape),
                   lambda a, b: (np.broadcast_to(C("5ab0d8"), a.shape + (3,)).copy(), nores(a.shape), None))
     T.cv.cylinder(x, y, 5, 6, 24, lambda a, v, nx, ny: solid_res(C("e8e4dc"), a.shape))
@@ -556,6 +556,8 @@ def fountain(L, o):
     cv.mark("fountain", x, y, 30 if L < 3 else 44)
     for k, (ss, ff) in enumerate(((20, 20), (140, 140))):
         bench(T, ss + 10, ff, "s")
+    door(T, 65, 30, 0, 10)
+    entry(T, 80)
     return cv
 
 
@@ -575,6 +577,8 @@ def statue(L, o):
     T.cv.mark("light", x + 7.5, y, 86)
     for k, (ss, ff) in enumerate(((20, 30), (140, 30))):
         bush(T, ss, ff, 0.7, 730 + k, "f4d040" if k else "e86a8a")
+    door(T, 65, 30, 0, 10)
+    entry(T, 80)
     return cv
 
 

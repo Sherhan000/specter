@@ -522,7 +522,7 @@ func _advance_time(delta: float) -> void:
 	var prev_hour := hour()
 	_update_power(delta)
 	day_time += delta / Data.DAY_LENGTH
-	if day_time >= 1.0:
+	while day_time >= 1.0:
 		day_time -= 1.0
 		_end_of_day()
 	var ph := phase_name()
@@ -543,7 +543,7 @@ func _on_hour() -> void:
 	_check_lose()
 	if hour() == 9 and water_ratio < 0.85:
 		toast.emit(Loc.t("water_low"))
-	elif hour() == 21 and light_power < 0.85:
+	elif hour() == 20 and light_power < 0.85:
 		toast.emit(Loc.t("power_low"))
 	hour_passed.emit(hour())
 	Events.on_hour(hour())
@@ -1109,7 +1109,7 @@ func _recalc_utilities() -> void:
 ## Solar panels follow the sun and the clouds; the batteries carry the city through the night.
 func _update_power(delta: float) -> void:
 	var sun := clampf(1.0 - night_amount() * 1.2, 0.0, 1.0)
-	sun *= {"cloudy": 0.6, "rain": 0.35, "storm": 0.2, "snow": 0.45, "fog": 0.5}.get(weather, 1.0)
+	sun *= {"cloudy": 0.6, "rain": 0.35, "storm": 0.2, "snow": 0.45, "fog": 0.5, "windy": 0.85, "heat": 1.1}.get(weather, 1.0)
 	power_supply = Data.POWER_FREE + _plant_kw + _solar_kw * sun
 	power_demand = _demand_kw * law_mult("power")
 	power_store = clampf(power_store + (power_supply - power_demand) * delta * 24.0 / Data.DAY_LENGTH, 0.0, power_cap)
@@ -1952,8 +1952,8 @@ func ready_missions() -> int:
 # ====================================================================== time of day & weather
 const TINT_KEYS := [
 	[0.00, Color(0.30, 0.35, 0.62)], [0.20, Color(0.30, 0.35, 0.62)], [0.24, Color(0.80, 0.62, 0.74)],
-	[0.28, Color(1.00, 0.86, 0.72)], [0.36, Color(1.0, 1.0, 1.0)], [0.72, Color(1.0, 1.0, 1.0)],
-	[0.78, Color(1.00, 0.76, 0.54)], [0.84, Color(0.68, 0.50, 0.66)], [0.89, Color(0.30, 0.35, 0.62)],
+	[0.28, Color(1.00, 0.86, 0.72)], [0.36, Color(1.0, 1.0, 1.0)], [0.70, Color(1.0, 1.0, 1.0)],
+	[0.75, Color(1.00, 0.76, 0.54)], [0.80, Color(0.68, 0.50, 0.66)], [0.833, Color(0.30, 0.35, 0.62)],
 	[1.00, Color(0.30, 0.35, 0.62)],
 ]
 
@@ -1977,16 +1977,20 @@ func world_tint() -> Color:
 			c *= Color(0.92, 0.93, 0.96)
 		"snow":
 			c *= Color(0.94, 0.96, 1.02)
+		"windy":
+			c *= Color(0.96, 0.98, 0.97)
+		"heat":
+			c *= Color(1.05, 0.98, 0.86)
 	return c
 
 
 func night_amount() -> float:
 	var t := day_time
 	var n := 0.0
-	if t >= 0.89 or t < 0.2:
+	if t >= 0.833 or t < 0.2:
 		n = 1.0
-	elif t >= 0.8:
-		n = (t - 0.8) / 0.09
+	elif t >= 0.75:
+		n = (t - 0.75) / 0.083
 	elif t < 0.27:
 		n = 1.0 - (t - 0.2) / 0.07
 	if weather == "storm":
@@ -2002,7 +2006,7 @@ func phase_name() -> String:
 		return "morning"
 	if h >= 9.0 and h < 18.0:
 		return "day"
-	if h >= 18.0 and h < 22.0:
+	if h >= 18.0 and h < 20.0:
 		return "evening"
 	return "night"
 
@@ -2014,10 +2018,10 @@ func clock_text() -> String:
 
 func _pick_weather() -> void:
 	var table: Dictionary = {
-		"spring": {"clear": 4, "cloudy": 3, "rain": 3, "storm": 1, "fog": 1},
-		"summer": {"clear": 7, "cloudy": 2, "rain": 1, "storm": 2},
-		"autumn": {"clear": 2, "cloudy": 3, "rain": 4, "storm": 1, "fog": 2},
-		"winter": {"clear": 2, "cloudy": 3, "snow": 5, "fog": 1},
+		"spring": {"clear": 4, "cloudy": 3, "rain": 3, "storm": 1, "fog": 1, "windy": 2},
+		"summer": {"clear": 6, "cloudy": 2, "rain": 1, "storm": 2, "heat": 2, "windy": 1},
+		"autumn": {"clear": 2, "cloudy": 3, "rain": 4, "storm": 1, "fog": 2, "windy": 3},
+		"winter": {"clear": 2, "cloudy": 3, "snow": 5, "fog": 1, "windy": 2},
 	}[season_name()]
 	var total := 0
 	for k in table:

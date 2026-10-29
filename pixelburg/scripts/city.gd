@@ -333,7 +333,7 @@ func _process(delta: float) -> void:
 	_bird_t -= delta
 	if _bird_t <= 0.0:
 		_bird_t = randf_range(14.0, 30.0)
-		if Game.weather in ["clear", "cloudy"] and Game.night_amount() < 0.5:
+		if Game.weather in ["clear", "cloudy", "windy", "heat"] and Game.night_amount() < 0.5:
 			_spawn_birds()
 
 
@@ -360,7 +360,7 @@ func _update_daylight() -> void:
 	var night := Game.night_amount()
 	Assets.set_daylight(tint, night, Game.light_level())
 	var h := Game.day_time * 24.0
-	var dusk := clampf(1.0 - absf(h - 19.6) / 1.6, 0.0, 1.0) + clampf(1.0 - absf(h - 6.0) / 1.2, 0.0, 1.0) * 0.7
+	var dusk := clampf(1.0 - absf(h - 18.8) / 1.6, 0.0, 1.0) + clampf(1.0 - absf(h - 6.0) / 1.2, 0.0, 1.0) * 0.7
 	var zen := SKY_DAY[0].lerp(SKY_DUSK[0], dusk).lerp(SKY_NIGHT[0], night)
 	var hor := SKY_DAY[1].lerp(SKY_DUSK[1], dusk).lerp(SKY_NIGHT[1], night)
 	if Game.weather in ["rain", "storm", "snow", "fog"]:

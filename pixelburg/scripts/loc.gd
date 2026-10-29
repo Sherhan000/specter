@@ -151,6 +151,8 @@ const S := {
 	"weather_storm": ["Гроза", "Thunderstorm"],
 	"weather_snow": ["Снегопад", "Snow"],
 	"weather_fog": ["Туман", "Fog"],
+	"weather_windy": ["Ветрено", "Windy"],
+	"weather_heat": ["Жара", "Heatwave"],
 	"beep": ["Би-бип!", "Beep beep!"],
 	# finance
 	"finance": ["Финансы", "Finance"],
@@ -444,6 +446,8 @@ const PHRASES := {
 	"p_w_storm": [["Ой, гроза!", "Скорее домой!"], ["Oh, a thunderstorm!", "Let's get home quick!"]],
 	"p_w_snow": [["Снег! Красота!", "Слепим снеговика?"], ["Snow! Beautiful!", "Shall we build a snowman?"]],
 	"p_w_fog": [["Ничего не видно...", "Туман как молоко."], ["Can't see a thing...", "Fog as thick as milk."]],
+	"p_w_windy": [["Держите шляпу!", "Ух, как дует!"], ["Hold your hat!", "Wow, it's gusty!"]],
+	"p_w_heat": [["Ну и жара сегодня...", "Пойду куплю мороженое."], ["It's so hot today...", "I'm getting ice cream."]],
 	"p_morning": [["Доброе утро!", "Кофе бы..."], ["Good morning!", "I need coffee..."]],
 	"p_day": [["Хорошего дня!", "Обеденный перерыв!"], ["Have a nice day!", "Lunch break!"]],
 	"p_evening": [["Наконец-то вечер.", "Пойду в кафе."], ["Finally evening.", "Off to a cafe."]],

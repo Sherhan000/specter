@@ -7,8 +7,10 @@ var city: Node
 var layer: CanvasLayer
 var rain: CPUParticles2D
 var snow: CPUParticles2D
+var gust: CPUParticles2D
 var flash: ColorRect
 var fog: ColorRect
+var heat_haze: ColorRect
 var clouds: Array[Sprite2D] = []
 var _bolt_t := 5.0
 var _splash_t := 0.0
@@ -50,10 +52,29 @@ func _ready() -> void:
 	snow.scale_amount_max = 2.6
 	snow.emitting = false
 	layer.add_child(snow)
+	gust = CPUParticles2D.new()
+	gust.texture = Assets.tex("fx/puff")
+	gust.amount = 70
+	gust.lifetime = 2.2
+	gust.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	gust.direction = Vector2(1, 0.22)
+	gust.spread = 10.0
+	gust.gravity = Vector2.ZERO
+	gust.initial_velocity_min = 260.0
+	gust.initial_velocity_max = 420.0
+	gust.scale_amount_min = 0.5
+	gust.scale_amount_max = 1.1
+	gust.color = Color(0.56, 0.46, 0.3, 0.55)
+	gust.emitting = false
+	layer.add_child(gust)
 	fog = ColorRect.new()
 	fog.color = Color(0.85, 0.88, 0.92, 0.0)
 	fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(fog)
+	heat_haze = ColorRect.new()
+	heat_haze.color = Color(1.0, 0.72, 0.32, 0.0)
+	heat_haze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(heat_haze)
 	flash = ColorRect.new()
 	flash.color = Color(0.9, 0.93, 1.0, 0.0)
 	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -74,7 +95,10 @@ func _fit() -> void:
 		p.position = Vector2(vp.x / 2 + 80, -30)
 		p.emission_rect_extents = Vector2(vp.x * 0.7, 10)
 	snow.lifetime = vp.y / 70.0
+	gust.position = Vector2(-60, vp.y / 2)
+	gust.emission_rect_extents = Vector2(10, vp.y * 0.6)
 	fog.size = vp
+	heat_haze.size = vp
 	flash.size = vp
 
 
@@ -113,19 +137,21 @@ func _apply() -> void:
 	rain.emitting = stormy
 	rain.amount = 360 if w == "storm" else 200
 	snow.emitting = w == "snow"
+	gust.emitting = w == "windy"
 
 
 func _process(delta: float) -> void:
 	var w := Game.weather
-	var vis_clouds := 9 if w in ["rain", "storm", "cloudy"] else 4 if w in ["clear", "snow"] else 6
+	var vis_clouds := 9 if w in ["rain", "storm", "cloudy", "windy"] else 2 if w == "heat" else 4 if w in ["clear", "snow"] else 6
 	var bounds: Rect2 = city.view_rect().grow(2500.0)
 	var zoomed_out := clampf((0.55 - city.camera.zoom.x) / 0.25, 0.0, 1.0)
 	var night := Game.night_amount()
 	var tint := Game.world_tint()
+	var drift := 2.0 if w == "storm" else 2.6 if w == "windy" else 1.0
 	for i in clouds.size():
 		var s := clouds[i]
 		s.visible = i < vis_clouds
-		s.position += Vector2(45, 12) * delta * (2.0 if w == "storm" else 1.0)
+		s.position += Vector2(45, 12) * delta * drift
 		s.modulate.a = (1.0 - night * 0.6) * (1.3 if _storm else 1.0)
 		var c: Sprite2D = s.get_child(0)
 		c.modulate = Color(tint.r, tint.g, tint.b, (0.05 + 0.55 * zoomed_out) * (1.0 if not _storm else 1.3))
@@ -144,6 +170,9 @@ func _process(delta: float) -> void:
 	flash.color.a = move_toward(flash.color.a, 0.0, delta * 2.5)
 	# fog
 	fog.color.a = move_toward(fog.color.a, 0.32 if w == "fog" else 0.0, delta * 0.2)
+	# heat shimmer: a warm haze that breathes gently near the horizon
+	var heat_target := (0.05 + 0.03 * sin(Time.get_ticks_msec() * 0.002)) if w == "heat" and night < 0.5 else 0.0
+	heat_haze.color.a = move_toward(heat_haze.color.a, heat_target, delta * 0.3)
 	# puddle splashes on the ground around the camera
 	if w in ["rain", "storm"]:
 		_splash_t -= delta

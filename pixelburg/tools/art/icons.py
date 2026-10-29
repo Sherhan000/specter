@@ -575,6 +575,34 @@ def fog(c):
     stroke(c, "e0e6f0", 4)
 
 
+def windy(c):
+    cloud_fill(c, -6, -10, lin(c, 4, 40, "ffffff", "c8d4e8"), w=2.6)
+    for (x0, y0, x1, cy) in ((6, 38, 46, 38), (10, 48, 54, 48), (14, 58, 44, 58)):
+        c.move_to(x0, y0)
+        c.curve_to(x0 + 10, y0 - 6, x1 - 10, cy + 6, x1, cy)
+        stroke(c, OUT_LINE, 6)
+    for (x0, y0, x1, cy) in ((6, 38, 46, 38), (10, 48, 54, 48), (14, 58, 44, 58)):
+        c.move_to(x0, y0)
+        c.curve_to(x0 + 10, y0 - 6, x1 - 10, cy + 6, x1, cy)
+        stroke(c, "8aa0c0", 3)
+
+
+def heat(c):
+    c.save()
+    c.translate(0, -8)
+    c.scale(0.72, 0.72)
+    sun(c)
+    c.restore()
+    for (x0, y1) in ((12, 62), (32, 63), (52, 62)):
+        c.move_to(x0, y1)
+        c.curve_to(x0 - 5, y1 - 7, x0 + 5, y1 - 12, x0, y1 - 18)
+        stroke(c, "ffffff", 2.2)
+    for (x0, y1) in ((12, 62), (32, 63), (52, 62)):
+        c.move_to(x0, y1)
+        c.curve_to(x0 - 5, y1 - 7, x0 + 5, y1 - 12, x0, y1 - 18)
+        stroke(c, "f8a020", 1.1)
+
+
 def paw(c):
     c.save()
     c.translate(32, 42)
@@ -802,7 +830,7 @@ ICONS = {"coin": coin, "gem": gem, "goods": goods, "pop": pop, "jobs": jobs,
          "music": music, "globe": globe, "upgrade": upgrade, "speed": speed, "sun": sun, "moon": moon,
          "sunrise": sunrise, "sunset": sunset, "plus": plus, "info": info, "clock": clock, "finance": finance,
          "bank": bank, "law": law, "reputation": reputation, "tax": tax, "cloud": cloud, "rain": rain,
-         "storm": storm, "snow": snow, "fog": fog, "paw": paw, "zoo": zoo, "move": move, "link": link,
+         "storm": storm, "snow": snow, "fog": fog, "windy": windy, "heat": heat, "paw": paw, "zoo": zoo, "move": move, "link": link,
          "closed": closed, "evict": evict, "police": police, "fire": fire, "bell": bell, "mail": mail,
          "backup": backup, "trophy": trophy, "heart": heart, "calendar": calendar, "shop": shop, "chat": chat,
          "door": door, "rotate": rotate}

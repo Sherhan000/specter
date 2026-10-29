@@ -1059,7 +1059,7 @@ func _process(delta: float) -> void:
 		_ambient()
 	_social_t -= delta
 	if _social_t <= 0.0:
-		_social_t = 1.3
+		_social_t = 0.9
 		_social()
 	cars = cars.filter(func(c): return is_instance_valid(c))
 	walkers = walkers.filter(func(w): return is_instance_valid(w) and not w.done)
@@ -1211,10 +1211,13 @@ func _social() -> void:
 			continue
 		for o in walkers:
 			if o != w and is_instance_valid(o) and o.busy <= 0.0 and o.crossing == Vector3i(-1, -1, -1) \
-					and (o.g - w.g).length() < 0.12 and randf() < 0.3:
-				w.chat(o)
-				o.chat(w)
-				break
+					and (o.g - w.g).length() < 0.22:
+				# neighbours from the same home (family) are much more likely to stop and talk
+				var family: bool = w.person and o.person and w.person.home != 0 and w.person.home == o.person.home
+				if randf() < (0.8 if family else 0.45):
+					w.chat(o)
+					o.chat(w)
+					break
 
 
 func pick(wp: Vector2) -> Variant:
@@ -1354,7 +1357,7 @@ class Walker extends Node2D:
 	func chat(other: Walker) -> void:
 		busy = 2.2
 		var b := Sprite2D.new()
-		b.texture = Assets.ui_icon(["chat", "heart", "chat"].pick_random())
+		b.texture = Assets.ui_icon(["chat", "heart", "chat", "happy"].pick_random())
 		var ts := b.texture.get_size()
 		b.scale = Vector2(22.0, 22.0) / maxf(ts.x, 1.0)
 		b.position = Vector2(0, -44)

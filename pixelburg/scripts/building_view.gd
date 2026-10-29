@@ -23,6 +23,8 @@ var garland: Node2D
 var fire_fx: Array[Node2D] = []
 var heads: Array[Sprite2D] = []
 var smoke: Array[CPUParticles2D] = []
+var fountains: Array[CPUParticles2D] = []
+var _fountain_t := 0.0
 var tex_name := ""
 var room_levels := Vector4.ZERO      ## wanted light of each room group (set by the residents)
 var openness := 1.0                  ## work places: share of the building that is lit at night
@@ -165,6 +167,7 @@ func _setup_extras(m: Dictionary) -> void:
 	for s in smoke:
 		s.queue_free()
 	smoke.clear()
+	fountains.clear()
 	for h in heads:
 		h.queue_free()
 	heads.clear()
@@ -211,17 +214,39 @@ func _setup_extras(m: Dictionary) -> void:
 			var ps := CPUParticles2D.new()
 			ps.texture = Assets.tex("fx/drop")
 			ps.position = pos
-			ps.amount = 40
+			ps.amount = 44
 			ps.lifetime = 1.1
 			ps.direction = Vector2(0, -1)
 			ps.spread = 16.0
 			ps.gravity = Vector2(0, 90)
 			ps.initial_velocity_min = 40.0
-			ps.initial_velocity_max = 55.0
+			ps.initial_velocity_max = 58.0
+			ps.scale_amount_min = 0.85
+			ps.scale_amount_max = 1.3
 			ps.color = Color(0.85, 0.95, 1.0, 0.8)
 			ps.z_index = 2
 			add_child(ps)
 			smoke.append(ps)
+			fountains.append(ps)
+			# a soft mist drifting off the jet, for a fuller, more alive spray
+			var mist := CPUParticles2D.new()
+			mist.texture = Assets.tex("fx/drop")
+			mist.position = pos + Vector2(0, -8)
+			mist.amount = 24
+			mist.lifetime = 1.6
+			mist.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+			mist.emission_sphere_radius = 5.0
+			mist.direction = Vector2(0, -1)
+			mist.spread = 65.0
+			mist.gravity = Vector2(0, 26)
+			mist.initial_velocity_min = 6.0
+			mist.initial_velocity_max = 16.0
+			mist.scale_amount_min = 0.45
+			mist.scale_amount_max = 0.85
+			mist.color = Color(0.92, 0.97, 1.0, 0.3)
+			mist.z_index = 2
+			add_child(mist)
+			smoke.append(mist)
 	if m.points.has("door_a") and m.points.has("door_t"):
 		var a := Vector2(m.points.door_a[0], m.points.door_a[1]) + _shift
 		var b2 := Vector2(m.points.door_b[0], m.points.door_b[1]) + _shift
@@ -330,6 +355,15 @@ func _process(delta: float) -> void:
 				f.position.y = top_y() * 0.3
 	if status_icon.visible:
 		status_icon.position.y = top_y() + sin(_anim_t * 4.0) * 3.0
+	if not fountains.is_empty():
+		var jet := 1.0 + sin(_anim_t * 2.2 + _phase) * 0.18
+		for ps in fountains:
+			ps.speed_scale = jet
+		if fountains[0].emitting:
+			_fountain_t -= delta
+			if _fountain_t <= 0.0:
+				_fountain_t = randf_range(0.5, 0.9)
+				_fountain_splash(fountains[randi() % fountains.size()].position)
 	# the state of the building changes slowly: look at it a few times a second
 	_state_t -= delta
 	if _state_t > 0.0:
@@ -404,6 +438,21 @@ func pop_in() -> void:
 	add_child(dust)
 	dust.emitting = true
 	dust.finished.connect(dust.queue_free)
+
+
+## A droplet from the spray landing back in the basin, for the fountain's periodic ripple.
+func _fountain_splash(at: Vector2) -> void:
+	var s := Sprite2D.new()
+	s.texture = Assets.tex("fx/splash")
+	s.hframes = 3
+	s.scale = Vector2(0.9, 0.9)
+	s.position = at + Vector2(randf_range(-10.0, 10.0), randf_range(6.0, 14.0))
+	s.modulate = Color(0.9, 0.97, 1.0, 0.6)
+	s.z_index = 2
+	add_child(s)
+	var tw := s.create_tween()
+	tw.tween_property(s, "frame", 2, 0.3)
+	tw.tween_callback(s.queue_free)
 
 
 class ProgressBarNode extends Node2D:

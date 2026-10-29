@@ -311,6 +311,10 @@ func _disasters(_h: int) -> void:
 	var fire_p := 0.012 * (2.0 if Game.rules.get("fire", false) else 1.0) * Game.law_mult("fire")
 	if Game.weather == "storm":
 		fire_p *= 2.0
+	elif Game.weather == "heat":
+		fire_p *= 1.6
+	elif Game.weather == "windy":
+		fire_p *= 1.25
 	if _rng.randf() < fire_p:
 		start_fire()
 	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.law_mult("crime"):

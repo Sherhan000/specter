@@ -1228,7 +1228,8 @@ func _process(delta: float) -> void:
 	_bar_t = 0.25
 	clock_label.text = Game.clock_text()
 	date_label.text = Loc.t("date_fmt") % [Loc.t(Game.season), Game.day]
-	var wi: String = {"clear": "sun", "cloudy": "cloud", "rain": "rain", "storm": "storm", "snow": "snow", "fog": "fog"}[Game.weather]
+	var wi: String = {"clear": "sun", "cloudy": "cloud", "rain": "rain", "storm": "storm", "snow": "snow", "fog": "fog",
+		"windy": "windy", "heat": "heat"}[Game.weather]
 	if Game.phase == "night" and Game.weather == "clear":
 		wi = "moon"
 	weather_icon.texture = Assets.ui_icon(wi)
