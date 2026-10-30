@@ -621,7 +621,7 @@ def dushanbe_tower(L, o):
     lit = [0.25, 0.4, 0.6][L - 1]
     ground(T, 0, 0, 640, 640, kit.paving("d8d0c2", 12.0, 4))
     # lake and park behind the tower
-    pool(T, 140, 470, 500, 620)
+    pool(T, 30, 460, 260, 620)
     for k, (ss, ff) in enumerate(((60, 460), (100, 600), (560, 600), (590, 450), (120, 300), (520, 300))):
         tree(T, ss, ff, "maple", 0.8, seed + 40 + k)
     # main tower: two blades, each a stack of two-floor slices that narrow, lean apart and end in a point
@@ -652,40 +652,37 @@ def dushanbe_tower(L, o):
         crane(T, cs + 30, cf - 20, top - 40, 90)
     else:
         spire(T, cs - 8, cf - 10, pod + full, 50, "e8eef4", beacon=True)
-    # two oval glass towers with gardens on top, flanking the main one
     grow = [0.75, 0.95, 1.0][L - 1]
-    for k, (sc, fc, fl, r0) in enumerate(((120, 150, 34, 54), (520, 520, 30, 52))):
+    green = lambda wx, wy, wz, nx, ny, nz: (C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None)
+    # a wavy white podium: low drums joined together under the three front towers
+    for (sc, fc) in ((110, 150), (290, 110), (470, 140), (560, 560)):
+        px, py = T.pt(sc, fc)
+        T.cv.cylinder(px, py, 84, 0, pod, ring_glass(84, "6a9ac0", "f4f6f8", pod, 18, 0.8, seed + 5, "f4f6f8"),
+                      cap=lambda u, v: (C("eef0ee") * np.ones(u.shape + (3,)), nores(u.shape), None))
+        T.cv.cylinder(px, py, 88, pod - 4, pod, solid_side("f4f6f8"))
+    # three "bullet" towers in an arc in front: round, glass, a ribbed glass dome with a garden on the top
+    for k, (sc, fc, fl, r0) in enumerate(((110, 150, 30, 50), (470, 140, 32, 54), (560, 560, 28, 50))):
         th = int(fl * grow) * fh
-        segs = max(3, th // seg)
-        for j in range(segs):
-            t = j / segs
-            r = r0 * (1.0 - 0.18 * t)
-            z0 = pod + j * seg
-            for dd in (-r0 * 0.45, r0 * 0.45):        # two overlapping drums make the oval plan
-                cx, cy = T.pt(sc + dd, fc - dd * 0.4)
-                T.cv.cylinder(cx, cy, r, z0, z0 + seg, ring_glass(r, "4a7ab0", "d8e2ec", fh, 10, lit, seed + 20 + k, "e8eef4"))
-        zt = pod + segs * seg
-        rt = r0 * 0.82
-        for dd in (-r0 * 0.45, r0 * 0.45):
-            cx, cy = T.pt(sc + dd, fc - dd * 0.4)
-            T.cv.cylinder(cx, cy, rt, zt, zt + 3, solid_side("e8eef4"), cap=lambda u, v: (C("6a9a50") * np.ones(u.shape + (3,)), nores(u.shape), None))
-        for j in range(6):
-            a = j / 6 * 2 * np.pi
-            cx, cy = T.pt(sc + np.cos(a) * r0 * 0.6, fc + np.sin(a) * r0 * 0.35)
-            T.cv.ellipsoid(cx, cy, zt + 9, 11, 11, 10, lambda wx, wy, wz, nx, ny, nz: (
-                C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
+        cx, cy = T.pt(sc, fc)
+        T.cv.cylinder(cx, cy, r0, pod, pod + th, ring_glass(r0, "4a7ab0", "d8e2ec", fh, 10, lit, seed + 20 + k, "e8eef4"))
+        for j in range(1, th // (4 * fh) + 1):
+            tier_ring(T, cx, cy, r0 + 3, pod + j * 4 * fh - 2, 2, "f4f6f8")
+        zt = pod + th
         if L == 1 and k == 0:
             crane(T, sc, fc, zt, 70, 80)
-    # the curved podium: a low white drum with a glass band, an oval plaza in front of it
-    px, py = T.pt(320, 200)
-    T.cv.cylinder(px, py, 120, 0, pod, ring_glass(120, "6a9ac0", "f4f6f8", pod, 18, 0.8, seed + 5, "f4f6f8"),
-                  cap=lambda u, v: (C("7aa860") * np.ones(u.shape + (3,)), nores(u.shape), None))
-    T.cv.cylinder(px, py, 124, pod - 4, pod, solid_side("f4f6f8"))
-    for k in range(5):
-        a = k / 5 * 2 * np.pi
-        bx, by = px + np.cos(a) * 60, py + np.sin(a) * 60
-        T.cv.ellipsoid(bx, by, pod + 6, 9, 9, 8, lambda wx, wy, wz, nx, ny, nz: (
-            C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
+            continue
+        T.cv.ellipsoid(cx, cy, zt, r0, r0, r0 * 1.5, glass3("6a9ac8", L == 3), cut_z=zt)
+        T.cv.ellipsoid(cx, cy, zt + r0 * 1.35, 16, 16, 14, green)
+    # a slim cone tower beside the main one, closing to a point
+    cx, cy = T.pt(515, 430)
+    ch = int(46 * grow) * fh
+    nseg = ch // seg
+    for j in range(nseg):
+        t = j / nseg
+        r = 46 * (1 - 0.8 * t)
+        T.cv.cylinder(cx, cy, r, pod + j * seg, pod + (j + 1) * seg, ring_glass(max(r, 6), "5a8ab8", "dce6f0", fh, 9, lit, seed + 30, "e8eef4"))
+    if L >= 2:
+        spire(T, 515, 430, pod + nseg * seg, 40, "e8eef4", beacon=False)
     T.flat(240, 20, 400, 76, 0.5, lambda u, v, LL, D: (np.where(((u - LL / 2) / (LL / 2)) ** 2 + ((v - D / 2) / (D / 2)) ** 2 < 1,
                                                                  1, 0)[..., None] * C("f4f2ee") + np.where(
         ((u - LL / 2) / (LL / 2)) ** 2 + ((v - D / 2) / (D / 2)) ** 2 < 1, 0, 1)[..., None] * C("d8d0c2"), nores(u.shape), None), ground=True)
@@ -697,39 +694,35 @@ def dushanbe_tower(L, o):
 
 
 def dushanbe_home(L, o):
-    """A residential high-rise of the Dushanbe Tower district: cream stone, bronze frames, a roof garden."""
-    floors = [30, 35, 40][L - 1]
-    fh = 20                       # same reduced scale as the tower
-    pod = 40
-    H = pod + floors * fh
+    """A home of the Dushanbe Tower quarter: a sand-yellow L-shaped block with white window frames,
+    shops on the ground floor and a green courtyard, as in the architect's model."""
+    floors = [12, 14, 16][L - 1]
+    fh = 30
+    H = floors * fh
     cv = Canvas(2, H + 120)
     T = Orient(cv, o)
     seed = 971
-    stone = ["eadcc0", "e6d6b8", "efe2c8"][L - 1]
-    podf = facade("stone", "d8ccb4", shop=(20, 140, 28), doors=[(160, 40, 30, "double_glass")], plinth=None, seed=seed, lit=0.7,
-                  win=Win(w=22, h=18, sill=12, sp=30, margin=10, fh=pod, frame="5a4a3e", group="work"))
-    box(T, 20, 50, 300, 290, 0, pod, all=podf, top=flat_top("6e9a5a", "d8ccb4", 5))
-    canopy(T, 150, 220, 50, 20, 32, "5a4a3e", "5a4a3e", posts=False)
-    door(T, 160, 40, 50, 30)
-    entry(T, 180)
-    win = Win(w=12, h=13, sill=4, sp=20, margin=8, fh=fh, frame="5a4a3e", style="vertical", tint="6a8aa8", group="flats", top_skip=2)
-    bands = [(fh * k - 1, fh * k + 1, "f6efe0") for k in range(1, floors + 1)]
-    fa = facade("stone", stone, win=win, seed=seed + 1, plinth=None, bands=bands, cornice=("f6efe0", 5))
-    s0, s1, f0, f1 = 50, 270, 80, 260
-    box(T, s0, f0, s1, f1, pod, H, all=fa, top=flat_top("6e9a5a", "f6efe0", 5))
-    # bronze piers frame the front, a lit crown on top
-    pier = facade("metal", "7a5a3e", plinth=None, seed=seed + 2)
-    for a in (s0 - 4, s1 - 10, (s0 + s1) / 2 - 7):
-        T.box(a, f0 - 6, a + 14, f0, pod, H + 10, all=pier, top=flat("7a5a3e"))
-    T.box(s0 + 40, f0 + 30, s1 - 40, f1 - 30, H, H + 22, all=facade("stone", stone, plinth=None, seed=seed + 3, win=Win(
-        w=14, h=14, sill=4, sp=22, margin=8, fh=22, frame="5a4a3e", group="work"), lit=0.9), top=flat_top("807c78", "f6efe0", 3))
-    for j in range(4):
-        bush(T, s0 + 20 + j * 55, f1 - 14, 0.5, seed + j)
-    for ss in (30, 290):
-        tree(T, ss, 24, "lime", 0.7, seed + ss)
-    ground(T, 0, 0, 320, 50, kit.paving("d0c8bc", 12.0, 4))
-    lamp(T, 100, 16, "modern", 50)
-    lamp(T, 220, 16, "modern", 50, "light2")
+    sand = ["e8cc8e", "e6c888", "ecd296"][L - 1]
+    win = Win(w=14, h=17, sill=7, sp=22, margin=8, fh=fh, frame="fbf6ea", style="cross", group="flats", top_skip=4)
+    bands = [(fh * k - 1, fh * k + 1, "f4e6c4") for k in range(2, floors + 1, 2)]
+    front = facade("plaster", sand, win=win, shop=(20, 200, 26), doors=[(210, 30, 26, "double_glass")], seed=seed, plinth=("c8a868", 5),
+                   bands=bands, cornice=("f6ecd4", 6), lit=0.7)
+    side = facade("plaster", sand, win=win, seed=seed + 1, plinth=("c8a868", 5), bands=bands, cornice=("f6ecd4", 6))
+    # the front wing along the street and a side wing going back, a courtyard in the corner between them
+    box(T, 20, 40, 300, 130, 0, H, front=front, back=side, left=side, right=side, top=flat_top("8a8478", "f6ecd4", 4))
+    box(T, 210, 130, 300, 300, 0, H - fh, all=side, top=flat_top("8a8478", "f6ecd4", 4))
+    balconies(T, [40, 110, 180], 40, range(2, floors, 2), fh, 34, 8, "glass", col="f6ecd4")
+    roof_units(T, 40, 50, 280, 120, H, seed, 2, stair=True)
+    door(T, 210, 30, 40, 26)
+    entry(T, 225)
+    # courtyard: playground lawn and trees
+    ground(T, 20, 130, 210, 300, kit.paving("b8c890", 10.0, 4))
+    for k, (ss, ff) in enumerate(((60, 200), (150, 250), (100, 280))):
+        tree(T, ss, ff, "lime", 0.7, seed + k)
+    bench(T, 120, 180, "s")
+    ground(T, 0, 0, 320, 40, kit.paving("d0c8bc", 12.0, 4))
+    lamp(T, 60, 16, "modern", 48)
+    lamp(T, 260, 16, "modern", 48, "light2")
     return cv
 
 

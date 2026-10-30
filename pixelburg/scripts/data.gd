@@ -91,9 +91,9 @@ const B := {
 		"pop": 75, "rent": 240, "cycle": 270, "upkeep": 100},
 	"sky_home": {"name": ["Жилой небоскрёб", "Residential Skyscraper"], "cat": "home", "zones": ["city"], "size": 3, "cost": 48000, "gems": 20, "lvl": 24, "time": 420,
 		"pop": 420, "rent": 900, "cycle": 360, "upkeep": 420},
-	# the 40-floor homes of the Dushanbe Tower district: built once the tower stands, happier close to it
-	"dushanbe_home": {"name": ["Дом Душанбе-Сити", "Dushanbe City Home"], "cat": "home", "zones": ["city"], "size": 2, "cost": 26000, "gems": 6,
-		"lvl": 27, "time": 300, "needs": "dushanbe_tower", "pop": 240, "rent": 560, "cycle": 320, "upkeep": 220},
+	# the sand-yellow homes of the Dushanbe Tower quarter (42 in the project): built once the tower stands, happier close to it
+	"dushanbe_home": {"name": ["Дом квартала «Душанбе»", "Dushanbe Quarter Home"], "cat": "home", "zones": ["city"], "size": 2, "cost": 14000,
+		"gems": 3, "lvl": 27, "time": 220, "needs": "dushanbe_tower", "pop": 140, "rent": 360, "cycle": 300, "upkeep": 130},
 	# towers with a signature design
 	"round_tower": {"name": ["Круглая башня", "Round Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 12000, "gems": 3, "lvl": 14, "time": 240,
 		"pop": 90, "rent": 280, "cycle": 270, "upkeep": 110},
@@ -250,7 +250,7 @@ const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
 ## build menu tabs: the categories plus the hotels, which have a window of their own
 const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
-const LANDMARK_HOMES := 40   ## homes of the district that bring the tower to full income
+const LANDMARK_HOMES := 42   ## homes of the quarter (as in the project) that bring the tower to full income
 const LANDMARK_RADIUS := 16  ## homes this close to the tower are happier
 const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
