@@ -945,9 +945,9 @@ func recalc() -> void:
 		if decor > 0:
 			reasons.append(["r_decor", decor])
 		h += decor
-		for key in ["edu", "fire", "police", "health", "bus", "metro", "sport"]:
+		for key in ["edu", "fire", "police", "health", "bus", "metro", "sport", "tv"]:
 			if svc.has(key):
-				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6, "sport": 5}[key]
+				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6, "sport": 5, "tv": 4}[key]
 				h += v
 				reasons.append(["r_" + key, v])
 		if water_ratio < 0.9:

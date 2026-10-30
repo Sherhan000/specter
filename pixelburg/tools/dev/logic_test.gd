@@ -320,6 +320,14 @@ func _ready() -> void:
 	check(Game.bus_stops().size() == 2 and Game.transit_fares() > 0, "two bus stops start a bus line with fares")
 	var kinds := ["bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village"]
 	check(kinds.all(func(k): return Data.B.has(k) and Data.B[k].svc == "bus" and Data.ORDER.has(k)), "four new kinds of bus stops")
+	var tvk := ["tv_studio", "tv_center", "tv_tower"]
+	check(tvk.all(func(k): return Data.B.has(k) and Data.B[k].svc == "tv" and Data.ORDER.has(k)), "three kinds of TV buildings")
+	check(Data.B.tv_tower.radius > Data.B.tv_center.radius and Data.B.tv_center.radius > Data.B.tv_studio.radius, "a taller TV building reaches farther")
+	var tvb := Game._add_building("tv_studio", spots[3].x, spots[3].y, true)
+	Game.recalc()
+	check(Game.has_service("tv") and Game.covered_by("tv", spots[3]), "a TV studio covers its surroundings")
+	Game.demolish(tvb)
+	Game.recalc()
 	var mixed := Game._add_building("bus_stop_village", spots[3].x, spots[3].y, true)
 	Game.recalc()
 	check(Game.bus_stops().has(mixed) and Game.bus_stops().size() == 3, "a village stop joins the same bus line")

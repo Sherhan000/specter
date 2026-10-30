@@ -948,7 +948,127 @@ def sport_tower(L, o):
     return cv
 
 
-BUILDERS = {"sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+def _screen_panel(base="3a8ad8", glow=(120, 190, 255, 220.0)):
+    """A lit blue screen / window wall for studio fronts."""
+    return lambda u, v, LL, HH: (np.ones(u.shape + (3,)) * C(base), nores(u.shape), np.ones(u.shape + (4,)) * np.array(glow))
+
+
+def tv_studio(L, o):
+    """A small TV studio: a low block with a lit ON AIR sign, a dish and a short mast, a camera van parked out front."""
+    H = 56
+    cv = Canvas(2, H + 140)
+    T = Orient(cv, o)
+    seed = 1101
+    ground(T, 0, 0, 320, 320, kit.paving("c4c0b8", 10.0, 4))
+    win = Win(w=22, h=22, sill=10, sp=40, margin=14, fh=H, frame="3a4450", style="vertical", tint="6a9ac0", group="work")
+    fr = facade("plaster", "d8dce4", win=win, doors=[(130, 60, 30, "double_glass")], plinth=("8a8e98", 5), seed=seed, lit=0.85)
+    sd = facade("plaster", "d8dce4", win=win, plinth=("8a8e98", 5), seed=seed + 1, lit=0.85)
+    box(T, 30, 120, 290, 280, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("6a6e76", "d8dce4", 3))
+    slab(T, 150, 160, 290, 280, H, H + 12, "c4c8d0")
+    sign_board(T, 160, 118, H - 18, "TV", 14, "c8302a", "ffffff")
+    sign_board(T, 230, 118, H - 18, "ON AIR", 8, "1a1a20", "ff4a3a")
+    canopy(T, 120, 200, 120, 30, 38, "2a2e34", "c8302a", posts=True)
+    door(T, 130, 60, 120, 34)
+    entry(T, 160)
+    # mast with a red-white stripe and a dish on the roof
+    post(T, 80, 200, H, H + 70, "e8e8e8", 3.0)
+    for k in range(4):
+        post(T, 80, 200, H + 10 + k * 16, H + 18 + k * 16, "d83a2a", 3.2)
+    T.box(50, 190, 64, 204, H, H + 14, all=flat("e8eaee"), top=flat("c8ccd4"))
+    T.box(46, 186, 68, 208, H + 14, H + 18, all=flat("f4f6f8"), top=flat("dfe2e8"))
+    # camera van
+    T.box(220, 40, 290, 70, 0, 22, all=flat("f4f4f2"), top=flat("d8dadc"))
+    T.box(222, 41, 288, 43, 14, 20, all=_screen_panel("2a3a5a", (60, 100, 160, 120.0)), top=flat("2a2e34"))
+    post(T, 255, 56, 22, 34, "c8302a", 3.0)
+    if L >= 2:
+        tree(T, 20, 60, "lime", 0.6, seed)
+    if L >= 3:
+        lamp(T, 100, 20, "modern", 48)
+        lamp(T, 200, 20, "modern", 48, "light2")
+    return cv
+
+
+def tv_center(L, o):
+    """A TV centre: a wide glass front of studios, a round satellite dish on the roof and a tall mast."""
+    fh = 36
+    n = [3, 4, 5][L - 1]
+    H = n * fh
+    cv = Canvas(3, H + 200)
+    T = Orient(cv, o)
+    seed = 1111
+    ground(T, 0, 0, 480, 480, kit.paving("c8c4bc", 12.0, 4))
+    win = Win(w=26, h=24, sill=6, sp=36, margin=10, fh=fh, frame="2a3440", style="vertical", tint="5a8ab0", group="work")
+    fr = facade("concrete", "e0e4ea", win=win, doors=[(200, 80, 34, "double_glass")], plinth=None, seed=seed, lit=0.9,
+                bands=[(fh * k - 3, fh * k, "6a7480") for k in range(1, n)])
+    sd = facade("concrete", "e0e4ea", win=win, plinth=None, seed=seed + 1, lit=0.9)
+    box(T, 60, 140, 420, 400, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("6a6e76", "e0e4ea", 3))
+    # big studio box sticking out at the side with a screen wall
+    T.box(20, 140, 60, 330, 0, 40, all=sd, front=_screen_panel("3a6ac8", (120, 170, 255, 200.0)), top=flat_top("5a5e66", "d0d4da", 2))
+    canopy(T, 190, 290, 140, 40, 44, "2a2e34", "c8302a", posts=True)
+    door(T, 200, 80, 140, 40)
+    entry(T, 240)
+    sign_board(T, 240, 138, H - 26, "TV CENTRE", 12, "1a2a4a", "f4f0e0")
+    # roof: a big satellite dish on a drum and a lattice mast
+    T.box(100, 230, 160, 290, H, H + 10, all=flat("c8ccd4"), top=flat("e0e4ea"))
+    T.cv.cylinder(*T.pt(130, 260), 26, H + 10, H + 16, solid_side("f4f6f8"))
+    post(T, 130, 260, H + 16, H + 36, "8a8e96", 3.0)
+    T.cv.cylinder(*T.pt(130, 260), 32, H + 36, H + 40, solid_side("f4f6f8"))
+    mh = 110 + L * 20
+    for k in range(6):
+        t0 = H + k * mh / 6
+        post(T, 360, 330, t0, t0 + mh / 6, "d83a2a" if k % 2 == 0 else "f0f0f0", 4.5 - k * 0.5)
+    for s_ in (30, 450):
+        tree(T, s_, 70, "lime", 0.7, seed + s_)
+    lamp(T, 150, 30, "modern", 50)
+    lamp(T, 330, 30, "modern", 50, "light2")
+    return cv
+
+
+def tv_tower(L, o):
+    """A tall TV tower: a concrete shaft rising from a low hall, an observation pod, antenna rings and a red-white mast."""
+    shaft = [320, 400, 480][L - 1]
+    cv = Canvas(2, shaft + 150 + 140)
+    T = Orient(cv, o)
+    seed = 1121
+    ground(T, 0, 0, 320, 320, kit.paving("c4c0b8", 10.0, 4))
+    win = Win(w=20, h=20, sill=6, sp=34, margin=8, fh=30, frame="3a4450", style="vertical", tint="6a9ac0", group="work")
+    fr = facade("concrete", "d8dce4", win=win, doors=[(120, 60, 30, "double_glass")], plinth=("8a8e98", 5), seed=seed, lit=0.8)
+    sd = facade("concrete", "d8dce4", win=win, plinth=("8a8e98", 5), seed=seed + 1, lit=0.8)
+    box(T, 40, 60, 280, 180, 0, 36, front=fr, back=sd, left=sd, right=sd, top=flat_top("6a6e76", "d8dce4", 3))
+    door(T, 120, 60, 60, 34)
+    entry(T, 150)
+    sign_board(T, 160, 58, 24, "TV TOWER", 10, "c8302a", "ffffff")
+    cx, cy = 160, 220
+    # tapered concrete shaft built from stacked slimmer boxes
+    steps_n = 10
+    for k in range(steps_n):
+        w = 16 - k * 1.1
+        z0 = 36 + k * (shaft - 36) / steps_n
+        z1 = 36 + (k + 1) * (shaft - 36) / steps_n
+        T.box(cx - w, cy - w, cx + w, cy + w, z0, z1 + 1, all=flat("c8ccd2", 3), top=flat("b0b4ba", 3))
+    # observation pod with a ring of glass and a rim
+    pz = shaft - 40
+    T.box(cx - 46, cy - 46, cx + 46, cy + 46, pz, pz + 22, all=_screen_panel("5a8ab0", (255, 214, 140, 160.0)), top=flat("d0d4da"))
+    T.box(cx - 52, cy - 52, cx + 52, cy + 52, pz + 22, pz + 28, all=flat("e8ecf0"), top=flat("c8ccd4"))
+    T.box(cx - 36, cy - 36, cx + 36, cy + 36, pz - 10, pz, all=flat("8a8e96"), top=flat("6a6e76"))
+    # antenna mast with red and white bands
+    top0 = shaft
+    mast = 90 + L * 30
+    T.box(cx - 10, cy - 10, cx + 10, cy + 10, pz + 28, top0 + 4, all=flat("c8ccd2", 3), top=flat("b0b4ba", 3))
+    for k in range(8):
+        z0 = top0 + k * mast / 8
+        post(T, cx, cy, z0, z0 + mast / 8, "d83a2a" if k % 2 == 0 else "f0f0f0", 5.0 - k * 0.5)
+    for zz in (top0 + 20, top0 + 50):
+        T.box(cx - 14, cy - 14, cx + 14, cy + 14, zz, zz + 3, all=flat("e8eaee"), top=flat("c8ccd4"))
+    if L >= 2:
+        tree(T, 40, 20, "lime", 0.6, seed)
+    if L >= 3:
+        lamp(T, 100, 20, "modern", 48)
+        lamp(T, 220, 20, "modern", 48, "light2")
+    return cv
+
+
+BUILDERS = {"tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "bus_stop_simple": bus_stop_simple, "bus_stop_modern": bus_stop_modern, "bus_stop_ad": bus_stop_ad,
             "bus_stop_village": bus_stop_village, "metro_station": metro_station}

@@ -92,6 +92,7 @@ const NEWS := [
 	["Кнопка-глаз делает высокие здания прозрачными", "The eye button makes tall buildings see-through"],
 	["Выход из игры: кнопка в настройках и двойное «Назад»", "Quitting: a button in settings, or press Back twice"],
 	["Остановки разного вида: навес, стеклянная, с рекламой и экраном, деревенская", "Bus stops of every kind: simple, glass, with ads and a screen, village"],
+	["Телевидение: маленькая студия, телецентр и высокая телебашня — жители счастливее", "Television: a small studio, a TV centre and a tall TV tower make residents happier"],
 ]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
@@ -256,6 +257,12 @@ const B := {
 		"jobs": 1, "upkeep": 2, "svc": "bus", "radius": 8, "happy": 4},
 	"bus_stop_village": {"name": ["Деревенская остановка", "Village Bus Stop"], "cat": "service", "zones": ["farm", "city", "leisure"], "size": 1, "cost": 250, "lvl": 3, "time": 10,
 		"jobs": 1, "upkeep": 3, "svc": "bus", "radius": 7, "happy": 3},
+	"tv_studio": {"name": ["Маленькая телестудия", "Small TV Studio"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 4000, "lvl": 6, "time": 60,
+		"jobs": 5, "upkeep": 30, "svc": "tv", "radius": 12, "happy": 4},
+	"tv_center": {"name": ["Телецентр", "TV Centre"], "cat": "service", "zones": ["city", "leisure"], "size": 3, "cost": 14000, "gems": 2, "lvl": 11, "time": 150,
+		"jobs": 14, "upkeep": 80, "svc": "tv", "radius": 20, "happy": 6},
+	"tv_tower": {"name": ["Телебашня", "TV Tower"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 30000, "gems": 5, "lvl": 15, "time": 240,
+		"jobs": 8, "upkeep": 100, "svc": "tv", "radius": 32, "happy": 8},
 	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
 		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
@@ -298,7 +305,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
