@@ -20,4 +20,6 @@
 
 ## Перед выпуском 1.4.0
 - export_presets.cfg: version/code=6, version/name="1.4.0"; project.godot config/version. Собрать AAB, проверить на телефоне выход.
-- Иконки от пользователя (Gemini) класть в assets/ui/icons/<имя>.png 256x256 с прозрачностью, затем import + fix_imports.
+- Иконки от пользователя (Gemini): лист 4x4 на маджента-фоне → `python3 tools/art/cut_icons.py 5=лист.png` (имена — 5-я строка
+  tools/art/icon_sheet_names.json: eye news river wall street exit bus metro hotel bike sport power water tv newspaper plane),
+  затем import + fix_imports. Пока файлов нет, assets.gd ui_icon подставляет старые иконки (alias).

@@ -1,6 +1,7 @@
 """Cuts hand-made icon sheets (4 x 4 icons on a magenta #FF00FF background) into single icons.
 
     python3 tools/art/cut_icons.py sheet1.png sheet2.png sheet3.png sheet4.png
+    python3 tools/art/cut_icons.py 5=sheet5.png      (only sheet 5)
 
 Sheet k uses the k-th row of names in icon_sheet_names.json. Each icon is keyed out, trimmed,
 centred on a transparent square and saved as assets/ui/icons/<name>.png (256 px); the game then
@@ -65,7 +66,12 @@ def main(paths):
     rows = json.load(open(os.path.join(HERE, "icon_sheet_names.json")))
     os.makedirs(OUT, exist_ok=True)
     for k, p in enumerate(paths):
-        cut(p, rows[k])
+        # "5=sheet.png" cuts a sheet with the names of row 5; plain paths go in order
+        if "=" in p and p.split("=", 1)[0].isdigit():
+            n, p = p.split("=", 1)
+            cut(p, rows[int(n) - 1])
+        else:
+            cut(p, rows[k])
 
 
 if __name__ == "__main__":

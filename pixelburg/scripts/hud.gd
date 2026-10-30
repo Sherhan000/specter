@@ -592,7 +592,8 @@ func _build_mode_bar() -> void:
 	tool_tabs.add_theme_constant_override("separation", 4)
 	v.add_child(tool_tabs)
 	for tl in ["road", "water", "wall", "deco"]:
-		var tb := button(Loc.t("tool_" + tl), "", "orange", func(): city.set_tool(tl))
+		var tb := button(Loc.t("tool_" + tl), {"road": "road", "water": "river", "wall": "wall", "deco": "street"}[tl], "orange",
+			func(): city.set_tool(tl))
 		tb.set_meta("tool", tl)
 		tb.add_theme_font_size_override("font_size", 11)
 		tool_tabs.add_child(tb)
@@ -1083,9 +1084,9 @@ func _refresh_info() -> void:
 		"service":
 			_stat("jobs", str(Data.stat(b.id, "jobs", lv)))
 			if d.has("power"):
-				_stat("storm", "+%d kW" % Data.stat(b.id, "power", lv))
+				_stat("power", "+%d kW" % Data.stat(b.id, "power", lv))
 			elif d.has("water"):
-				_stat("rain", "+%d" % Data.stat(b.id, "water", lv))
+				_stat("water", "+%d" % Data.stat(b.id, "water", lv))
 			else:
 				_stat("happy", "+%d" % Data.stat(b.id, "happy", lv))
 		"decor":

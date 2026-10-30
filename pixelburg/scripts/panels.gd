@@ -275,9 +275,9 @@ func city_info() -> void:
 	_row(cv, "pop", Loc.t("ci_pop"), "%s / %s" % [Loc.num(Game.pop), Loc.num(Game.capacity)])
 	_row(cv, "jobs", Loc.t("ci_jobs"), "%s / %s" % [Loc.num(Game.workers), Loc.num(Game.jobs)])
 	_row(cv, "unhappy", Loc.t("ci_unemp"), "%d%%" % int(Game.unemployment * 100), Color("b83a2a") if Game.unemployment > 0.1 else Color("3a2a1e"))
-	_row(cv, "storm", Loc.t("ci_power"), "%d / %d kW" % [int(Game.power_supply), int(Game.power_demand)],
+	_row(cv, "power", Loc.t("ci_power"), "%d / %d kW" % [int(Game.power_supply), int(Game.power_demand)],
 		Color("b83a2a") if Game.power_ratio < 0.85 else Color("3a2a1e"))
-	_row(cv, "rain", Loc.t("ci_water"), "%s / %s" % [Loc.num(Game.water_supply), Loc.num(Game.water_demand)],
+	_row(cv, "water", Loc.t("ci_water"), "%s / %s" % [Loc.num(Game.water_supply), Loc.num(Game.water_demand)],
 		Color("b83a2a") if Game.water_ratio < 0.9 else Color("3a2a1e"))
 	_row(cv, "happy", Loc.t("happy"), "%d%% → %d%%" % [int(Game.happy), int(Game.happy_target)])
 	_row(cv, "reputation", Loc.t("rep"), str(int(Game.rep)))
@@ -502,11 +502,11 @@ func settings() -> void:
 	v.add_child(hud.button(Loc.t("profile"), "pop", "blue", profile))
 	v.add_child(hud.button(Loc.t("backup"), "backup", "green", backup))
 	v.add_child(hud.button(Loc.t("privacy"), "info", "blue", privacy))
-	v.add_child(hud.button(Loc.t("whats_new") % Data.NEWS_VERSION, "star", "blue", whats_new))
+	v.add_child(hud.button(Loc.t("whats_new") % Data.NEWS_VERSION, "news", "blue", whats_new))
 	v.add_child(hud.button(Loc.t("credits"), "heart", "blue", func():
 		hud.popup(Loc.t("credits"), Loc.t("credits_text"), [[Loc.t("ok"), "blue", settings]])))
 	if OS.get_name() != "Web":
-		v.add_child(hud.button(Loc.t("quit_game"), "door", "orange", func(): hud.city.quit_game()))
+		v.add_child(hud.button(Loc.t("quit_game"), "exit", "orange", func(): hud.city.quit_game()))
 	v.add_child(hud.button(Loc.t("reset"), "", "red", func():
 		hud.confirm(Loc.t("reset_q"), func():
 			Game.reset_game()
