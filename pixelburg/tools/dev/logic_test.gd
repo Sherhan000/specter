@@ -383,6 +383,13 @@ func _ready() -> void:
 	Game.garbage = 0.0
 	Game.recalc()
 	check(Data.B.has("recycling_plant") and Data.ORDER.has("recycling_plant"), "recycling plant is in the build list")
+	for mid in ["market_stall", "market", "bazaar"]:
+		check(Data.B.has(mid) and Data.ORDER.has(mid) and Data.B[mid].cat == "shop" and Data.B[mid].income > 0, "%s is a shop in the list" % mid)
+		var mb := Game._add_building(mid, spots[3].x, spots[3].y, true)
+		check(mb != 0 and Game.buildings.has(mb), "%s can be placed" % mid)
+		if mb != 0:
+			Game.demolish(mb)
+	Game.recalc()
 	for sid in ["site_small", "site_house", "site_crane"]:
 		check(Data.B.has(sid) and Data.ORDER.has(sid) and Data.B[sid].cat == "decor", "%s is a decor building in the list" % sid)
 		var sb := Game._add_building(sid, spots[3].x, spots[3].y, true)

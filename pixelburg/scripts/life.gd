@@ -30,7 +30,7 @@ const JOB_KINDS := {
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
 const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall"]
-const SHOPS := ["supermarket", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station"]
+const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum",
 	"stadium", "cinema", "restaurant", "library", "gym", "cafe"]
 

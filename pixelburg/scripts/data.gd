@@ -95,6 +95,7 @@ const NEWS := [
 	["Телевидение: маленькая студия, телецентр и высокая телебашня — жители счастливее", "Television: a small studio, a TV centre and a tall TV tower make residents happier"],
 	["Газеты: киоск и редакция — новости о городе: население, счастье, деньги, пожары", "Newspapers: a newsstand and an office with news about your city: people, mood, money, fires"],
 	["Недостроенные дома и стройки с краном — для красоты, как будто идёт стройка", "Unfinished houses and building sites with a crane, for looks, as if a construction is going on"],
+	["Рынок: рыночный прилавок, открытый рынок и крытый базар — торговля свежими продуктами", "Markets: a market stall, an open-air market and a covered bazaar selling fresh goods"],
 	["Мусор: жители производят отходы, станция вывоза и завод отправляют мусоровозки по дорогам — иначе падает счастье и растёт загрязнение", "Garbage: residents make waste; depots and recycling plants send trucks along the roads, or mood drops and pollution rises"],
 ]
 
@@ -182,6 +183,12 @@ const B := {
 		"jobs": 4, "use": 14, "income": 110, "cycle": 130, "upkeep": 26},
 	"supermarket": {"name": ["Супермаркет", "Supermarket"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 10, "time": 120,
 		"jobs": 12, "use": 30, "income": 170, "cycle": 160, "upkeep": 50},
+	"market_stall": {"name": ["Рыночный прилавок", "Market Stall"], "cat": "shop", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 600, "lvl": 3, "time": 20,
+		"jobs": 2, "use": 6, "income": 40, "cycle": 90, "upkeep": 6},
+	"market": {"name": ["Рынок", "Market"], "cat": "shop", "zones": ["city", "farm", "leisure"], "size": 2, "cost": 3800, "lvl": 8, "time": 90,
+		"jobs": 10, "use": 20, "income": 150, "cycle": 140, "upkeep": 40},
+	"bazaar": {"name": ["Крытый базар", "Covered Bazaar"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 16000, "gems": 4, "lvl": 14, "time": 220,
+		"jobs": 32, "use": 60, "income": 430, "cycle": 220, "upkeep": 120},
 	"office": {"name": ["Бизнес-центр", "Office Block"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 8000, "lvl": 11, "time": 160,
 		"jobs": 30, "use": 0, "income": 190, "cycle": 200, "upkeep": 60},
 	"restaurant": {"name": ["Ресторан", "Restaurant"], "cat": "shop", "zones": ["city", "leisure"], "size": 2, "cost": 7000, "lvl": 12, "time": 150,
@@ -318,7 +325,7 @@ const B := {
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
 const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
-	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
+	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
