@@ -1199,17 +1199,26 @@ func _road_cost_text() -> String:
 
 
 # ====================================================================== android back
+var _back_t := -10.0
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		# a second "back" within two seconds always quits, whatever is open (some phones swallow the dialog)
+		if _time - _back_t < 2.0:
+			quit_game()
+			return
+		_back_t = _time
 		if hud and hud.back():
+			hud.toast(Loc.t("back_again"))
 			return
 		if mode != Mode.NONE:
 			cancel_mode()
+			hud.toast(Loc.t("back_again"))
 			return
-		hud.confirm(Loc.t("quit_q"), _quit)
+		hud.confirm(Loc.t("quit_q"), quit_game)
 
 
-func _quit() -> void:
+func quit_game() -> void:
 	Game.save_game()
 	get_tree().quit()
 

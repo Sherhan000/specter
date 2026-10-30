@@ -478,6 +478,16 @@ func catch_animal(a: ForestAnimal) -> void:
 
 
 # ====================================================================== settings
+## "What's new" after an update, shown once per version (and from the settings).
+func whats_new() -> void:
+	Game.set_setting("news", Data.NEWS_VERSION)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	for item in Data.NEWS:
+		hud.text("• " + Loc.pick(item), v, 12, Color("3a2a1e"), _w())
+	hud.popup(Loc.t("whats_new") % Data.NEWS_VERSION, "", [[Loc.t("ok"), "green", Callable()]], v, 300)
+
+
 func settings() -> void:
 	var v := _vbox(5)
 	v.add_child(hud.button("%s: %s" % [Loc.t("sound"), Loc.t("on" if Game.settings.sound else "off")], "sound", "blue", func():
@@ -492,8 +502,11 @@ func settings() -> void:
 	v.add_child(hud.button(Loc.t("profile"), "pop", "blue", profile))
 	v.add_child(hud.button(Loc.t("backup"), "backup", "green", backup))
 	v.add_child(hud.button(Loc.t("privacy"), "info", "blue", privacy))
+	v.add_child(hud.button(Loc.t("whats_new") % Data.NEWS_VERSION, "star", "blue", whats_new))
 	v.add_child(hud.button(Loc.t("credits"), "heart", "blue", func():
 		hud.popup(Loc.t("credits"), Loc.t("credits_text"), [[Loc.t("ok"), "blue", settings]])))
+	if OS.get_name() != "Web":
+		v.add_child(hud.button(Loc.t("quit_game"), "door", "orange", func(): hud.city.quit_game()))
 	v.add_child(hud.button(Loc.t("reset"), "", "red", func():
 		hud.confirm(Loc.t("reset_q"), func():
 			Game.reset_game()

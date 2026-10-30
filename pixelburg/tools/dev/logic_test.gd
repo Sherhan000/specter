@@ -224,6 +224,14 @@ func _ready() -> void:
 	check(city.hud.road_types.get_child_count() == 2 and city.hud.tool_tabs.visible, "water tool: dig and fill in")
 	city.cancel_mode()
 	check(Assets.units().props.has("lamp_lantern"), "third street lamp style")
+	for hid in ["house_american", "house_tajik", "house_asian", "dacha", "sky_villa"]:
+		check(Data.ORDER.has(hid) and Data.B[hid].cat == "home", "new home type " + hid)
+	check(Data.NEWS.size() > 0 and Data.NEWS_VERSION != "", "what's new list for this update")
+	Game.settings["news"] = ""
+	city.hud.panels.whats_new()
+	check(Game.settings.news == Data.NEWS_VERSION and city.hud.modal.visible, "what's new window shows once")
+	city.hud.close_modal()
+	check(city.has_method("quit_game"), "the game can be quit from the menu")
 
 	# ------------------------------------------------ water, bridges, walls, street decoration
 	Game.coins = 999999

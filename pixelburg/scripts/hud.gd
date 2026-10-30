@@ -123,6 +123,7 @@ func _ready() -> void:
 		var intro := Intro.new()
 		intro.hud = self
 		add_child(intro)
+		Game.settings["news"] = Data.NEWS_VERSION   # a new player has nothing to catch up on
 	elif Game.lost:
 		panels.game_over.call_deferred()
 	else:
@@ -132,6 +133,8 @@ func _ready() -> void:
 			toast(Loc.t("offline"))
 		if Game.tutorial < 99:
 			tutorial.start.call_deferred()
+		elif Game.settings.get("news", "") != Data.NEWS_VERSION:
+			get_tree().create_timer(2.6).timeout.connect(panels.whats_new)
 
 
 func _fit() -> void:

@@ -77,6 +77,22 @@ const ROAD_DECO := {
 const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
 const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
+## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
+const NEWS_VERSION := "1.4.0"
+const NEWS := [
+	["Река, море и океан: копайте воду пальцем, над дорогой будет мост, у домов — берег", "Rivers, seas and oceans: dig water with your finger, roads become bridges"],
+	["Лодки, корабли, утки, чайки, камни и камыши у воды", "Boats, ships, ducks, gulls, stones and reeds by the water"],
+	["Башня Душанбе и квартал жёлтых домов вокруг неё", "Dushanbe Tower and its quarter of yellow homes"],
+	["Отели в отдельной вкладке — откроются, когда дорога дойдёт до трассы", "Hotels in their own tab: they open once a road reaches the highway"],
+	["Автобусы, остановки и метро под землёй", "Buses, bus stops and an underground metro"],
+	["Новые дороги: проспект, кирпичная, автобусная полоса, велодорожка — и велосипедисты", "New roads: avenue, brick, bus lane, bike lane, and cyclists"],
+	["Красивые башни, спортивная башня, башня-виллы", "Signature towers, a sports tower and a sky-villa tower"],
+	["Новые дома: американский, азиатский, таджикский и дачи с большими участками", "New homes: American, Asian and Tajik houses, and dachas with big plots"],
+	["Стены, украшения улиц и новый фонарь", "Walls, street decoration and a new street lamp"],
+	["Кнопка-глаз делает высокие здания прозрачными", "The eye button makes tall buildings see-through"],
+	["Выход из игры: кнопка в настройках и двойное «Назад»", "Quitting: a button in settings, or press Back twice"],
+]
+
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
 ## zones: where it may be built. upkeep: coins per in-game day (salaries for services).
 ## pop is the number of residents (a little house is one family), jobs the workers needed.
@@ -84,6 +100,14 @@ const B := {
 	# ------------------------------------------------ homes (pop, rent per cycle)
 	"house_small": {"name": ["Домик", "Little House"], "cat": "home", "zones": ["city"], "size": 1, "cost": 120, "lvl": 1, "time": 10,
 		"pop": 4, "rent": 10, "cycle": 90, "upkeep": 6},
+	"house_american": {"name": ["Американский дом", "American House"], "cat": "home", "zones": ["city"], "size": 1, "cost": 300, "lvl": 2,
+		"time": 18, "pop": 5, "rent": 18, "cycle": 110, "upkeep": 9},
+	"house_tajik": {"name": ["Таджикский дом", "Tajik House"], "cat": "home", "zones": ["city", "farm"], "size": 1, "cost": 260, "lvl": 2,
+		"time": 16, "pop": 6, "rent": 16, "cycle": 110, "upkeep": 8},
+	"house_asian": {"name": ["Азиатский дом", "Asian House"], "cat": "home", "zones": ["city"], "size": 1, "cost": 520, "lvl": 3,
+		"time": 25, "pop": 4, "rent": 24, "cycle": 120, "upkeep": 12},
+	"dacha": {"name": ["Дача", "Dacha"], "cat": "home", "zones": ["farm", "city", "leisure"], "size": 2, "cost": 700, "lvl": 3, "time": 30,
+		"pop": 4, "rent": 26, "cycle": 140, "upkeep": 10},
 	"cottage": {"name": ["Коттедж", "Cottage"], "cat": "home", "zones": ["city"], "size": 1, "cost": 450, "lvl": 3, "time": 25,
 		"pop": 5, "rent": 22, "cycle": 120, "upkeep": 12},
 	"bungalow": {"name": ["Современный дом", "Modern House"], "cat": "home", "zones": ["city"], "size": 1, "cost": 900, "lvl": 5, "time": 40,
@@ -112,6 +136,8 @@ const B := {
 	"dushanbe_home": {"name": ["Дом квартала «Душанбе»", "Dushanbe Quarter Home"], "cat": "home", "zones": ["city"], "size": 2, "cost": 14000,
 		"gems": 3, "lvl": 27, "time": 220, "needs": "dushanbe_tower", "pop": 140, "rent": 360, "cycle": 300, "upkeep": 130},
 	# towers with a signature design
+	"sky_villa": {"name": ["Башня-виллы", "Sky Villas"], "cat": "home", "zones": ["city"], "size": 2, "cost": 34000, "gems": 12, "lvl": 21,
+		"time": 340, "pop": 60, "rent": 620, "cycle": 300, "upkeep": 200},
 	"round_tower": {"name": ["Круглая башня", "Round Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 12000, "gems": 3, "lvl": 14, "time": 240,
 		"pop": 90, "rent": 280, "cycle": 270, "upkeep": 110},
 	"deco_tower": {"name": ["Башня ар-деко", "Art Deco Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 22000, "gems": 8, "lvl": 17, "time": 300,
@@ -257,7 +283,7 @@ const B := {
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
-const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "twin_towers", "sky_home", "dushanbe_home",
+const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
