@@ -394,6 +394,17 @@ func newspaper() -> void:
 	hud.popup(Loc.t("paper_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
 
 
+func garbage() -> void:
+	var v := _vbox(5)
+	var lvl: String = Game.garbage_level()
+	hud.text(Loc.t("gb_none") if Game.garbage_depots().is_empty() else Loc.t("gb_" + lvl), v, 12, Color("3a2a1e"), _w())
+	_row(v, "demolish", Loc.t("gb_pile"), "%d%%" % int(Game.garbage), Color("c03a2a") if lvl == "high" else Color("3a2a1e"))
+	_row(v, "pop", Loc.t("gb_made"), "%.1f" % Game.garbage_rate())
+	_row(v, "jobs", Loc.t("gb_cap"), str(Game.garbage_capacity()))
+	_row(v, "build", Loc.t("gb_depots"), str(Game.garbage_depots().size()))
+	hud.popup(Loc.t("gb_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
+
+
 func building_details(uid: int) -> void:
 	if not Game.buildings.has(uid):
 		return

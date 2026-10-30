@@ -226,7 +226,7 @@ func on_hour(h: int) -> void:
 func on_day(d: int) -> void:
 	if Game.lost:
 		return
-	if Game.rules.get("pollution", false) and _rng.randf() < 0.6:
+	if (Game.rules.get("pollution", false) or Game.rules.get("garbage", false)) and _rng.randf() < 0.6:
 		post("complaint", "zina", ["Жалоба", "Complaint"],
 			["Дым от заводов идёт прямо в окна! Уберите промышленность подальше от домов, {title}.",
 			 "Smoke from the factories goes right into our windows! Move industry away from homes, {title}."],

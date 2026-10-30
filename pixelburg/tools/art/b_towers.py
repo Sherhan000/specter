@@ -1120,7 +1120,68 @@ def newspaper(L, o):
     return cv
 
 
-BUILDERS = {"newsstand": newsstand, "newspaper": newspaper, "tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+def garbage_depot(L, o):
+    """A garbage depot: a low garage with two roller doors, a row of green bins and a heap of bags in the yard."""
+    H = 48
+    cv = Canvas(2, H + 60)
+    T = Orient(cv, o)
+    seed = 1201
+    ground(T, 0, 0, 320, 320, kit.paving("a8a8a0", 10.0, 4))
+    win = Win(w=18, h=14, sill=26, sp=52, margin=16, fh=H, frame="3a4450", style="vertical", tint="6a9ac0", group="work")
+    fr = facade("plaster", "b8c4a8", win=win, doors=[(60, 70, 30, "double_glass")], plinth=("6a7060", 5), seed=seed, lit=0.5)
+    sd = facade("plaster", "b8c4a8", win=win, plinth=("6a7060", 5), seed=seed + 1, lit=0.5)
+    box(T, 30, 120, 290, 280, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("5a5e56", "b8c4a8", 3))
+    sign_board(T, 190, 118, H - 16, "WASTE", 9, "2a7a3a", "ffffff")
+    T.box(150, 117, 210, 120, 0, 30, all=flat("8a8e90"), top=flat("7a7e80"))
+    T.box(222, 117, 282, 120, 0, 30, all=flat("8a8e90"), top=flat("7a7e80"))
+    door(T, 130, 60, 120, 34)
+    entry(T, 160)
+    for k in range(5):
+        T.box(40 + k * 22, 40, 56 + k * 22, 56, 0, 16, all=flat(["3a9a4a", "2a6ab8", "e0b030", "3a9a4a", "7a7e80"][k]), top=flat("2a2e34"))
+    for k in range(3):
+        T.box(230 + k * 18, 56, 244 + k * 18, 70, 0, 8 + (k % 2) * 4, all=flat("2a2a30"), top=flat("3a3a42"))
+    if L >= 2:
+        tree(T, 20, 100, "lime", 0.6, seed)
+    if L >= 3:
+        lamp(T, 100, 20, "modern", 48)
+        lamp(T, 200, 20, "modern", 48, "light2")
+    return cv
+
+
+def recycling_plant(L, o):
+    """A recycling plant: a tall green-roofed hall, a conveyor and sorting silos, a chimney with a recycling sign."""
+    H = 70
+    cv = Canvas(3, H + 120)
+    T = Orient(cv, o)
+    seed = 1211
+    ground(T, 0, 0, 480, 480, kit.paving("a4a49c", 12.0, 4))
+    win = Win(w=20, h=18, sill=34, sp=46, margin=16, fh=H, frame="3a4450", style="vertical", tint="6a9ac0", group="work")
+    fr = facade("plaster", "dce2d0", win=win, doors=[(200, 70, 34, "double_glass")], plinth=("6a7060", 5), seed=seed, lit=0.5)
+    sd = facade("plaster", "dce2d0", win=win, plinth=("6a7060", 5), seed=seed + 1, lit=0.5)
+    box(T, 40, 200, 440, 440, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("3a8a4a", "dce2d0", 3))
+    sign_board(T, 250, 198, H - 20, "RECYCLE", 8, "2a7a3a", "ffffff")
+    door(T, 200, 70, 198, 36)
+    entry(T, 235)
+    # three sorting silos in colours of the waste streams
+    for k, col in enumerate(["2a6ab8", "e0b030", "3aa858"]):
+        x0 = 60 + k * 50
+        T.box(x0, 70, x0 + 36, 106, 0, 64, all=flat(col), top=flat("d0d4d8"))
+        T.box(x0 + 8, 106, x0 + 28, 200, 30, 38, all=flat("5a5e66"), top=flat("7a7e86"))
+    # chimney
+    post(T, 400, 400, H, H + 60, "b0b4b8", 8.0)
+    post(T, 400, 400, H + 40, H + 50, "3aa858", 8.2)
+    # bales and a stack of bins at the gate
+    for k in range(4):
+        T.box(300 + k * 30, 40, 326 + k * 30, 66, 0, 20, all=flat(["c0a060", "9a9a9a", "c0a060", "3a9a4a"][k]), top=flat("d8d0b0"))
+    if L >= 2:
+        tree(T, 20, 140, "lime", 0.6, seed)
+    if L >= 3:
+        lamp(T, 150, 20, "modern", 48)
+        lamp(T, 330, 20, "modern", 48, "light2")
+    return cv
+
+
+BUILDERS = {"garbage_depot": garbage_depot, "recycling_plant": recycling_plant, "newsstand": newsstand, "newspaper": newspaper, "tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "bus_stop_simple": bus_stop_simple, "bus_stop_modern": bus_stop_modern, "bus_stop_ad": bus_stop_ad,
             "bus_stop_village": bus_stop_village, "metro_station": metro_station}

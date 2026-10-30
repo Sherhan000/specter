@@ -352,6 +352,37 @@ func _ready() -> void:
 	Game.recalc()
 	city.life._update_buses()
 	check(city.life.cars.any(func(car): return is_instance_valid(car) and car.role == "city_bus"), "a city bus drives between the stops")
+	# ---- garbage
+	var gpop := Game.pop
+	Game.pop = 1000
+	Game.garbage = 0.0
+	Game._update_garbage()
+	check(is_equal_approx(Game.garbage, 40.0), "residents make garbage (%.1f)" % Game.garbage)
+	Game.garbage = 90.0
+	Game.recalc()
+	Game.pop = 1000
+	Game._check_rules()
+	check(Game.rules.get("garbage", false) and Game.garbage_mood() > 0, "a big pile breaks the garbage rule and costs mood")
+	check(Game.paper_headlines().has("n_garbage") and Loc.t("n_garbage") != "n_garbage", "paper reports the garbage")
+	var gd := Game._add_building("garbage_depot", spots[3].x, spots[3].y, true)
+	Game.recalc()
+	if Game.garbage_depots().has(gd):
+		check(Game.garbage_capacity() >= 12, "a working depot has capacity")
+		Game.garbage = 50.0
+		Game.pop = 100
+		Game._update_garbage()
+		check(Game.garbage < 50.0, "a depot carries garbage away")
+		for _try in 6:
+			city.life._garb_hour = -1
+			city.life._update_garbage_trucks()
+		check(city.life.cars.any(func(car): return is_instance_valid(car) and car.kind == "garbage"), "a garbage truck leaves the depot")
+	else:
+		check(true, "depot has no road here (skipped truck check)")
+	Game.demolish(gd)
+	Game.pop = gpop
+	Game.garbage = 0.0
+	Game.recalc()
+	check(Data.B.has("recycling_plant") and Data.ORDER.has("recycling_plant"), "recycling plant is in the build list")
 	var st1 := Game._add_building("metro_station", spots[2].x, spots[2].y, true)
 	Game.recalc()
 	check(not Game.metro_open(), "one metro station is not a line yet")

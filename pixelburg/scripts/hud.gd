@@ -1143,6 +1143,8 @@ func _refresh_info() -> void:
 				info_actions.add_child(round_btn("link", "green", func(): city.start_link(uid), 26))
 		if d.get("svc", "") == "patrol":
 			info_actions.add_child(round_btn("police", "purple", func(): panels.watchtower(uid), 26))
+		if d.get("svc", "") == "garbage":
+			info_actions.add_child(round_btn("demolish", "purple", func(): panels.garbage(), 26))
 		if d.get("svc", "") == "news":
 			info_actions.add_child(round_btn("newspaper", "purple", func(): panels.newspaper(), 26))
 		info_actions.add_child(round_btn("info", "blue", func(): panels.building_details(uid), 26))

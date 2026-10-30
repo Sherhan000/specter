@@ -27,6 +27,7 @@ signal game_over
 
 const SAVE_PATH := "user://city.json"
 const SAVE_VERSION := 4
+const GARBAGE_MAX := 100.0
 const SEASONS := ["spring", "summer", "autumn", "winter"]
 
 # ------------------------------------------------------------------ saved state
@@ -96,6 +97,7 @@ var unemployment := 0.0
 var happy_target := 55.0
 var home_happy := {}         ## uid -> int
 var home_reasons := {}       ## uid -> Array of [text key, value]
+var garbage := 0.0            ## uncollected waste in the city, 0..GARBAGE_MAX
 var rules := {}              ## rule -> true if broken
 var laws: Array = []         ## passed laws (Data.LAWS ids)
 var jam_tiles := {}          ## traffic-light cluster tiles
@@ -337,7 +339,7 @@ func to_dict() -> Dictionary:
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
 		"caught": caught, "weather": weather, "weather_until": weather_until, "patrol_until": patrol_until, "mood": mood,
-		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "tutorial": tutorial, "lost": lost,
+		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "garbage": garbage, "tutorial": tutorial, "lost": lost,
 		"events": Events.to_dict(), "power_store": power_store,
 	}
 
@@ -449,6 +451,7 @@ func from_dict(p: Dictionary) -> bool:
 	today = p.get("today", _empty_day())
 	loan = p.get("loan", {})
 	deposit = int(p.get("deposit", 0))
+	garbage = clampf(float(p.get("garbage", 0.0)), 0.0, GARBAGE_MAX)
 	tutorial = int(p.get("tutorial", 99))
 	lost = bool(p.get("lost", false))
 	Events.from_dict(p.get("events", {}))
@@ -566,6 +569,7 @@ func _on_hour() -> void:
 	var now := abs_hour()
 	mood = mood.filter(func(m): return int(m.until) > now)
 	_move_population()
+	_update_garbage()
 	if now >= weather_until:
 		_pick_weather()
 	recalc()
@@ -892,7 +896,7 @@ func recalc() -> void:
 	_check_rules()
 	home_happy.clear()
 	home_reasons.clear()
-	var global := 45 + mood_total() + int(law_sum("happy")) + weather_mood() - int(round((tax - Data.TAX_DEFAULT) * 2.2)) - int(unemployment * 22.0)
+	var global := 45 - garbage_mood() + mood_total() + int(law_sum("happy")) + weather_mood() - int(round((tax - Data.TAX_DEFAULT) * 2.2)) - int(unemployment * 22.0)
 	for r in rules:
 		if rules[r]:
 			global -= 2
@@ -950,6 +954,8 @@ func recalc() -> void:
 				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6, "sport": 5, "tv": 4, "news": 2}[key]
 				h += v
 				reasons.append(["r_" + key, v])
+		if garbage_mood() > 0:
+			reasons.append(["r_garbage", -garbage_mood()])
 		if water_ratio < 0.9:
 			var wp := int(round((1.0 - water_ratio) * 20.0))
 			h -= wp
@@ -970,6 +976,8 @@ func recalc() -> void:
 		else:
 			h -= 6
 			reasons.append(["r_noshop", -6])
+		if garbage >= 40.0:
+			poll += int(garbage / 25.0)
 		if poll > 0:
 			h -= mini(poll * 2, 22)
 			reasons.append(["r_poll", -mini(poll * 2, 22)])
@@ -1295,6 +1303,7 @@ func _check_rules() -> void:
 				poll_bad = true
 	rules["pollution"] = poll_bad
 	rules["roads"] = homes_no_road
+	rules["garbage"] = pop > 100 and garbage >= 60.0
 	rules["school"] = pop > 150 and not have.has("edu")
 	rules["fire"] = pop > 200 and not have.has("fire")
 	rules["police"] = pop > 300 and not have.has("police")
@@ -2467,6 +2476,45 @@ func _update_music(delta: float) -> void:
 		_ambient.volume_db = move_toward(_ambient.volume_db, -14.0 if weather in ["rain", "storm"] else -20.0, delta * 8.0)
 
 
+# ====================================================================== garbage
+## Waste made per in-game hour by the residents.
+func garbage_rate() -> float:
+	return pop * 0.04
+
+
+## Waste the working depots and plants carry away per hour (a truck leaves each one).
+func garbage_capacity() -> int:
+	var c := 0
+	for uid in buildings:
+		var d: Dictionary = Data.B[buildings[uid].id]
+		if d.get("svc", "") == "garbage" and _works(uid):
+			c += int(d.garb) * buildings[uid].lvl
+	return c
+
+
+func garbage_depots() -> Array:
+	var r: Array = []
+	for uid in buildings:
+		if Data.B[buildings[uid].id].get("svc", "") == "garbage" and _works(uid):
+			r.append(uid)
+	return r
+
+
+func garbage_mood() -> int:
+	return clampi(int((garbage - 40.0) / 6.0), 0, 10)
+
+
+func garbage_level() -> String:
+	return "low" if garbage < 30.0 else "mid" if garbage < 60.0 else "high"
+
+
+func _update_garbage() -> void:
+	var before := garbage
+	garbage = clampf(garbage + garbage_rate() - garbage_capacity(), 0.0, GARBAGE_MAX)
+	if before < 60.0 and garbage >= 60.0 and pop > 100:
+		toast.emit(Loc.t("garbage_warn"))
+
+
 # ====================================================================== newspaper
 ## Loc keys of today's headlines (most important first), chosen by the state of the city.
 func paper_headlines() -> Array:
@@ -2491,6 +2539,8 @@ func paper_headlines() -> Array:
 		h.append("n_jobless")
 	elif workers > 0 and unemployment <= 0.03:
 		h.append("n_work")
+	if pop > 100 and garbage >= 60.0:
+		h.append("n_garbage")
 	if happy >= 75.0:
 		h.append("n_happy")
 	elif happy < 35.0:

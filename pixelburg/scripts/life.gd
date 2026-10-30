@@ -51,6 +51,7 @@ var _tick := 0.0
 var _ambient_t := 2.0
 var _social_t := 1.0
 var _hour := 0.0
+var _garb_hour := -1
 var _last_day := -1
 var _dirty := true
 var _conflict := {}
@@ -1149,17 +1150,31 @@ func _ambient() -> void:
 				spots[sp[0]] = c
 	_update_buses()
 	_update_cyclists()
-	# garbage truck round in the early morning
-	if int(_hour) == 6 and not cars.any(func(c): return c.kind == "garbage") and Game.roads.size() > 10:
-		var tiles: Array = Game.roads.keys()
-		var path := car_path(Data.far_ends()[0], tiles.pick_random())
-		if path.size() > 5:
-			var back := car_path(path.back(), Data.far_ends()[1])
-			if back.size() > 1:
-				path.append_array(back.slice(1))
-			var c := _make_car("garbage")
-			c.role = "service"
-			c.start_route(path, null)
+	_update_garbage_trucks()
+
+
+## Every hour each working depot sends a truck along the roads and back (the waste itself is counted in Game).
+func _update_garbage_trucks() -> void:
+	if int(_hour) == _garb_hour:
+		return
+	_garb_hour = int(_hour)
+	if cars.filter(func(c): return c.moving()).size() >= MAX_MOVING_CARS:
+		return
+	var tiles: Array = Game.roads.keys()
+	for st in Game.garbage_depots():
+		if cars.any(func(c): return is_instance_valid(c) and c.kind == "garbage" and c.station == st):
+			continue
+		var home := Game.entrance_tile(st)
+		var path := car_path(home, tiles.pick_random())
+		if path.size() < 2:
+			continue
+		var back := car_path(path.back(), home)
+		if back.size() > 1:
+			path.append_array(back.slice(1))
+		var c := _make_car("garbage")
+		c.role = "service"
+		c.station = st
+		c.start_route(path, null)
 
 
 ## City buses: one per two stops (up to three) once two stops stand by connected roads.

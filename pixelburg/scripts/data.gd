@@ -94,6 +94,7 @@ const NEWS := [
 	["Остановки разного вида: навес, стеклянная, с рекламой и экраном, деревенская", "Bus stops of every kind: simple, glass, with ads and a screen, village"],
 	["Телевидение: маленькая студия, телецентр и высокая телебашня — жители счастливее", "Television: a small studio, a TV centre and a tall TV tower make residents happier"],
 	["Газеты: киоск и редакция — новости о городе: население, счастье, деньги, пожары", "Newspapers: a newsstand and an office with news about your city: people, mood, money, fires"],
+	["Мусор: жители производят отходы, станция вывоза и завод отправляют мусоровозки по дорогам — иначе падает счастье и растёт загрязнение", "Garbage: residents make waste; depots and recycling plants send trucks along the roads, or mood drops and pollution rises"],
 ]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
@@ -268,6 +269,10 @@ const B := {
 		"jobs": 1, "upkeep": 3, "svc": "news", "radius": 6, "happy": 2},
 	"newspaper": {"name": ["Редакция газеты", "Newspaper Office"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 5000, "lvl": 7, "time": 70,
 		"jobs": 6, "upkeep": 35, "svc": "news", "radius": 14, "happy": 3},
+	"garbage_depot": {"name": ["Станция вывоза мусора", "Garbage Depot"], "cat": "service", "zones": ["city", "industry"], "size": 2, "cost": 2800, "lvl": 5, "time": 70,
+		"jobs": 4, "upkeep": 30, "svc": "garbage", "radius": 999, "happy": 0, "garb": 12},
+	"recycling_plant": {"name": ["Мусороперерабатывающий завод", "Recycling Plant"], "cat": "service", "zones": ["industry"], "size": 3, "cost": 12000, "gems": 2, "lvl": 11, "time": 140,
+		"jobs": 12, "upkeep": 90, "svc": "garbage", "radius": 999, "happy": 0, "garb": 40},
 	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
 		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
@@ -310,7 +315,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
@@ -354,7 +359,7 @@ const TOWER_MEETING_HAPPY := 10
 const TOWER_MEETING_HOURS := 24
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
-const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget"]
+const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]
 
 ## Task missions. type: build:<id> | roads | pop | level | happy | coins_total | goods_total | plots | upgrades | lvl3 | rep | animals
 const MISSIONS := [
