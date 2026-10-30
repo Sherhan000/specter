@@ -32,6 +32,7 @@ var views := {}          ## uid -> BuildingView
 var lamp_nodes := {}     ## quarter Vector2i -> LampView
 var sale_signs: Array[Node2D] = []
 var light_nodes := {}    ## Vector2i -> [TrafficLight, TrafficLight]
+var ring_nodes := {}     ## Vector2i -> [RingView base, RingView top]
 var forest_animals: Array[ForestAnimal] = []
 var zoo_animals: Array[ForestAnimal] = []
 var xray := false        ## tall buildings are drawn see-through
@@ -230,6 +231,12 @@ func _rebuild_lights() -> void:
 			tl.setup(c, axis, self)
 			pair.append(tl)
 		light_nodes[c] = pair
+	for c in ring_nodes:
+		for v in ring_nodes[c]:
+			v.queue_free()
+	ring_nodes.clear()
+	for c in Game.rings:
+		ring_nodes[c] = RingView.make(c, decals, world)
 	ground.update_roads(Game.net)
 
 
@@ -757,8 +764,7 @@ func _tap(screen_p: Vector2) -> void:
 				var q := _lamp_at(wp)
 				hud.confirm(Loc.t("lamp_remove_q"), func(): Game.remove_lamp(q))
 			elif Game.roads.has(tile) and Game.is_intersection(tile):
-				hud.confirm(Loc.t("light_remove_q") if Game.lights.has(tile) else Loc.t("light_add_q") % Data.LIGHT_COST,
-					func(): Game.toggle_light(tile))
+				hud.crossing(tile)
 			else:
 				Game.sfx("tap")
 		Mode.LAND:

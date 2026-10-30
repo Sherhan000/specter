@@ -85,6 +85,52 @@ func _ready() -> void:
 	Game.recalc()
 	check(not Game.rules.lights, "one light is fine")
 
+	# ------------------------------------------------ roundabouts
+	var rx := Vector2i(c, c)
+	Game.coins = maxi(Game.coins, 5000)
+	check(not Game.toggle_ring(Vector2i(c - 3, c + 3)), "no roundabout on a straight road")
+	c0 = Game.coins
+	check(Game.toggle_ring(rx) and Game.coins == c0 - Data.RING_COST, "roundabout costs %d" % Data.RING_COST)
+	check(Game.rings.has(rx) and not Game.lights.has(rx), "roundabout replaces the traffic light")
+	await get_tree().process_frame
+	check(city.ring_nodes.has(rx) and city.ring_nodes[rx].size() == 2, "roundabout island and fountain are drawn")
+	Game.save_game()
+	Game.rings.clear()
+	Game.load_game()
+	check(Game.rings.has(rx), "roundabout is saved")
+	var ctr := Vector2(rx) + Vector2(0.5, 0.5)
+	var straight := Life.ring_segment(rx, Vector2(1, 0), Vector2(1, 0), 0.105)
+	var plain := Life.segment_for(rx, Vector2(1, 0), Vector2(1, 0), 0.105)
+	check(Life.eval_seg(straight, 0.0).distance_to(plain[0]) < 0.001 and Life.eval_seg(straight, 1.0).distance_to(plain[2]) < 0.001,
+		"ring path starts and ends in the lanes")
+	var inside := 1.0
+	var ccw := true
+	for i in 41:
+		var k := i / 40.0
+		inside = minf(inside, Life.eval_seg(straight, k).distance_to(ctr))
+		var g0 := Life.eval_seg(straight, k) - ctr
+		var tg := Life.tangent_seg(straight, k, Vector2(1, 0))
+		if k > 0.3 and k < 0.7 and g0.cross(tg) > 0.0:
+			ccw = false
+	check(inside > RingView.APRON, "cars drive around the island (%.2f)" % inside)
+	check(ccw, "everyone circles the same way, island on the left")
+	var ring_near := Life.ring_segment(rx, Vector2(1, 0), Vector2(0, 1), 0.105)
+	var ring_far := Life.ring_segment(rx, Vector2(1, 0), Vector2(0, -1), 0.105)
+	check(float(ring_near[3]) < float(straight[3]) and float(straight[3]) < float(ring_far[3]), "right turn short, left turn the long way round")
+	var ringer := Life.Car.new()
+	ringer.p = [rx - Vector2i(0, 1), rx, rx + Vector2i(1, 0)] as Array[Vector2i]
+	ringer.idx = 0
+	check(city.life._ring_blocks(rx, Vector2i(1, 0), [ringer, Vector2i(0, 1), Vector2i(0, 1)]),
+		"entering cars give way to a car coming round the ring")
+	check(not city.life._ring_blocks(rx, Vector2i(1, 0), [ringer, Vector2i(0, 1), Vector2i(-1, 0)]),
+		"no need to wait for a car leaving before the entry")
+	ringer.free()
+	Game.coins = maxi(Game.coins, 5000)
+	check(Game.toggle_light(rx) and not Game.rings.has(rx), "a traffic light replaces the roundabout")
+	check(Game.toggle_ring(rx) and Game.toggle_ring(rx) and not Game.rings.has(rx), "roundabout can be removed")
+	Game.lights = {rx: true}
+	Game.recalc()
+
 	# ------------------------------------------------ lamps
 	var q := Vector2i(2 * (c + 5), 2 * c)
 	c0 = Game.coins

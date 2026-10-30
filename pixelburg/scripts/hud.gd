@@ -1284,6 +1284,20 @@ func confirm(t: String, on_yes: Callable) -> void:
 	popup(Loc.t("title"), t, [[Loc.t("no"), "red", Callable()], [Loc.t("yes"), "green", on_yes]])
 
 
+## Tap on a crossing: a traffic light or a roundabout (one replaces the other), or take it away.
+func crossing(tile: Vector2i) -> void:
+	var b := [[Loc.t("cancel"), "red", Callable()]]
+	if Game.lights.has(tile):
+		b.append([Loc.t("light_remove"), "orange", func(): Game.toggle_light(tile)])
+	else:
+		b.append([Loc.t("crossing_light") % Data.LIGHT_COST, "green", func(): Game.toggle_light(tile)])
+	if Game.rings.has(tile):
+		b.append([Loc.t("ring_remove"), "orange", func(): Game.toggle_ring(tile)])
+	else:
+		b.append([Loc.t("crossing_ring") % Data.RING_COST, "green", func(): Game.toggle_ring(tile)])
+	popup(Loc.t("crossing_t"), Loc.t("crossing_body"), b)
+
+
 func back() -> bool:
 	if dialog.visible:
 		dialog.skip()

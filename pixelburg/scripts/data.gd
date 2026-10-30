@@ -38,6 +38,8 @@ const TAX_MIN := 0
 const TAX_MAX := 25
 const LAMP_COST := 40
 const LIGHT_COST := 150
+const RING_COST := 220     ## a roundabout on a crossing (no power needed)
+const RING_UPKEEP := 0.8
 const MOVE_COST := 0       ## moving a building is free, only its old spot must be left clean
 const CATCH_COST := 80
 const ZOO_ANIMALS := 5
@@ -82,6 +84,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Кольцо на перекрёстке: нажмите на перекрёсток и выберите «Кольцо» — машины объезжают островок с фонтаном по кругу и уступают тем, кто уже на кольце, светофор и электричество не нужны", "Roundabouts: tap a crossing and choose Roundabout - cars circle an island with a fountain and give way to those already on the ring, no traffic light or power needed"],
 	["В настройках можно увеличить или уменьшить кнопки и иконки (от 80% до 150%) — подстройте интерфейс под свой телефон, выбор сохраняется", "In the settings you can make the buttons and icons bigger or smaller (80% to 150%) - fit the interface to your phone, the choice is saved"],
 	["Два новых вида заправки, у каждой свой вид: электрозаправка с солнечными панелями на навесе и электромобилями на зарядке и большая заправка у трассы с колонками, магазином, кафе, автомойкой и стелой с ценами", "Two new kinds of filling stations, each with its own look: an EV charging station with a solar roof and electric cars plugged in, and a big highway fuel stop with pumps, a shop, a cafe, a car wash and a price pylon"],
 	["Новые деревья, у каждого свой вид: берёзы, сосны и ели, тополя, яблоня с яблоками, осенний клён, плакучая ива, сакура, пальмы и чинара — ставятся как украшение и растут в природе", "New trees, each with its own look: birches, pines and spruces, poplars, an apple tree, an autumn maple, a weeping willow, sakura, palms and a chinar - place them as decoration, and they also grow in the wild"],

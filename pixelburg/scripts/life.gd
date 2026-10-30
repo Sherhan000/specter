@@ -16,6 +16,8 @@ const WALK_SPEED := 0.2         ## tiles per second
 const CAR_SPEED := 0.75
 const ACCEL := 0.9
 const BRAKE := 2.6
+const RING_R := 0.19            ## roundabout: ring lane radius minus the lane offset, in tiles
+const RING_YIELD := 1.9         ## radians upstream of an entry where ring traffic has priority
 const ARM_DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 ## sidewalk corners of a road tile: NW, NE, SW, SE
 const CORNERS := [Vector2(0.075, 0.075), Vector2(0.925, 0.075), Vector2(0.075, 0.925), Vector2(0.925, 0.925)]
@@ -453,22 +455,42 @@ func request_enter(car: Car, t: Vector2i, din: Vector2i, dout: Vector2i) -> bool
 		for o in bins.get(nxt, []):
 			if o != car and o.moving() and o.s < 0.45 and o.heading.dot(Vector2(dout)) > 0.5 and o.v < 0.2:
 				return false
+	var ring: bool = Game.rings.has(t)
 	var list: Array = reserve.get(t, [])
 	for r in list:
 		if r[0] == car:
 			return true
-		if is_instance_valid(r[0]) and _conflicts(din, dout, r[1], r[2]) and not car.siren:
+		if is_instance_valid(r[0]) and not car.siren and (_ring_blocks(t, din, r) if ring else _conflicts(din, dout, r[1], r[2])):
 			return false
-	# give way to whoever has waited much longer for a conflicting move
+	# give way to whoever has waited much longer for a conflicting move (on a ring the ring has priority)
 	var w: Dictionary = waiting.get(t, {})
 	var mine: float = w.get(car, 0.0)
 	for o in w:
+		if ring:
+			break
 		if o != car and is_instance_valid(o) and w[o] > mine + 2.5 and _conflicts(din, dout, o.want_in, o.want_out):
 			return false
 	list.append([car, din, dout])
 	reserve[t] = list
 	w.erase(car)
 	return true
+
+
+## Roundabout rule: wait at the entry while a car on the ring (reservation r) is coming up to it
+## from upstream and will drive past it, or has only just passed it.
+func _ring_blocks(t: Vector2i, din: Vector2i, r: Array) -> bool:
+	var o: Car = r[0]
+	var ae := ring_angle(r[1], true)
+	var total := fposmod(ae - ring_angle(r[2], false), TAU)
+	var ac := ae
+	if o.idx < o.p.size() and o.p[o.idx] == t:
+		var d: Vector2 = o.g - (Vector2(t) + Vector2(0.5, 0.5))
+		ac = atan2(d.y, d.x)
+	var rem := total - (fposmod(ae - ac + 0.3, TAU) - 0.3)
+	if rem <= 0.0:
+		return false
+	var up := fposmod(ac - ring_angle(din, true), TAU)
+	return (up < RING_YIELD and up < rem) or up > TAU - 0.8
 
 
 func note_waiting(car: Car, t: Vector2i, delta: float) -> void:
@@ -487,6 +509,52 @@ func release(car: Car, t: Vector2i) -> void:
 
 
 # ====================================================================== lane geometry
+## Angle around the tile centre where a lane enters (or leaves) a roundabout tile.
+static func ring_angle(d: Vector2i, entry: bool, lane := 0.105) -> float:
+	var dv := Vector2(d)
+	var p := (-dv if entry else dv) * 0.5 + Vector2(-dv.y, dv.x) * lane
+	return atan2(p.y, p.x)
+
+
+## Path over a roundabout tile: merge onto the ring, circle the island (always the same way,
+## the island on the left as traffic keeps right) and leave by the exit arm.
+## Same layout as a segment plus the polyline and its running lengths.
+static func ring_segment(t: Vector2i, din: Vector2, dout: Vector2, lane: float) -> Array:
+	var c := Vector2(t) + Vector2(0.5, 0.5)
+	var e := c - din * 0.5 + Vector2(-din.y, din.x) * lane
+	var x := c + dout * 0.5 + Vector2(-dout.y, dout.x) * lane
+	var ae := atan2((e - c).y, (e - c).x)
+	var raw := fposmod(ae - atan2((x - c).y, (x - c).x), TAU)
+	var m := minf(0.45, raw * 0.3)
+	var a0 := ae - m
+	var sweep := raw - 2.0 * m
+	var r := RING_R + lane
+	var p0 := c + Vector2(cos(a0), sin(a0)) * r
+	var p1 := c + Vector2(cos(a0 - sweep), sin(a0 - sweep)) * r
+	var pts := PackedVector2Array([e])
+	for i in range(1, 6):
+		pts.append(eval_seg([e, e + din * 0.2, p0], i / 5.0))
+	var n := maxi(2, ceili(sweep / 0.18))
+	for i in range(1, n + 1):
+		var a := a0 - sweep * i / n
+		pts.append(c + Vector2(cos(a), sin(a)) * r)
+	for i in range(1, 6):
+		pts.append(eval_seg([p1, x - dout * 0.2, x], i / 5.0))
+	var cum := PackedFloat32Array([0.0])
+	for i in range(1, pts.size()):
+		cum.append(cum[i - 1] + pts[i - 1].distance_to(pts[i]))
+	return [e, c, x, cum[cum.size() - 1], pts, cum]
+
+
+static func _ring_at(seg: Array, t: float) -> int:
+	var cum: PackedFloat32Array = seg[5]
+	var want := clampf(t, 0.0, 1.0) * float(seg[3])
+	var i := 1
+	while i < cum.size() - 1 and cum[i] < want:
+		i += 1
+	return i
+
+
 static func segment_for(t: Vector2i, din: Vector2, dout: Vector2, lane: float) -> Array:
 	var c := Vector2(t) + Vector2(0.5, 0.5)
 	var e := c - din * 0.5 + Vector2(-din.y, din.x) * lane
@@ -502,6 +570,12 @@ static func segment_for(t: Vector2i, din: Vector2, dout: Vector2, lane: float) -
 
 
 static func eval_seg(seg: Array, t: float) -> Vector2:
+	if seg.size() > 4:
+		var i := _ring_at(seg, t)
+		var cum: PackedFloat32Array = seg[5]
+		var pts: PackedVector2Array = seg[4]
+		var k := (clampf(t, 0.0, 1.0) * float(seg[3]) - cum[i - 1]) / maxf(0.0001, cum[i] - cum[i - 1])
+		return pts[i - 1].lerp(pts[i], clampf(k, 0.0, 1.0))
 	var a: Vector2 = seg[0]
 	var b: Vector2 = seg[1]
 	var c: Vector2 = seg[2]
@@ -509,6 +583,11 @@ static func eval_seg(seg: Array, t: float) -> Vector2:
 
 
 static func tangent_seg(seg: Array, t: float, fallback: Vector2) -> Vector2:
+	if seg.size() > 4:
+		var i := _ring_at(seg, t)
+		var pts: PackedVector2Array = seg[4]
+		var d := pts[i] - pts[i - 1]
+		return d.normalized() if d.length() > 0.0001 else fallback
 	var a: Vector2 = seg[0]
 	var b: Vector2 = seg[1]
 	var c: Vector2 = seg[2]
@@ -1745,6 +1824,8 @@ class Car extends Node2D:
 		var din: Vector2 = Vector2(p[k] - p[k - 1]) if k > 0 else (Vector2(p[1] - p[0]) if p.size() > 1 else heading)
 		var dout: Vector2 = Vector2(p[k + 1] - p[k]) if k + 1 < p.size() else din
 		lane = Life.lane_for(Game.net.get(p[k], "asphalt"), kind)
+		if Game.rings.has(p[k]):
+			return Life.ring_segment(p[k], din, dout, lane)
 		return Life.segment_for(p[k], din, dout, lane)
 
 	func check_path() -> void:
@@ -1778,6 +1859,7 @@ class Car extends Node2D:
 	func _gap_ahead() -> float:
 		var best := INF
 		var right := Vector2(-heading.y, heading.x)
+		var on_ring: bool = seg.size() > 4
 		for o in life.cars_near(g):
 			if o == self or not is_instance_valid(o) or o.state == "parked":
 				continue
@@ -1785,7 +1867,7 @@ class Car extends Node2D:
 			var along := d.dot(heading)
 			if along <= 0.0 or along > 1.6:
 				continue
-			if absf(d.dot(right)) > 0.09:
+			if absf(d.dot(right)) > (0.16 if on_ring else 0.09):
 				continue
 			if o.heading.dot(heading) < 0.2:
 				continue

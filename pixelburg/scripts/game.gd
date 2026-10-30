@@ -44,6 +44,7 @@ var arrivals_day := {}       ## country -> travellers who flew in today
 var plots: Array = []        ## owned plots (Vector2i)
 var roads := {}              ## Vector2i -> road type (player roads)
 var lights := {}             ## Vector2i -> true (traffic lights on intersections)
+var rings := {}              ## Vector2i -> true (roundabouts on intersections; cars circle the island)
 var lamps := {}              ## Vector2i quarter cell -> style ("classic" / "modern")
 var buildings := {}          ## uid -> dictionary, see _add_building
 var next_uid := 1
@@ -267,6 +268,7 @@ func new_game() -> void:
 	arrivals_day = {}
 	roads = {}
 	lights = {}
+	rings = {}
 	lamps = {}
 	buildings = {}
 	occ = {}
@@ -370,6 +372,7 @@ func to_dict() -> Dictionary:
 		"flights": flights.duplicate(), "arrivals": arrivals.duplicate(), "arrivals_day": arrivals_day.duplicate(),
 		"roads": roads.keys().map(func(v): return [v.x, v.y, roads[v]]),
 		"lights": lights.keys().map(func(v): return [v.x, v.y]),
+		"rings": rings.keys().map(func(v): return [v.x, v.y]),
 		"lamps": lamps.keys().map(func(v): return [v.x, v.y, lamps[v]]),
 		"cleared": cleared_trees.keys().map(func(v): return [v.x, v.y]),
 		"water": water.keys().map(func(v): return [v.x, v.y]),
@@ -436,6 +439,9 @@ func from_dict(p: Dictionary) -> bool:
 	lights = {}
 	for v in p.get("lights", []):
 		lights[_v2(v)] = true
+	rings = {}
+	for v in p.get("rings", []):
+		rings[_v2(v)] = true
 	lamps = {}
 	for v in p.get("lamps", []):
 		lamps[_v2(v)] = str(v[2])
@@ -719,7 +725,7 @@ func daily_upkeep() -> int:
 		if not b.built or b.priv != "":
 			continue
 		total += Data.stat(b.id, "upkeep", b.lvl) * (0.3 if b.closed else 1.0)
-	total += lamps.size() * 0.5 + lights.size() * 2.0
+	total += lamps.size() * 0.5 + lights.size() * 2.0 + rings.size() * Data.RING_UPKEEP
 	return int(round(total))
 
 
@@ -1181,6 +1187,10 @@ func _rebuild_net() -> void:
 			if net.has(nc) and not connected.has(nc):
 				connected[nc] = true
 				queue.append(nc)
+	# a roundabout needs a crossing: it goes when a road of it is removed
+	for c in rings.keys():
+		if not roads.has(c) or not is_intersection(c):
+			rings.erase(c)
 
 
 ## Built metro stations in the order they were built: the line runs underground from one to the next.
@@ -2044,6 +2054,7 @@ func remove_roads(tiles: Array[Vector2i]) -> bool:
 			any = true
 			road_deco.erase(t)
 			lights.erase(t)
+			rings.erase(t)
 			for k in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
 				lamps.erase(t * 2 + k)
 	if not any:
@@ -2070,12 +2081,34 @@ func toggle_light(c: Vector2i) -> bool:
 		if not pay(Data.LIGHT_COST, 0, "roads"):
 			return false
 		lights[c] = true
+		rings.erase(c)
 	recalc()
 	lights_changed.emit()
 	sfx("place")
 	save_game()
 	if rules.get("lights", false):
 		toast.emit(Loc.t("rule_lights_warn"))
+	return true
+
+
+## A roundabout on a crossing: cars circle the island and give way to those already on the ring.
+## It replaces a traffic light on the same tile.
+func toggle_ring(c: Vector2i) -> bool:
+	if rings.has(c):
+		rings.erase(c)
+	else:
+		if not is_intersection(c) or not roads.has(c):
+			toast.emit(Loc.t("ring_bad"))
+			sfx("error")
+			return false
+		if not pay(Data.RING_COST, 0, "roads"):
+			return false
+		rings[c] = true
+		lights.erase(c)
+	recalc()
+	lights_changed.emit()
+	sfx("place")
+	save_game()
 	return true
 
 
