@@ -255,6 +255,9 @@ func _ready() -> void:
 	check(tv.faded(), "see-through mode fades tall buildings")
 	city.set_xray(false)
 	check(not tv.faded(), "see-through mode off")
+	var landmark := Game._add_building("dushanbe_tower", c - 20, c + 20, true)
+	check(Game.place_problem("dushanbe_tower", c + 30, c - 30) == "already_built", "Dushanbe Tower can be built only once")
+	Game.demolish(landmark)
 	for uid in [stops[0], stops[1], st1, st2, tall]:
 		Game.demolish(uid)
 

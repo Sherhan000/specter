@@ -571,6 +571,8 @@ func _end_of_day() -> void:
 				tour += 60 * b.lvl
 			elif Data.B[b.id].get("tab", "") == "hotel" and _works(uid):
 				tour += 120 * b.lvl
+			elif Data.B[b.id].get("landmark", false) and _works(uid):
+				tour += 400 * b.lvl
 		tour = int(tour * law_mult("tour"))
 		if tour > 0:
 			_earn("tourism", tour)
@@ -1419,6 +1421,8 @@ func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
 				return "wrong_zone"
 	if id == "zoo" and ignore_uid == 0 and caught.size() < Data.ZOO_ANIMALS:
 		return "need_animals"
+	if Data.B[id].get("unique", false) and ignore_uid == 0 and buildings.values().any(func(b): return b.id == id):
+		return "already_built"
 	if Data.B[id].get("highway", false) and not is_connected_to_highway():
 		return "need_highway"
 	return ""

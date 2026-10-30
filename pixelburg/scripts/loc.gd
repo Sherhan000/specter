@@ -28,6 +28,7 @@ const S := {
 	"hotels_title": ["Отели", "Hotels"],
 	"hotels_locked": ["Отели откроются, когда ваша дорога дойдёт до края земли и соединится с трассой", "Hotels open once your road reaches the edge of the land and joins the highway"],
 	"hotels_open": ["Город соединён с трассой — туристы приедут в ваши отели", "The city is joined to the highway: tourists will come to your hotels"],
+	"already_built": ["Такое здание в городе может быть только одно", "A city can have only one of these"],
 	"need_highway": ["Сначала проведите дорогу к краю земли, к трассе", "First build a road to the edge of the land, to the highway"],
 	"metro_wait": ["Постройте вторую станцию — туда, куда пойдёт метро", "Build a second station where the metro should go"],
 	"metro_ready": ["Метро открыто! Поезд ходит под землёй между станциями", "The metro is open! Trains run underground between the stations"],

@@ -100,6 +100,9 @@ const B := {
 		"pop": 210, "rent": 520, "cycle": 300, "upkeep": 230},
 	"twin_towers": {"name": ["Башни-близнецы", "Skybridge Twins"], "cat": "home", "zones": ["city"], "size": 3, "cost": 42000, "gems": 16, "lvl": 22, "time": 400,
 		"pop": 360, "rent": 800, "cycle": 360, "upkeep": 360},
+	# the landmark: one per city (77 floors, offices, mall, hotel); brings tourists
+	"dushanbe_tower": {"name": ["Башня Душанбе", "Dushanbe Tower"], "cat": "shop", "unique": true, "landmark": true, "zones": ["city"], "size": 3,
+		"cost": 120000, "gems": 40, "lvl": 27, "time": 600, "jobs": 300, "use": 0, "income": 3200, "cycle": 400, "upkeep": 600},
 	# ------------------------------------------------ hotels (own tab; open only with a road to the highway)
 	"hotel_boutique": {"name": ["Бутик-отель", "Boutique Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["city", "leisure"], "size": 2,
 		"cost": 9000, "gems": 2, "lvl": 10, "time": 200, "jobs": 12, "use": 0, "income": 300, "cycle": 240, "upkeep": 70},
@@ -234,7 +237,7 @@ const B := {
 }
 const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "twin_towers", "sky_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
-	"cinema", "hotel", "mall", "sky_office", "sky_heli",
+	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
