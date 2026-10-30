@@ -143,7 +143,11 @@ func update_roads(net: Dictionary) -> void:
 			b |= 32
 		if Game.lights.has(c):
 			b |= 16
-		road_img.set_pixel(c.x, c.y, Color8(ROAD_IDS[t], g, b, 255))
+		road_img.set_pixel(c.x, c.y, Color8(ROAD_IDS[t], g, b, 128 + Game.water_kind(c) if Game.water.has(c) else 255))
+	# water dug by the player: alpha 129 river, 130 sea, 131 ocean
+	for c in Game.water:
+		if not all.has(c):
+			road_img.set_pixel(c.x, c.y, Color8(0, 0, 0, 128 + Game.water_kind(c)))
 	road_tex.update(road_img)
 
 

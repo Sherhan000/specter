@@ -219,6 +219,19 @@ def lamp_post(cv, x, y, h=45, style="classic", name="light"):
                lambda u, v, L, D: solid_res(pole, u.shape))
         cv.box(x - 3.6, y - 3.6, h + 6, x + 3.6, y + 3.6, h + 7.5, flat(pole), flat(pole), flat(pole))
         cv.mark(name, x, y, h + 2)
+    elif style == "lantern":
+        # wrought-iron post with a scrolled cross-arm, two hanging lanterns and a ball on top
+        cv.cylinder(x, y, 1.8, 4, 10, lambda a, v, nx, ny: solid_res(pole * 1.1, a.shape))
+        cv.box(x - 9, y - 0.8, h - 1, x + 9, y + 0.8, h + 0.8, flat(pole), flat(pole), flat(pole))
+        for lx in (x - 8, x + 8):
+            cv.box(lx - 0.4, y - 0.4, h - 4, lx + 0.4, y + 0.4, h - 1, flat(pole), flat(pole), flat(pole))
+            cv.box(lx - 2.6, y - 2.6, h - 11, lx + 2.6, y + 2.6, h - 4,
+                   lambda u, v, L, H: glow_res("ffd890", u.shape), lambda u, v, L, H: glow_res("f8c878", u.shape),
+                   lambda u, v, L, D: solid_res(pole, u.shape))
+            cv.box(lx - 3.2, y - 3.2, h - 4, lx + 3.2, y + 3.2, h - 2.8, flat(pole), flat(pole), flat(pole))
+            cv.box(lx - 1.4, y - 1.4, h - 12.5, lx + 1.4, y + 1.4, h - 11, flat(pole), flat(pole), flat(pole))
+        cv.ellipsoid(x, y, h + 3, 2, 2, 2, lambda wx, wy, wz, nx, ny, nz: solid_res(C("c8a040"), wx.shape))
+        cv.mark(name, x, y, h - 7)
     else:
         cv.box(x - 1, y - 1, h - 1, x + 12, y + 1, h + 1, flat(pole), flat(pole), flat(pole))
         cv.box(x + 6, y - 2, h - 2.5, x + 13, y + 2, h - 1, lambda u, v, L, H: glow_res("f4f0e0", u.shape),

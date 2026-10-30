@@ -366,6 +366,52 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	return vec4(c, 1.0);
 }
 
+// ------------------------------------------------------------------ water dug by the player
+// The road texture's alpha carries it: 129 river, 130 sea, 131 ocean (255 = road without water).
+int water_at(ivec2 p) {
+	int a = int(texelFetch(road_tex, p, 0).a * 255.0 + 0.5);
+	return (a > 128 && a < 140) ? a - 128 : 0;
+}
+
+// Distance to the nearest dry tile around: the shore follows it, so neighbouring water tiles merge
+// into one shape and the banks come out rounded.
+vec3 player_water(vec2 g, ivec2 t, int kind, vec3 ground, out float field) {
+	float dmin = 10.0;
+	for (int dy = -1; dy <= 1; dy++) {
+		for (int dx = -1; dx <= 1; dx++) {
+			ivec2 n = t + ivec2(dx, dy);
+			if ((dx != 0 || dy != 0) && water_at(n) == 0) {
+				vec2 q = max(abs(g - (vec2(n) + 0.5)) - 0.5, vec2(0.0));
+				dmin = min(dmin, length(q));
+			}
+		}
+	}
+	field = dmin;
+	vec4 nz = texture(noise_tex, g / 2.5);
+	float fw = dmin + (nz.r - 0.5) * 0.1 + (texture(noise_tex, g / 7.0 + 0.4).g - 0.5) * 0.14;
+	vec3 sand = tex_g(3.0, g, 0.5) * vec3(1.15, 1.1, 0.95);
+	vec3 c = mix(ground, sand, smoothstep(0.0, 0.05, fw));
+	float wm = smoothstep(0.13, 0.17, fw);
+	if (wm > 0.0) {
+		float deep = smoothstep(0.2, 0.9, dmin);
+		vec3 shallow = kind == 1 ? vec3(0.34, 0.6, 0.62) : kind == 2 ? vec3(0.22, 0.52, 0.66) : vec3(0.16, 0.42, 0.62);
+		vec3 deepc = kind == 1 ? vec3(0.2, 0.44, 0.52) : kind == 2 ? vec3(0.1, 0.3, 0.5) : vec3(0.04, 0.16, 0.36);
+		vec3 wc = mix(shallow, deepc, deep);
+		float sp = kind == 1 ? 0.06 : 0.025;
+		float rip = texture(noise_tex, g / 3.0 + vec2(TIME * sp, TIME * sp * 0.6)).b;
+		float rip2 = texture(noise_tex, g / 2.0 - vec2(TIME * sp * 0.8, -TIME * sp * 0.5)).b;
+		wc += smoothstep(0.62, 0.7, (rip + rip2) * 0.5) * (kind == 3 ? 0.16 : 0.12);
+		if (kind >= 2) {
+			// surf: foam lines running along the shore
+			float band = smoothstep(0.15, 0.18, fw) * (1.0 - smoothstep(0.22, 0.4, fw));
+			float wave = step(0.55, fract(fw * 12.0 - TIME * 0.35 + nz.g * 0.6));
+			wc = mix(wc, vec3(0.92, 0.96, 0.98), band * wave * (kind == 3 ? 0.85 : 0.5));
+		}
+		c = mix(c, wc, wm);
+	}
+	return c;
+}
+
 void fragment() {
 	vec2 g = vec2((wpos.x / 160.0 + wpos.y / 80.0) * 0.5, (wpos.y / 80.0 - wpos.x / 160.0) * 0.5);
 	float sum = g.x + g.y;
@@ -380,9 +426,26 @@ void fragment() {
 	bool on_map = t.x >= 0 && t.y >= 0 && t.x < int(map_size) && t.y < int(map_size);
 	if (on_map) {
 		ivec4 d = ivec4(texelFetch(road_tex, t, 0) * 255.0 + 0.5);
+		int wk = (d.a > 128 && d.a < 140) ? d.a - 128 : 0;
+		float wfield = 0.0;
+		if (wk > 0) {
+			c = player_water(g, t, wk, ground, wfield);
+		}
 		if (d.r > 0) {
 			vec4 r = road(g, f, d, ground);
-			c = mix(c, r.rgb, r.a);
+			if (wk > 0) {
+				// a bridge: the deck with railings, water and its shadow on both sides
+				vec3 mb;
+				float db = carriage(f, d.g & 15, 0.33, mb);
+				float deck = 1.0 - smoothstep(-0.004, 0.004, db);
+				c = mix(c, c * 0.55, (1.0 - deck) * (1.0 - smoothstep(0.0, 0.08, db)) * 0.7);
+				r.a *= deck;
+				c = mix(c, r.rgb, r.a);
+				float rail = (1.0 - smoothstep(0.004, 0.01, abs(db + 0.012))) * step(0.5, fract((f.x + f.y) * 14.0) + 0.4);
+				c = mix(c, vec3(0.86, 0.86, 0.9), rail * 0.9);
+			} else {
+				c = mix(c, r.rgb, r.a);
+			}
 		}
 	}
 	// seasons and weather

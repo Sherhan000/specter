@@ -484,6 +484,7 @@ def gen_props(out):
     c = U / 2
     _prop("lamp_classic", lambda cv: kit.lamp_post(cv, c, c, 45, "classic"), out, meta)
     _prop("lamp_modern", lambda cv: kit.lamp_post(cv, c, c, 55, "modern"), out, meta)
+    _prop("lamp_lantern", lambda cv: kit.lamp_post(cv, c, c, 50, "lantern"), out, meta)
 
     def tl(cv, axis):
         pole = flat("3a3c42")

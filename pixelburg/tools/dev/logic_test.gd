@@ -218,7 +218,58 @@ func _ready() -> void:
 	Game.roads = saved_roads
 	check(Data.B.has("sport_tower") and Data.B.sport_tower.svc == "sport", "sports tower is a sports service")
 	city.hud._set_cat("home")
+	city.start_road()
 	check(city.hud.road_types.get_child_count() == Data.ROAD_ORDER.size() + 1, "road bar lists every road type")
+	city.set_tool("water")
+	check(city.hud.road_types.get_child_count() == 2 and city.hud.tool_tabs.visible, "water tool: dig and fill in")
+	city.cancel_mode()
+	check(Assets.units().props.has("lamp_lantern"), "third street lamp style")
+
+	# ------------------------------------------------ water, bridges, walls, street decoration
+	Game.coins = 999999
+	var free_land: Array[Vector2i] = []
+	for yy in range(c - 12, c + 12):
+		for xx in range(c - 12, c + 12):
+			var t := Vector2i(xx, yy)
+			if Game.is_owned(t) and not Game.occ.has(t) and not Game.roads.has(t):
+				free_land.append(t)
+	var line: Array[Vector2i] = []
+	var road_tile: Vector2i = Game.roads.keys()[0]
+	var house_tile: Vector2i = Game.occ.keys()[0]
+	line.append(road_tile)
+	line.append(house_tile)
+	line.append(free_land[0])
+	check(Game.dig_water(line), "water dug")
+	check(Game.water.has(road_tile) and Game.roads.has(road_tile), "a river over a road becomes a bridge")
+	check(not Game.water.has(house_tile), "water flows around houses, not over them")
+	check(Game.water_kind(free_land[0]) == 1, "a little water is a river")
+	check(Game.place_problem("bakery", free_land[0].x, free_land[0].y) != "", "no building on the water")
+	var lake: Array[Vector2i] = []
+	for t in free_land:
+		if lake.size() < Data.WATER_OCEAN:
+			lake.append(t)
+	Game.dig_water(lake)
+	var biggest := 0
+	for t in Game.water:
+		biggest = maxi(biggest, Game.water_kind(t))
+	check(biggest >= 2, "joined water grows into a sea or an ocean (%d)" % biggest)
+	city.water_life.refresh()
+	check(city.water_life.agents.size() > 0, "boats, ducks or gulls on the water (%d)" % city.water_life.agents.size())
+	Game.save_game()
+	var wn := Game.water.size()
+	Game.load_game()
+	check(Game.water.size() == wn, "water saved and loaded")
+	var all_water: Array[Vector2i] = []
+	all_water.assign(Game.water.keys())
+	Game.fill_water(all_water)
+	check(Game.water.is_empty(), "water filled in")
+	var wall_line: Array[Vector2i] = [free_land[0], free_land[1]]
+	check(Game.build_walls(wall_line, "stone") and Game.walls.size() == 2, "stone wall built")
+	check(Game.place_problem("bakery", free_land[0].x, free_land[0].y) != "", "no building on a wall")
+	check(Game.remove_walls(wall_line) and Game.walls.is_empty(), "wall removed")
+	var deco_line: Array[Vector2i] = [road_tile]
+	check(Game.decorate_roads(deco_line, "planters") and Game.road_deco.has(road_tile), "street decorated with flower pots")
+	check(Game.decorate_roads(deco_line, "none") and Game.road_deco.is_empty(), "street decoration removed")
 	check(Data.HOTELS.size() == 5 and Data.HOTELS.all(func(h): return Data.tab_of(h) == "hotel" and Data.B[h].get("highway", false)),
 		"five hotels in their own tab, opened by the highway")
 	Game.level = 30

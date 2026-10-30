@@ -33,6 +33,8 @@ var mode_rot: TextureButton
 var mode_land: TextureButton
 var _ok_enabled := false
 var road_types: HFlowContainer
+var tool_tabs: HBoxContainer
+var _types_tool := ""
 var lamp_types: HBoxContainer
 var build_menu: PanelContainer
 var build_cards: HBoxContainer
@@ -583,19 +585,22 @@ func _build_mode_bar() -> void:
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 3)
 	h.add_child(v)
+	tool_tabs = HBoxContainer.new()
+	tool_tabs.add_theme_constant_override("separation", 4)
+	v.add_child(tool_tabs)
+	for tl in ["road", "water", "wall", "deco"]:
+		var tb := button(Loc.t("tool_" + tl), "", "orange", func(): city.set_tool(tl))
+		tb.set_meta("tool", tl)
+		tb.add_theme_font_size_override("font_size", 11)
+		tool_tabs.add_child(tb)
 	road_types = HFlowContainer.new()
 	road_types.add_theme_constant_override("h_separation", 4)
 	road_types.add_theme_constant_override("v_separation", 3)
 	v.add_child(road_types)
-	for t in Data.ROAD_ORDER + ["remove"]:
-		var b := button(Loc.pick(Data.ROADS[t].name) if t != "remove" else Loc.t("road_remove"), "remove" if t == "remove" else "",
-			"red" if t == "remove" else "blue", func(): city.set_road_type(t))
-		b.set_meta("road", t)
-		road_types.add_child(b)
 	lamp_types = HBoxContainer.new()
 	lamp_types.add_theme_constant_override("separation", 4)
 	v.add_child(lamp_types)
-	for st in ["classic", "modern"]:
+	for st in ["classic", "modern", "lantern"]:
 		var b := button(Loc.t("lamp_" + st), "", "blue", func():
 			city.lamp_style = st
 			show_lamp_bar())
@@ -641,6 +646,7 @@ func _show_bar() -> void:
 
 func show_mode_bar(t: String, sub: String, can_confirm: bool) -> void:
 	road_types.visible = false
+	tool_tabs.visible = false
 	lamp_types.visible = false
 	mode_rot.visible = city.mode in [city.Mode.PLACE, city.Mode.MOVE]
 	mode_land.visible = city.mode == city.Mode.LAND
@@ -680,14 +686,27 @@ func show_road_bar(sub: String, can_confirm: bool) -> void:
 	mode_rot.visible = false
 	mode_land.visible = false
 	road_types.visible = true
+	tool_tabs.visible = true
 	lamp_types.visible = false
 	mode_title.visible = false
 	mode_hint.visible = false
+	for tb in tool_tabs.get_children():
+		tb.modulate = Color.WHITE if tb.get_meta("tool") == city.tool else Color(0.7, 0.7, 0.78)
+	if _types_tool != city.tool:
+		_types_tool = city.tool
+		for b in road_types.get_children():
+			road_types.remove_child(b)
+			b.queue_free()
+		for t in _tool_options(city.tool):
+			var rm: bool = t in ["remove", "fill", "none"]
+			var b := button("", "remove" if rm else "", "red" if rm else "blue", func(): city.set_road_type(t))
+			b.set_meta("road", t)
+			road_types.add_child(b)
 	for b in road_types.get_children():
 		var t: String = b.get_meta("road")
 		b.modulate = Color.WHITE if t == city.road_type else Color(0.6, 0.6, 0.72)
-		b.text = "%s %d" % [Loc.pick(Data.ROADS[t].name), Data.ROADS[t].cost] if t != "remove" else Loc.t("road_remove")
-	mode_sub.text = sub + "\n" + Loc.t("hint_road_drag")
+		b.text = _tool_label(city.tool, t)
+	mode_sub.text = sub + ("\n" + Loc.t("hint_road_drag") if city.tool == "road" else "")
 	mode_sub.visible = true
 	for c in mode_price.get_children():
 		c.queue_free()
@@ -695,10 +714,33 @@ func show_road_bar(sub: String, can_confirm: bool) -> void:
 	_show_bar()
 
 
+func _tool_options(tl: String) -> Array:
+	match tl:
+		"water":
+			return ["dig", "fill"]
+		"wall":
+			return Data.WALL_ORDER + ["remove"]
+		"deco":
+			return Data.ROAD_DECO_ORDER + ["none"]
+	return Data.ROAD_ORDER + ["remove"]
+
+
+func _tool_label(tl: String, t: String) -> String:
+	match tl:
+		"water":
+			return "%s %d" % [Loc.t("water_dig"), Data.WATER_COST] if t == "dig" else Loc.t("water_fill")
+		"wall":
+			return "%s %d" % [Loc.pick(Data.WALLS[t].name), Data.WALLS[t].cost] if t != "remove" else Loc.t("wall_remove")
+		"deco":
+			return "%s %d" % [Loc.pick(Data.ROAD_DECO[t].name), Data.ROAD_DECO[t].cost] if t != "none" else Loc.t("deco_remove")
+	return "%s %d" % [Loc.pick(Data.ROADS[t].name), Data.ROADS[t].cost] if t != "remove" else Loc.t("road_remove")
+
+
 func show_lamp_bar() -> void:
 	mode_rot.visible = false
 	mode_land.visible = false
 	road_types.visible = false
+	tool_tabs.visible = false
 	lamp_types.visible = true
 	mode_title.text = Data.name_of("lamp")
 	mode_title.visible = true

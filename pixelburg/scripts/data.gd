@@ -59,6 +59,22 @@ const ROADS := {
 	"highway": {"name": ["Трасса", "Highway"], "cost": 0, "upkeep": 0.0, "row": 5, "speed": 1.6},
 	"country": {"name": ["Загородная дорога", "Country road"], "cost": 0, "upkeep": 0.0, "row": 6, "speed": 1.25},
 }
+## Water the player digs: a river joins into a sea at WATER_SEA tiles and an ocean at WATER_OCEAN.
+const WATER_COST := 12
+const WATER_SEA := 30
+const WATER_OCEAN := 120
+const WALLS := {
+	"stone": {"name": ["Каменная стена", "Stone wall"], "cost": 14},
+	"brick": {"name": ["Кирпичная стена", "Brick wall"], "cost": 18},
+}
+const WALL_ORDER := ["stone", "brick"]
+## Street improvements along the sidewalks.
+const ROAD_DECO := {
+	"railing": {"name": ["Кованая решётка", "Iron railing"], "cost": 10, "happy": 1},
+	"planters": {"name": ["Вазоны с цветами", "Flower pots"], "cost": 14, "happy": 2},
+	"bollards": {"name": ["Столбики", "Bollards"], "cost": 6, "happy": 0},
+}
+const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
 const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.

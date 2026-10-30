@@ -25,6 +25,8 @@ var hud: CanvasLayer
 var life: Life
 var weather: WeatherFx
 var metro: MetroView
+var water_life: WaterLife
+var street_props: StreetProps
 
 var views := {}          ## uid -> BuildingView
 var lamp_nodes := {}     ## quarter Vector2i -> LampView
@@ -40,6 +42,10 @@ var place_id := ""
 var place_rot := 0
 var rot_auto := true
 var road_type := "asphalt"
+var tool := "road"           ## what the road mode paints: road | water | wall | deco
+var tool_types := {"road": "asphalt", "water": "dig", "wall": "stone", "deco": "railing"}
+var stroke: Array[Vector2i] = []   ## tiles under the finger while digging water
+var _stroke_last := Vector2i(-1, -1)
 var lamp_style := "classic"
 var ghost: Sprite2D
 var ghost_tile := Vector2i.ZERO
@@ -113,6 +119,16 @@ func _ready() -> void:
 	Events.crime.connect(func(caught): life.start_chase(caught))
 	_rebuild_zoo_animals()
 	metro.refresh()
+	water_life = WaterLife.new()
+	water_life.city = self
+	add_child(water_life)
+	water_life.refresh()
+	street_props = StreetProps.new()
+	street_props.city = self
+	add_child(street_props)
+	street_props.refresh()
+	Game.water_changed.connect(_on_water_changed)
+	Game.walls_changed.connect(street_props.refresh)
 	for sig in [Game.building_updated, Game.building_removed, Game.building_moved]:
 		sig.connect(func(_uid): _on_metro_check.call_deferred())
 	_update_daylight()
@@ -281,7 +297,15 @@ func _on_building_moved(uid: int) -> void:
 	life.building_moved(uid)
 
 
+func _on_water_changed() -> void:
+	ground.update_roads(Game.net)
+	scenery.rebuild_land_trees()
+	water_life.refresh()
+
+
 func _on_roads_changed() -> void:
+	if street_props:
+		street_props.refresh()
 	ground.update_roads(Game.net)
 	scenery.rebuild_land_trees()
 	_rebuild_lights()
@@ -341,6 +365,8 @@ func _process(delta: float) -> void:
 	if _pressing and not _moved and mode == Mode.NONE and _time - _press_time > LONG_PRESS:
 		_pressing = false
 		_long_press(_press_pos)
+	if water_life:
+		water_life.set_zoom(camera.zoom.x)
 	_cull_t -= delta
 	if _cull_t <= 0.0:
 		_cull_t = 0.25
@@ -597,6 +623,11 @@ func _drag(p: Vector2, rel: Vector2) -> void:
 	if _drag_ghost:
 		_set_ghost_tile(_tile_for_size(tile, _ghost_size()))
 		return
+	if _drawing_road and tool == "water":
+		_brush(Iso.to_tile(screen_to_world(_press_pos)))
+		_brush(tile)
+		hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
+		return
 	if _drawing_road:
 		var start := Iso.to_tile(screen_to_world(_press_pos))
 		road_start = start
@@ -637,9 +668,47 @@ func _long_press(p: Vector2) -> void:
 
 
 func _road_path(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
+	match tool:
+		"wall":
+			if road_type == "remove":
+				return _tiles(Game._straight_path(a, b).filter(func(t): return Game.walls.has(t)))
+			return Game.wall_tiles(Game._straight_path(a, b), road_type)
+		"deco":
+			if road_type == "none":
+				return _tiles(Game._straight_path(a, b).filter(func(t): return Game.road_deco.has(t)))
+			return Game.deco_tiles(Game._straight_path(a, b), road_type)
 	if road_type == "remove":
 		return Game.removable_path(a, b)
 	return Game.road_path(a, b, road_type)
+
+
+## Water brush: every tile the finger passes over joins the stroke.
+func _brush(tile: Vector2i) -> void:
+	var line: Array[Vector2i] = [tile] if _stroke_last == Vector2i(-1, -1) else Game._straight_path(_stroke_last, tile)
+	_stroke_last = tile
+	for t in line:
+		if not stroke.has(t):
+			stroke.append(t)
+	if road_type == "fill":
+		_set_road_preview(_tiles(stroke.filter(func(t): return Game.water.has(t))))
+	else:
+		_set_road_preview(Game.water_tiles(stroke))
+
+
+func _removing() -> bool:
+	return road_type in ["remove", "fill", "none"]
+
+
+func set_tool(t: String) -> void:
+	tool_types[tool] = road_type
+	tool = t
+	road_type = tool_types[t]
+	stroke.clear()
+	_stroke_last = Vector2i(-1, -1)
+	road_start = Vector2i(-1, -1)
+	_last_road_end = Vector2i(-1, -1)
+	_set_road_preview(_tiles([]))
+	hud.show_road_bar(_road_cost_text(), false)
 
 
 func _tap(screen_p: Vector2) -> void:
@@ -689,6 +758,10 @@ func _tap(screen_p: Vector2) -> void:
 				confirm_mode()
 			else:
 				_set_ghost_tile(_tile_for_size(tile, _ghost_size()))
+		Mode.ROAD when tool == "water":
+			_stroke_last = Vector2i(-1, -1)
+			_brush(tile)
+			hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
 		Mode.ROAD:
 			if road_start == Vector2i(-1, -1):
 				road_start = tile
@@ -899,9 +972,12 @@ func start_move(uid: int) -> void:
 	hud.show_mode_bar(Loc.t("move_title") % Data.name_of(b.id), Loc.t("move_hint"), true)
 
 
-func start_road() -> void:
+func start_road(p_tool := "road") -> void:
 	cancel_mode()
 	mode = Mode.ROAD
+	tool_types[tool] = road_type
+	tool = p_tool
+	road_type = tool_types[tool]
 	road_start = Vector2i(-1, -1)
 	_last_road_end = Vector2i(-1, -1)
 	road_tiles.clear()
@@ -943,6 +1019,14 @@ func start_link(uid: int) -> void:
 
 func set_road_type(t: String) -> void:
 	road_type = t
+	if tool == "water":
+		_stroke_last = Vector2i(-1, -1)
+		var keep := stroke.duplicate()
+		stroke.clear()
+		for s in keep:
+			_brush(s)
+		hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
+		return
 	if road_start != Vector2i(-1, -1):
 		var end := _last_road_end if _last_road_end != Vector2i(-1, -1) else road_start
 		_set_road_preview(_road_path(road_start, end))
@@ -971,6 +1055,8 @@ func cancel_mode() -> void:
 	link_from = 0
 	road_tiles.clear()
 	road_start = Vector2i(-1, -1)
+	stroke.clear()
+	_stroke_last = Vector2i(-1, -1)
 	demolish_target = {}
 	if hud:
 		hud.hide_mode_bar()
@@ -989,7 +1075,18 @@ func confirm_mode() -> void:
 			if Game.move_building(move_uid, ghost_tile.x, ghost_tile.y, place_rot):
 				cancel_mode()
 		Mode.ROAD:
-			var ok := Game.remove_roads(road_tiles) if road_type == "remove" else Game.build_roads(road_tiles, road_type)
+			var ok := false
+			match tool:
+				"water":
+					ok = Game.fill_water(road_tiles) if road_type == "fill" else Game.dig_water(road_tiles)
+					stroke.clear()
+					_stroke_last = Vector2i(-1, -1)
+				"wall":
+					ok = Game.remove_walls(road_tiles) if road_type == "remove" else Game.build_walls(road_tiles, road_type)
+				"deco":
+					ok = Game.decorate_roads(road_tiles, road_type)
+				_:
+					ok = Game.remove_roads(road_tiles) if road_type == "remove" else Game.build_roads(road_tiles, road_type)
 			if ok:
 				road_start = Vector2i(-1, -1)
 				_last_road_end = Vector2i(-1, -1)
@@ -1079,12 +1176,19 @@ func _add_cursors(tiles: Array[Vector2i], tex_name: String) -> void:
 
 func _set_road_preview(tiles: Array[Vector2i]) -> void:
 	road_tiles = tiles
-	_show_cursors(tiles, "cursor_bad" if road_type == "remove" else "cursor_ok")
+	_show_cursors(tiles, "cursor_bad" if _removing() else "cursor_ok")
 	if road_start != Vector2i(-1, -1) and not tiles.has(road_start):
 		_add_cursors(_tiles([road_start]), "cursor_sel")
 
 
 func _road_cost_text() -> String:
+	if tool != "road":
+		if road_tiles.is_empty():
+			return Loc.t({"water": "hint_water", "wall": "hint_wall", "deco": "hint_deco"}[tool])
+		if _removing():
+			return "%d" % road_tiles.size()
+		var each := Data.WATER_COST if tool == "water" else int((Data.WALLS if tool == "wall" else Data.ROAD_DECO)[road_type].cost)
+		return Loc.t("paint_cost") % [road_tiles.size(), Loc.num(each * road_tiles.size())]
 	if road_tiles.is_empty():
 		if road_type == "remove":
 			return Loc.t("hint_road_remove")
