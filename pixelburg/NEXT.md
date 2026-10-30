@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–9.
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–10.
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы).
@@ -12,7 +12,14 @@
 - Аэропорт (4x4, один, нужна дорога к трассе), рейсы в 16 стран, аналитика прилётов (panels.airport).
 - Фонари: classic, modern, lantern. «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (пункт 9)
+## Сделано в последней сессии (пункт 10)
+- Двери: scripts/door_view.gd (DoorView, вместо чёрного Polygon2D в building_view.door). Створка на дальнем косяке поворачивается внутрь (до ~100°, ложится к скрытой стене),
+  широкие проёмы (≥40 px) — две створки, ≥30 px — стеклянные. За створкой комната: задняя стена, пол, боковая стена, коврик, лампа;
+  всё обрезано по проёму (Geometry2D.intersect_polygons). Ночью комната ярче, свет на тротуар (glow_mat). Новая графика не нужна —
+  берёт метки door_a/door_b/door_t из meta.json. Узел обрабатывается только пока дверь открыта. Проверки в logic_test, Data.NEWS дополнен.
+- Проверено скриншотами (xvfb, день/ночь, середина поворота). На телефоне глазами не смотрели.
+
+## Пункт 9 (ранее)
 - Аэропорт: Data.B "airport" (service, svc "airport", unique, highway, 4x4, зоны industry/leisure/city, ур. 16). Графика tools/art/b_airport.py (модуль в MODULES): терминал, вышка, полоса, самолёты.
 - Рейсы: Data.COUNTRIES/COUNTRY_ORDER (16 стран: цена, уровень, флаг из 3 полос, pax, spend), FLIGHT_CHANCE. Game.flights (купленные), Game.arrivals (всего), Game.arrivals_day (за день, сброс в _end_of_day) — в сохранении (ключи flights/arrivals/arrivals_day, SAVE_VERSION не менялся).
 - Game.buy_flight(id), land_flight(id) (пассажиры → доход "flights", больше с отелями, закон tour), _update_airport() в _on_hour (с 6:00, шанс на рейс), arrival_stats(), arrivals_total(today), сигнал plane_landed.

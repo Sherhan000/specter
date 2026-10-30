@@ -566,6 +566,24 @@ func _ready() -> void:
 	await get_tree().create_timer(1.0).timeout
 	check(city.life.persons.size() > 0, "residents created (%d)" % city.life.persons.size())
 	check(city.life.cars.size() > 0, "cars in town (%d)" % city.life.cars.size())
+	var dv: BuildingView = null
+	for uid in city.views:
+		if city.views[uid].door.has_opening():
+			dv = city.views[uid]
+			break
+	check(dv != null, "buildings have doors that open")
+	if dv:
+		var dr: DoorView = dv.door
+		dv.open_door(1.4)
+		dr.step(0.2, 1.0)
+		dr.step(0.2, 1.0)
+		check(dr.visible and dr.angle > 1.2 and dr.inward.y < 0.0, "door leaf swings into the house (%.2f rad)" % dr.angle)
+		check(dr._clip(PackedVector2Array([dr.a, dr.b, dr.b + dr.up, dr.a + dr.up])).size() == 1, "room is drawn inside the opening")
+		dr.step(0.55, 1.0)
+		dr.step(0.15, 1.0)
+		check(dr.angle > 0.0 and dr.angle < DoorView.MAX_ANGLE * 0.9, "door closes slowly (%.2f rad)" % dr.angle)
+		dr.step(0.5, 1.0)
+		check(not dr.visible and dr.angle == 0.0, "door shut again")
 
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200

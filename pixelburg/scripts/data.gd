@@ -82,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Двери открываются по-настоящему: створка поворачивается внутрь, видно освещённую комнату, а ночью свет падает на тротуар", "Doors open for real: the leaf swings inside, you can see the lit room, and at night light spills onto the sidewalk"],
 	["Аэропорт: купите рейсы в 16 стран — самолёты привозят путешественников со всего мира, а аналитика покажет, из какой страны пришло больше всего людей", "Airport: buy flights to 16 countries; planes bring travellers from all over the world, and the analytics show which country sends the most people"],
 	["Пляж за границей карты: купите участки пляжа у моря и стройте зонты, спасательную вышку и пляжный бар", "Beach beyond the map border: buy beach plots by the sea and build umbrellas, a lifeguard tower and a beach bar"],
 	["Река, море и океан: копайте воду пальцем, над дорогой будет мост, у домов — берег", "Rivers, seas and oceans: dig water with your finger, roads become bridges"],

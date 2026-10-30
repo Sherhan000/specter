@@ -18,7 +18,7 @@ var bubble: Node2D
 var bubble_icon: Sprite2D
 var status_icon: Sprite2D
 var progress: ProgressBarNode
-var door: Polygon2D
+var door: DoorView
 var garland: Node2D
 var fire_fx: Array[Node2D] = []
 var heads: Array[Sprite2D] = []
@@ -33,7 +33,6 @@ var _lvl := 0
 var _busy := false
 var _anim_t := 0.0
 var _state_t := 0.0
-var _door_t := 0.0
 var _phase := randf() * TAU
 var _decals: Node2D
 var _shadows: Node2D
@@ -73,8 +72,7 @@ func setup(p_uid: int, decal_layer: Node2D, shadow_layer: Node2D) -> void:
 	glow.centered = false
 	glow.material = Assets.glow_mat
 	add_child(glow)
-	door = Polygon2D.new()
-	door.visible = false
+	door = DoorView.new()
 	add_child(door)
 
 	progress = ProgressBarNode.new()
@@ -171,8 +169,7 @@ func _setup_extras(m: Dictionary) -> void:
 	for h in heads:
 		h.queue_free()
 	heads.clear()
-	door.visible = false
-	door.polygon = PackedVector2Array()
+	door.clear()
 	if m.is_empty():
 		return
 	for key in m.points:
@@ -251,8 +248,7 @@ func _setup_extras(m: Dictionary) -> void:
 		var a := Vector2(m.points.door_a[0], m.points.door_a[1]) + _shift
 		var b2 := Vector2(m.points.door_b[0], m.points.door_b[1]) + _shift
 		var t := Vector2(m.points.door_t[0], m.points.door_t[1]) + _shift
-		var hgt := a.y - t.y
-		door.polygon = PackedVector2Array([a, b2, b2 - Vector2(0, hgt), a - Vector2(0, hgt)])
+		door.setup(a, b2, t)
 
 
 ## Grid position of the door (a point on the facade) and of the lot entrance on the street side.
@@ -271,8 +267,7 @@ func entry_grid() -> Vector2:
 
 
 func open_door(seconds := 1.4) -> void:
-	_door_t = seconds
-	door.visible = door.polygon.size() > 0
+	door.open(seconds)
 
 
 func _update_fire(on: bool) -> void:
@@ -339,11 +334,6 @@ func _process(delta: float) -> void:
 	if garland:
 		for i in range(1, garland.get_child_count()):
 			garland.get_child(i).modulate.a = 0.35 + night * 0.65 * (0.7 + 0.3 * sin(_anim_t * 3.0 + i))
-	if _door_t > 0.0:
-		_door_t -= delta
-		door.color = Color(0.1, 0.07, 0.06).lerp(Color(1.0, 0.85, 0.5), night * 0.9)
-		if _door_t <= 0.0:
-			door.visible = false
 	if bubble.visible:
 		bubble.position.y = top_y() + 6 + sin(_anim_t * 3.0 + _phase) * 4.0
 	for f in fire_fx:
