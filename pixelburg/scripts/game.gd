@@ -1445,7 +1445,7 @@ func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
 				return "wrong_zone"
 	if id == "zoo" and ignore_uid == 0 and caught.size() < Data.ZOO_ANIMALS:
 		return "need_animals"
-	if Data.B[id].get("highway", false) and not is_connected_to_highway():
+	if id != "road" and Data.B[id].get("highway", false) and not is_connected_to_highway():
 		return "need_highway"
 	return ""
 

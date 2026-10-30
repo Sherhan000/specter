@@ -196,6 +196,12 @@ func _ready() -> void:
 	for t in Data.ROAD_ORDER:
 		check(Data.ROADS.has(t) and Ground.ROAD_IDS.has(t), "road type %s drawn by the ground shader" % t)
 	check(Data.ROAD_ORDER.size() >= 7, "three new road types")
+	city.hud._set_cat("hotel")
+	await get_tree().process_frame
+	var cards: int = city.hud.build_cards.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
+	check(cards == 1 + Data.HOTELS.size(), "hotels window: a note and five hotel cards (%d)" % cards)
+	city.hud._set_cat("home")
+	check(city.hud.road_types.get_child_count() == Data.ROAD_ORDER.size() + 1, "road bar lists every road type")
 	check(Data.HOTELS.size() == 5 and Data.HOTELS.all(func(h): return Data.tab_of(h) == "hotel" and Data.B[h].get("highway", false)),
 		"five hotels in their own tab, opened by the highway")
 	Game.level = 30
