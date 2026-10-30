@@ -1,5 +1,12 @@
 # Что дальше
 
+## Релиз 1.3.1 (code 5)
+- В Google Play загружен code 5 (версия 1.3.1), собран из ветки claude/trusting-volta-t22d7u (в ней слиты все claude/*).
+- Сборка на Linux: Godot 4.7.2 + templates, JDK 17, Android SDK (platform 36, build-tools 36.0.0), `--install-android-build-template`.
+  Подпись через GODOT_ANDROID_KEYSTORE_RELEASE_PATH/USER/PASSWORD (ключ не в репозитории). logic_test: «DONE: 0 failed».
+- В контейнере Maven Central отдаёт 429 — Gradle надо направить на зеркало maven-central.storage-download.googleapis.com (init-скрипт в ~/.gradle/init.d).
+- APK для телефона: `bundletool build-apks --mode=universal` (подпись upload-ключом; если стоит версия из Play — сначала удалить её).
+
 ## Сделано (1.3.0)
 - Реальный масштаб, 55 зданий с поворотом, жители с работой и машинами, светофоры, горизонт с горами.
 - Новый интерфейс (Inter, иконки пользователя), обучение с блокировкой кнопок, удаление дорог.
