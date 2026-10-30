@@ -317,7 +317,7 @@ func _disasters(_h: int) -> void:
 		fire_p *= 1.25
 	if _rng.randf() < fire_p:
 		start_fire()
-	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.law_mult("crime"):
+	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.law_mult("crime") * Game.patrol_mult():
 		var caught := Game.has_service("police")
 		if caught:
 			Game.add_rep(2)

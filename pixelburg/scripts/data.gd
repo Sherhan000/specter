@@ -149,6 +149,8 @@ const B := {
 		"jobs": 5, "upkeep": 45, "svc": "fire", "radius": 20, "happy": 5},
 	"police": {"name": ["Полиция", "Police"], "cat": "service", "zones": ["city", "industry"], "size": 2, "cost": 4500, "lvl": 6, "time": 110,
 		"jobs": 6, "upkeep": 50, "svc": "police", "radius": 20, "happy": 7},
+	"watchtower": {"name": ["Дозорная башня", "Watchtower"], "cat": "service", "zones": ["city", "industry"], "size": 1, "cost": 2200, "lvl": 5, "time": 70,
+		"jobs": 2, "upkeep": 20, "svc": "patrol", "radius": 10, "happy": 2},
 	"gym": {"name": ["Спорткомплекс", "Sports Centre"], "cat": "service", "zones": ["city"], "size": 2, "cost": 3000, "lvl": 7, "time": 90,
 		"jobs": 4, "upkeep": 25, "svc": "sport", "radius": 14, "happy": 6},
 	"bank": {"name": ["Банк", "Bank"], "cat": "service", "zones": ["city"], "size": 2, "cost": 5000, "lvl": 7, "time": 120,
@@ -208,7 +210,7 @@ const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka
 	"cinema", "hotel", "mall", "sky_office", "sky_heli",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
@@ -233,6 +235,18 @@ const LAWS := {
 	"city_ads": {"name": ["Реклама города", "City ads"], "tour": 1.3, "rep": 0.2, "daily": 100},
 	"short_week": {"name": ["Четырёхдневка", "Four-day week"], "happy": 6, "biz": 0.85},
 }
+
+## Watchtower actions: checking papers catches petty crime (a fine, +rep, cuts crime risk for a while);
+## holding a gathering costs coins and lifts mood. Both run on a per-building cooldown (in-game hours).
+const TOWER_CHECK_COOLDOWN := 12
+const TOWER_CHECK_MIN := 60
+const TOWER_CHECK_MAX := 140
+const TOWER_PATROL_HOURS := 12   ## how long crime risk stays reduced after a check
+const TOWER_PATROL_MULT := 0.5
+const TOWER_MEETING_COST := 300
+const TOWER_MEETING_COOLDOWN := 24
+const TOWER_MEETING_HAPPY := 10
+const TOWER_MEETING_HOURS := 24
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget"]

@@ -1048,6 +1048,8 @@ func _refresh_info() -> void:
 						_info_key = ""), 26))
 			else:
 				info_actions.add_child(round_btn("link", "green", func(): city.start_link(uid), 26))
+		if d.get("svc", "") == "patrol":
+			info_actions.add_child(round_btn("police", "purple", func(): panels.watchtower(uid), 26))
 		info_actions.add_child(round_btn("info", "blue", func(): panels.building_details(uid), 26))
 	var sp2 := Control.new()
 	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL

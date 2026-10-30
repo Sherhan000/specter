@@ -65,6 +65,7 @@ var peak_pop := 0
 var caught: Array = []       ## species names of animals caught for the zoo
 var weather := "clear"
 var weather_until := 0       ## absolute hour when the weather changes
+var patrol_until := 0        ## absolute hour until which a recent watchtower check keeps crime risk down
 var mood: Array = []         ## temporary happiness modifiers [{"v", "until", "why"}]
 var ledger: Array = []       ## closed days, newest last
 var today := {}              ## running ledger of the current day
@@ -284,7 +285,8 @@ func _add_building(id: String, x: int, y: int, built: bool, lvl := 1, rot := -1)
 	if rot < 0:
 		rot = facing_for(x, y, maxi(1, Data.B[id].size), 0)
 	buildings[uid] = {"id": id, "x": x, "y": y, "lvl": lvl, "rot": rot, "built": built, "upg": false, "prog": 0.0,
-		"ready": false, "stocked": false, "occ": 0, "closed": false, "dmg": false, "priv": "", "link": 0, "fire": 0.0}
+		"ready": false, "stocked": false, "occ": 0, "closed": false, "dmg": false, "priv": "", "link": 0, "fire": 0.0,
+		"cd_check": 0, "cd_meet": 0}
 	_occupy(uid)
 	return uid
 
@@ -321,7 +323,7 @@ func to_dict() -> Dictionary:
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
-		"caught": caught, "weather": weather, "weather_until": weather_until, "mood": mood,
+		"caught": caught, "weather": weather, "weather_until": weather_until, "patrol_until": patrol_until, "mood": mood,
 		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "tutorial": tutorial, "lost": lost,
 		"events": Events.to_dict(), "power_store": power_store,
 	}
@@ -395,7 +397,8 @@ func from_dict(p: Dictionary) -> bool:
 		buildings[uid] = {"id": b.id, "x": int(b.x), "y": int(b.y), "lvl": clampi(int(b.get("lvl", 1)), 1, 3), "rot": int(b.get("rot", 0)),
 			"built": bool(b.built), "upg": bool(b.get("upg", false)), "prog": float(b.prog), "ready": bool(b.ready),
 			"stocked": bool(b.get("stocked", false)), "occ": int(b.get("occ", 0)), "closed": bool(b.get("closed", false)),
-			"dmg": bool(b.get("dmg", false)), "priv": str(b.get("priv", "")), "link": int(b.get("link", 0)), "fire": float(b.get("fire", 0.0))}
+			"dmg": bool(b.get("dmg", false)), "priv": str(b.get("priv", "")), "link": int(b.get("link", 0)), "fire": float(b.get("fire", 0.0)),
+			"cd_check": int(b.get("cd_check", 0)), "cd_meet": int(b.get("cd_meet", 0))}
 		_occupy(uid)
 	next_uid = int(p.next_uid)
 	claimed = p.claimed.map(func(v): return int(v))
@@ -414,6 +417,7 @@ func from_dict(p: Dictionary) -> bool:
 	caught = p.get("caught", []).map(func(v): return str(v))
 	weather = str(p.get("weather", "clear"))
 	weather_until = int(p.get("weather_until", 0))
+	patrol_until = int(p.get("patrol_until", 0))
 	power_store = float(p.get("power_store", 0.0))
 	mood = p.get("mood", [])
 	ledger = p.get("ledger", [])
@@ -1205,6 +1209,54 @@ func toggle_law(id: String) -> bool:
 		laws.append(id)
 	_recalc_utilities()
 	recalc()
+	return true
+
+
+# ====================================================================== watchtower
+## Multiplier on crime risk while a recent document check is still in effect.
+func patrol_mult() -> float:
+	return Data.TOWER_PATROL_MULT if abs_hour() < patrol_until else 1.0
+
+
+## Hours left before a tower's action is off cooldown (0 if ready now).
+func tower_cooldown(uid: int, meeting := false) -> int:
+	if not buildings.has(uid):
+		return 0
+	var b: Dictionary = buildings[uid]
+	var until := int(b.get("cd_meet" if meeting else "cd_check", 0))
+	return maxi(0, until - abs_hour())
+
+
+## Check residents' papers at a watchtower: a small fine, +reputation, and less crime risk for a while.
+## Returns the coins earned, or -1 if still on cooldown.
+func check_documents(uid: int) -> int:
+	if not buildings.has(uid) or tower_cooldown(uid) > 0:
+		return -1
+	var b: Dictionary = buildings[uid]
+	var reward: int = _rng.randi_range(Data.TOWER_CHECK_MIN, Data.TOWER_CHECK_MAX) * int(b.lvl)
+	_earn("patrol", reward)
+	add_rep(1.0)
+	patrol_until = abs_hour() + Data.TOWER_PATROL_HOURS
+	b.cd_check = abs_hour() + Data.TOWER_CHECK_COOLDOWN
+	sfx("done")
+	changed.emit()
+	save_game()
+	return reward
+
+
+## Hold a gathering at a watchtower: costs coins, lifts the city's mood for a while. Returns false if
+## it can't be paid for or is still on cooldown.
+func hold_meeting(uid: int) -> bool:
+	if not buildings.has(uid) or tower_cooldown(uid, true) > 0:
+		return false
+	if not pay(Data.TOWER_MEETING_COST, 0, "meeting"):
+		return false
+	var b: Dictionary = buildings[uid]
+	add_mood(Data.TOWER_MEETING_HAPPY, Data.TOWER_MEETING_HOURS, "meeting")
+	add_rep(1.0)
+	b.cd_meet = abs_hour() + Data.TOWER_MEETING_COOLDOWN
+	sfx("done")
+	save_game()
 	return true
 
 

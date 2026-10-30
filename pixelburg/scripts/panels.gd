@@ -340,6 +340,46 @@ func _law_effects(l: Dictionary) -> String:
 	return ", ".join(out)
 
 
+## Watchtower: check residents' papers (a fine, +reputation, less crime risk for a while),
+## or hold a gathering (coins, more happiness for a while). Each action has its own cooldown.
+func watchtower(uid: int) -> void:
+	if not Game.buildings.has(uid):
+		return
+	var v := _vbox(6)
+	var cd_doc := Game.tower_cooldown(uid)
+	var c1 := _card(v, 4)
+	var h1 := _hbox(6)
+	c1.add_child(h1)
+	hud.icon_rect("police", h1)
+	var lv1 := _vbox(1)
+	lv1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h1.add_child(lv1)
+	hud.title(Loc.t("check_docs"), lv1, 12, Color("2a5a2a"))
+	hud.text(Loc.t("check_docs_note") % [Data.TOWER_CHECK_MIN, Data.TOWER_CHECK_MAX], lv1, 10, Color("3a2a1e"), _w() - 150)
+	var b1: Button = hud.button(Loc.t("check_docs_go") if cd_doc <= 0 else Loc.duration(cd_doc * Data.DAY_LENGTH / 24.0), "", "green" if cd_doc <= 0 else "grey", func():
+		Game.check_documents(uid)
+		watchtower(uid))
+	b1.disabled = cd_doc > 0
+	h1.add_child(b1)
+	var cd_meet := Game.tower_cooldown(uid, true)
+	var can_meet := cd_meet <= 0 and Game.coins >= Data.TOWER_MEETING_COST
+	var c2 := _card(v, 4)
+	var h2 := _hbox(6)
+	c2.add_child(h2)
+	hud.icon_rect("chat", h2)
+	var lv2 := _vbox(1)
+	lv2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h2.add_child(lv2)
+	hud.title(Loc.t("meeting"), lv2, 12, Color("2a5a2a"))
+	hud.text(Loc.t("meeting_note") % [Data.TOWER_MEETING_COST, Data.TOWER_MEETING_HAPPY], lv2, 10, Color("3a2a1e"), _w() - 150)
+	var b2: Button = hud.button(Loc.t("meeting_go") % Data.TOWER_MEETING_COST if cd_meet <= 0 else Loc.duration(cd_meet * Data.DAY_LENGTH / 24.0), "", "green" if can_meet else "grey", func():
+		Game.hold_meeting(uid)
+		watchtower(uid))
+	b2.disabled = not can_meet
+	h2.add_child(b2)
+	hud.popup(Loc.t("watchtower_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
+
+
 func building_details(uid: int) -> void:
 	if not Game.buildings.has(uid):
 		return

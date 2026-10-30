@@ -172,6 +172,26 @@ func _ready() -> void:
 	check(Game.repay_loan() and Game.loan.is_empty(), "loan repaid early")
 	Game.demolish(bank)
 
+	# ------------------------------------------------ watchtower
+	var tower := Game._add_building("watchtower", c - 6, c - 3, true)
+	Game.recalc()
+	check(Game.tower_cooldown(tower) == 0, "watchtower ready at start")
+	c0 = Game.coins
+	var reward := Game.check_documents(tower)
+	check(reward > 0 and Game.coins == c0 + reward, "checking papers pays a fine")
+	check(Game.tower_cooldown(tower) > 0, "checking papers starts a cooldown")
+	check(Game.check_documents(tower) == -1, "checking papers again is blocked by the cooldown")
+	check(Game.patrol_mult() < 1.0, "a recent check lowers crime risk")
+	Game.coins = Data.TOWER_MEETING_COST - 1
+	check(not Game.hold_meeting(tower), "meeting needs enough coins")
+	Game.coins = Data.TOWER_MEETING_COST + 500
+	c0 = Game.coins
+	var mood_before := Game.mood.size()
+	check(Game.hold_meeting(tower) and Game.coins == c0 - Data.TOWER_MEETING_COST, "meeting costs coins")
+	check(Game.mood.size() == mood_before + 1, "meeting lifts the mood")
+	check(Game.tower_cooldown(tower, true) > 0, "meeting starts its own cooldown")
+	Game.demolish(tower)
+
 	# ------------------------------------------------ animals and zoo
 	Game.level = 9
 	check(Game.place_problem("zoo", Data.LAND0 + 16, Data.LAND0 + 24) != "", "zoo needs animals and owned leisure land")

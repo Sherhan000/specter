@@ -205,6 +205,30 @@ def police(L, o):
     return cv
 
 
+def watchtower(L, o):
+    """Timber lookout tower on stilts, with a guard booth at street level for checking papers."""
+    cv = Canvas(1, 170)
+    T = Orient(cv, o)
+    H = [66, 82, 98][L - 1]
+    booth = facade("wood", "8a5a34", win=Win(w=14, h=16, sill=10, sp=22, margin=8, fh=28, frame="f4f0e8", group="work"),
+                   doors=[(10, 18, 24, "single")], seed=651, plinth=("5a3a24", 3))
+    box(T, 18, 94, 66, 150, 0, 28, all=booth, top=flat_top("5a3a24", "8a5a34", 2))
+    door(T, 26, 18, 150, 24)
+    entry(T, 35)
+    for (s, f) in ((36, 36), (120, 36), (36, 112), (120, 112)):
+        post(T, s, f, 0, H, "6a4a30", 7)
+    cab = facade("wood", "a86a40", win=Win(w=16, h=18, sill=6, sp=26, margin=8, fh=30, frame="f4f0e8", group="work"),
+                 plinth=None, seed=652)
+    box(T, 24, 24, 132, 132, H, H + 30, all=cab, top=flat_top("5a3a24", "a86a40", 2))
+    T.hip(24, 24, 132, 132, H + 30, 18, roof_mat("5a3a24", "shingle"), o=4)
+    T.box(114, 108, 124, 118, H + 48, H + 52, all=lambda u, v, LL, HH: glow_res("fff4c0", u.shape), top=flat("e8e2d6"))
+    T.cv.mark("light", *T.pt(119, 113), H + 50)
+    flagpole(T, 36, 36, H + 46, "2a5aa8")
+    ground(T, 8, 0, 140, 160, kit.paving("c4bcae", 8.0))
+    tree(T, 150, 10, "lime", 0.65, 881)
+    return cv
+
+
 def hospital(L, o):
     cv = Canvas(2, 260)
     T = Orient(cv, o)
@@ -816,7 +840,7 @@ def power_plant(L, o):
 
 
 BUILDERS = {"school": school, "kindergarten": kindergarten, "library": library, "museum": museum,
-            "fire_station": fire_station, "police": police, "hospital": hospital, "bank": bank, "court": court,
+            "fire_station": fire_station, "police": police, "watchtower": watchtower, "hospital": hospital, "bank": bank, "court": court,
             "town_hall": town_hall, "post_office": post_office, "gym": gym, "stadium": stadium, "zoo": zoo,
             "funfair": funfair, "parking": parking, "solar_panel": solar_panel, "water_station": water_station,
             "power_plant": power_plant, "tree": tree_lot, "flowerbed": flowerbed, "bench": square,
