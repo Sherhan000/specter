@@ -2,16 +2,25 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–8.
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–9.
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы).
 - Отели (вкладка «Отели», нужна дорога к трассе), Башня Душанбе (4x4, одна) + дома квартала, автобусы/остановки, метро (metro_view.gd).
 - Дороги 8 видов (шейдер ground.gdshader, типы 1–11), велосипедисты (cyclist.gd), прозрачные высокие здания (кнопка-глаз).
 - Вода: река → море (30) → океан (120), мосты, острова, жизнь на воде (water_life.gd). Стены и украшения улиц (street_props.gd).
+- Аэропорт (4x4, один, нужна дорога к трассе), рейсы в 16 стран, аналитика прилётов (panels.airport).
 - Фонари: classic, modern, lantern. «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (пункт 8)
+## Сделано в последней сессии (пункт 9)
+- Аэропорт: Data.B "airport" (service, svc "airport", unique, highway, 4x4, зоны industry/leisure/city, ур. 16). Графика tools/art/b_airport.py (модуль в MODULES): терминал, вышка, полоса, самолёты.
+- Рейсы: Data.COUNTRIES/COUNTRY_ORDER (16 стран: цена, уровень, флаг из 3 полос, pax, spend), FLIGHT_CHANCE. Game.flights (купленные), Game.arrivals (всего), Game.arrivals_day (за день, сброс в _end_of_day) — в сохранении (ключи flights/arrivals/arrivals_day, SAVE_VERSION не менялся).
+- Game.buy_flight(id), land_flight(id) (пассажиры → доход "flights", больше с отелями, закон tour), _update_airport() в _on_hour (с 6:00, шанс на рейс), arrival_stats(), arrivals_total(today), сигнал plane_landed.
+- Окно panels.airport() (кнопка-самолёт в карточке аэропорта): статистика, полосы по странам с %, покупка рейсов. Газета: заголовок n_flights.
+- Самолёт садится на аэропорт: scripts/plane_view.gd (рисуется полигонами), life._on_plane_landed (не больше 3 сразу). Проверки в logic_test, Data.NEWS дополнен.
+- Не проверено глазами в игре: посадка самолёта (направление по оси x сетки, не по повороту здания) и вид окна на телефоне.
+
+## Пункт 8 (ранее)
 - Пляж за западной границей земли: тайлы x 70..79, y 80..159 (Data.BEACH_X0/BEACH_W, beach_seg(c) → сегмент 0..7 по рядам участков), зона "beach", region "beach".
   Покупка по сегментам: Game.beach (в сохранении, ключ "beach", SAVE_VERSION не менялся), beach_buyable/buy_beach, Data.beach_price, panels.beach_plot,
   таблички продажи в city._rebuild_signs, подсветка в ground.update_info. Песок и море рисует ground.gdshader (по константам land0), деревья не растут (Data.beach_area).

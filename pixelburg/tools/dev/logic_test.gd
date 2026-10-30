@@ -409,6 +409,45 @@ func _ready() -> void:
 		Game.demolish(bb)
 	Game.beach = []
 	Game.plots.erase(Vector2i(0, 2))
+	# airport: routes are bought in the airport, planes bring travellers, analytics by country
+	check(Data.B.has("airport") and Data.ORDER.has("airport") and Data.B.airport.get("unique", false) and Data.B.airport.svc == "airport", "airport is a unique service in the list")
+	check(Data.COUNTRY_ORDER.size() == Data.COUNTRIES.size() and Data.COUNTRY_ORDER.size() >= 12, "airport has routes to many countries")
+	check(Data.COUNTRY_ORDER.all(func(k): return Data.COUNTRIES[k].flag.size() == 3 and int(Data.COUNTRIES[k].pax) > 0), "every country has a flag and travellers")
+	Game.flights = []
+	Game.arrivals = {}
+	Game.arrivals_day = {}
+	Game.coins = 100000
+	Game.level = 20
+	check(not Game.buy_flight("russia") and Game.flights.is_empty(), "no flights without an airport")
+	var ap := Game._add_building("airport", 90, 90, true)
+	check(Game.place_problem("airport", spots[3].x, spots[3].y) == "already_built", "only one airport per city")
+	var ac0 := Game.coins
+	check(Game.buy_flight("russia") and Game.flights.has("russia") and Game.coins == ac0 - int(Data.COUNTRIES.russia.cost), "flight route can be bought")
+	check(not Game.buy_flight("russia") and not Game.buy_flight("usa"), "a route is bought once and needs its level")
+	Game.road_ok[ap] = true
+	check(Game.airport_uid() == ap, "working airport found")
+	var c1 := Game.coins
+	var pax := Game.land_flight("russia")
+	check(pax > 0 and Game.coins > c1, "plane brings %d travellers who spend money" % pax)
+	check(Game.land_flight("turkey") == 0, "no planes from routes not bought")
+	Game.buy_flight("turkey")
+	var pax2 := Game.land_flight("turkey")
+	check(Game.arrivals_total() == pax + pax2 and Game.arrivals_total(true) == pax + pax2, "arrivals are counted")
+	var stt: Array = Game.arrival_stats()
+	check(stt.size() == 2 and stt[0][1] >= stt[1][1] and int(Game.arrivals[stt[0][0]]) == stt[0][1], "analytics by country, most first")
+	var sd := Game.to_dict()
+	check(sd.flights.has("turkey") and int(sd.arrivals.russia) == pax and int(sd.arrivals_day.turkey) == pax2, "routes and arrivals are saved")
+	check(Game.paper_headlines().has("n_flights"), "the paper writes about the airport")
+	city.hud.panels.airport()
+	check(city.hud.modal.visible and city.hud.modal_box.get_child_count() > 2, "airport window opens with analytics")
+	city.hud.close_modal()
+	city.life._on_plane_landed("turkey", pax2)
+	check(city.world.get_children().any(func(n): return n is PlaneView), "a plane flies in to the airport")
+	Game.demolish(ap)
+	Game.flights = []
+	Game.arrivals = {}
+	Game.arrivals_day = {}
+	Game.recalc()
 	for sid in ["site_small", "site_house", "site_crane"]:
 		check(Data.B.has(sid) and Data.ORDER.has(sid) and Data.B[sid].cat == "decor", "%s is a decor building in the list" % sid)
 		var sb := Game._add_building(sid, spots[3].x, spots[3].y, true)

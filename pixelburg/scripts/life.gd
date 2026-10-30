@@ -65,6 +65,7 @@ func _ready() -> void:
 	_build_conflicts()
 	roads_changed()
 	Game.hour_passed.connect(func(_h): _dirty = true)
+	Game.plane_landed.connect(_on_plane_landed)
 
 
 # ====================================================================== networks
@@ -1175,6 +1176,19 @@ func _update_garbage_trucks() -> void:
 		c.role = "service"
 		c.station = st
 		c.start_route(path, null)
+
+
+## A plane from this route glides down onto the airport runway (at most three in the air at once).
+func _on_plane_landed(country: String, _pax: int) -> void:
+	var uid := Game.airport_uid()
+	if uid == 0 or city == null or city.world.get_children().filter(func(n): return n is PlaneView).size() >= 3:
+		return
+	var b: Dictionary = Game.buildings[uid]
+	var n: float = Data.B[b.id].size
+	var p := PlaneView.new()
+	var flag: Array = Data.COUNTRIES[country].flag
+	p.setup(Vector2(b.x + n / 2.0, b.y + n / 2.0), Color(flag[1] if flag[1] != "ffffff" else flag[0]))
+	city.world.add_child(p)
 
 
 ## City buses: one per two stops (up to three) once two stops stand by connected roads.

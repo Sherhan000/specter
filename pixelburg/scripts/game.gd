@@ -24,6 +24,7 @@ signal weather_changed(kind: String)
 signal season_changed(season: String)
 signal animals_changed
 signal game_over
+signal plane_landed(country: String, pax: int)
 
 const SAVE_PATH := "user://city.json"
 const SAVE_VERSION := 4
@@ -37,6 +38,9 @@ var goods := 0
 var xp := 0
 var level := 1
 var beach: Array = []        ## owned beach segments (0..7, one per plot row)
+var flights: Array = []      ## bought airport routes (Data.COUNTRIES ids)
+var arrivals := {}           ## country -> travellers who flew in, all time
+var arrivals_day := {}       ## country -> travellers who flew in today
 var plots: Array = []        ## owned plots (Vector2i)
 var roads := {}              ## Vector2i -> road type (player roads)
 var lights := {}             ## Vector2i -> true (traffic lights on intersections)
@@ -258,6 +262,9 @@ func new_game() -> void:
 	level = 1
 	plots = Data.START_PLOTS.duplicate()
 	beach = []
+	flights = []
+	arrivals = {}
+	arrivals_day = {}
 	roads = {}
 	lights = {}
 	lamps = {}
@@ -360,6 +367,7 @@ func to_dict() -> Dictionary:
 		"coins": coins, "gems": gems, "goods": goods, "xp": xp, "level": level,
 		"plots": plots.map(func(p): return [p.x, p.y]),
 		"beach": beach.duplicate(),
+		"flights": flights.duplicate(), "arrivals": arrivals.duplicate(), "arrivals_day": arrivals_day.duplicate(),
 		"roads": roads.keys().map(func(v): return [v.x, v.y, roads[v]]),
 		"lights": lights.keys().map(func(v): return [v.x, v.y]),
 		"lamps": lamps.keys().map(func(v): return [v.x, v.y, lamps[v]]),
@@ -437,6 +445,16 @@ func from_dict(p: Dictionary) -> bool:
 	beach = []
 	for v in p.get("beach", []):
 		beach.append(int(v))
+	flights = []
+	for v in p.get("flights", []):
+		if Data.COUNTRIES.has(str(v)):
+			flights.append(str(v))
+	arrivals = {}
+	for k in p.get("arrivals", {}):
+		arrivals[str(k)] = int(p.arrivals[k])
+	arrivals_day = {}
+	for k in p.get("arrivals_day", {}):
+		arrivals_day[str(k)] = int(p.arrivals_day[k])
 	water = {}
 	for v in p.get("water", []):
 		water[_v2(v)] = true
@@ -605,6 +623,7 @@ func _on_hour() -> void:
 	mood = mood.filter(func(m): return int(m.until) > now)
 	_move_population()
 	_update_garbage()
+	_update_airport()
 	if now >= weather_until:
 		_pick_weather()
 	recalc()
@@ -618,6 +637,7 @@ func _on_hour() -> void:
 
 
 func _end_of_day() -> void:
+	arrivals_day = {}
 	# ---- passive income
 	var biz_tax := 0
 	for uid in buildings:
@@ -2550,6 +2570,87 @@ func _update_garbage() -> void:
 		toast.emit(Loc.t("garbage_warn"))
 
 
+# ====================================================================== airport
+## The working airport, or 0.
+func airport_uid() -> int:
+	for uid in buildings:
+		if Data.B[buildings[uid].id].get("svc", "") == "airport" and _works(uid):
+			return uid
+	return 0
+
+
+func has_airport() -> bool:
+	return buildings.values().any(func(b): return Data.B[b.id].get("svc", "") == "airport")
+
+
+func buy_flight(id: String) -> bool:
+	if not Data.COUNTRIES.has(id) or flights.has(id):
+		return false
+	if not has_airport():
+		toast.emit(Loc.t("air_need"))
+		sfx("error")
+		return false
+	var c: Dictionary = Data.COUNTRIES[id]
+	if level < int(c.lvl):
+		toast.emit(Loc.t("locked_lvl") % int(c.lvl))
+		sfx("error")
+		return false
+	if not pay(int(c.cost), 0, "build"):
+		return false
+	flights.append(id)
+	add_xp(int(c.cost) / 80)
+	changed.emit()
+	sfx("done")
+	toast.emit(Loc.t("air_bought") % Data.country_name(id))
+	save_game()
+	return true
+
+
+## A plane lands from this route: travellers arrive and spend money (more with hotels in town).
+func land_flight(id: String) -> int:
+	var uid := airport_uid()
+	if uid == 0 or not flights.has(id):
+		return 0
+	var c: Dictionary = Data.COUNTRIES[id]
+	var pax := int(round(int(c.pax) * _rng.randf_range(0.6, 1.2) * (1.0 + 0.25 * (buildings[uid].lvl - 1))))
+	var first := not arrivals.has(id)
+	arrivals[id] = int(arrivals.get(id, 0)) + pax
+	arrivals_day[id] = int(arrivals_day.get(id, 0)) + pax
+	var hotels := buildings.values().filter(func(b): return Data.B[b.id].get("tab", "") == "hotel" and b.built).size()
+	var spend := int(pax * int(c.spend) * (1.0 + minf(hotels, 5) * 0.1) * law_mult("tour"))
+	if spend > 0:
+		_earn("flights", spend)
+	if first:
+		toast.emit(Loc.t("air_first") % Data.country_name(id))
+	plane_landed.emit(id, pax)
+	return pax
+
+
+func _update_airport() -> void:
+	if flights.is_empty() or hour() < 6 or airport_uid() == 0:
+		return
+	for id in flights:
+		if _rng.randf() < Data.FLIGHT_CHANCE:
+			land_flight(id)
+
+
+func arrivals_total(today_only := false) -> int:
+	var n := 0
+	var d: Dictionary = arrivals_day if today_only else arrivals
+	for k in d:
+		n += int(d[k])
+	return n
+
+
+## [country, all time, today] for every country that sent people, most first.
+func arrival_stats() -> Array:
+	var r: Array = []
+	for k in arrivals:
+		r.append([k, int(arrivals[k]), int(arrivals_day.get(k, 0))])
+	r.sort_custom(func(a, b): return a[1] > b[1])
+	return r
+
+
 # ====================================================================== newspaper
 ## Loc keys of today's headlines (most important first), chosen by the state of the city.
 func paper_headlines() -> Array:
@@ -2598,6 +2699,8 @@ func paper_headlines() -> Array:
 			break
 	if has_service("tv"):
 		h.append("n_tv")
+	if arrivals_total(true) > 0:
+		h.append("n_flights")
 	if h.is_empty():
 		h.append("n_calm")
 	return h

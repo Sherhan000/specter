@@ -405,6 +405,78 @@ func garbage() -> void:
 	hud.popup(Loc.t("gb_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
 
 
+## The airport: flight routes to buy and where the travellers come from.
+func airport() -> void:
+	var v := _vbox(5)
+	hud.text(Loc.t("air_text") if Game.airport_uid() != 0 else Loc.t("air_closed"), v, 12,
+		Color("3a2a1e") if Game.airport_uid() != 0 else Color("b83a2a"), _w())
+	var stats: Array = Game.arrival_stats()
+	var total := Game.arrivals_total()
+	_row(v, "plane", Loc.t("air_routes"), "%d / %d" % [Game.flights.size(), Data.COUNTRY_ORDER.size()])
+	_row(v, "pop", Loc.t("air_today"), Loc.num(Game.arrivals_total(true)))
+	_row(v, "pop", Loc.t("air_all"), Loc.num(total))
+	if not stats.is_empty():
+		_row(v, "happy", Loc.t("air_top"), Data.country_name(stats[0][0]), Color("2a7a2a"))
+	hud.title(Loc.t("air_stats"), v, 13)
+	if stats.is_empty():
+		hud.text(Loc.t("air_none"), v, 11, Color("6a5a4a"), _w())
+	var bar_w := _w() - 190.0
+	for st in stats:
+		var c := _card(v, 4)
+		var h := _hbox(6)
+		c.add_child(h)
+		_flag(st[0], h)
+		var l: Label = hud.text(Data.country_name(st[0]), h, 11, Color("3a2a1e"))
+		l.custom_minimum_size.x = 96
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(bar_w, 10)
+		bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		h.add_child(bar)
+		var back := ColorRect.new()
+		back.color = Color("e8dcc4")
+		back.size = Vector2(bar_w, 10)
+		bar.add_child(back)
+		var fill := ColorRect.new()
+		fill.color = Color(Data.COUNTRIES[st[0]].flag[1]).darkened(0.1) if Data.COUNTRIES[st[0]].flag[1] != "ffffff" else Color("4a8ac8")
+		fill.size = Vector2(maxf(2.0, bar_w * float(st[1]) / maxf(1.0, float(stats[0][1]))), 10)
+		bar.add_child(fill)
+		hud.text("%s · %d%%" % [Loc.num(st[1]), int(round(100.0 * st[1] / maxf(1.0, total)))], h, 11, Color("4a7a2a"))
+	hud.title(Loc.t("air_buy"), v, 13)
+	for id in Data.COUNTRY_ORDER:
+		var co: Dictionary = Data.COUNTRIES[id]
+		var c := _card(v, 4)
+		var h := _hbox(6)
+		c.add_child(h)
+		_flag(id, h)
+		var l: Label = hud.text(Data.country_name(id), h, 12, Color("3a2a1e"))
+		l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		if Game.flights.has(id):
+			hud.text(Loc.t("air_owned"), h, 11, Color("2a7a2a"))
+			continue
+		if Game.level < int(co.lvl):
+			hud.text(Loc.t("air_lvl") % int(co.lvl), h, 11, Color("8a6a4a"))
+			continue
+		var ok: bool = Game.has_airport() and Game.can_afford(int(co.cost), 0)
+		var b: Button = hud.button(Loc.num(int(co.cost)), "coin", "green" if ok else "grey", func():
+			Game.buy_flight(id)
+			airport())
+		b.disabled = not ok
+		h.add_child(b)
+	hud.popup(Loc.t("air_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
+
+
+func _flag(id: String, parent: Node) -> void:
+	var f := VBoxContainer.new()
+	f.add_theme_constant_override("separation", 0)
+	f.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	for col in Data.COUNTRIES[id].flag:
+		var r := ColorRect.new()
+		r.color = Color(col)
+		r.custom_minimum_size = Vector2(20, 4)
+		f.add_child(r)
+	parent.add_child(f)
+
+
 func building_details(uid: int) -> void:
 	if not Game.buildings.has(uid):
 		return

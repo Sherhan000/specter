@@ -1147,6 +1147,8 @@ func _refresh_info() -> void:
 			info_actions.add_child(round_btn("demolish", "purple", func(): panels.garbage(), 26))
 		if d.get("svc", "") == "news":
 			info_actions.add_child(round_btn("newspaper", "purple", func(): panels.newspaper(), 26))
+		if d.get("svc", "") == "airport":
+			info_actions.add_child(round_btn("plane", "purple", func(): panels.airport(), 26))
 		info_actions.add_child(round_btn("info", "blue", func(): panels.building_details(uid), 26))
 	var sp2 := Control.new()
 	sp2.size_flags_horizontal = Control.SIZE_EXPAND_FILL

@@ -82,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Аэропорт: купите рейсы в 16 стран — самолёты привозят путешественников со всего мира, а аналитика покажет, из какой страны пришло больше всего людей", "Airport: buy flights to 16 countries; planes bring travellers from all over the world, and the analytics show which country sends the most people"],
 	["Пляж за границей карты: купите участки пляжа у моря и стройте зонты, спасательную вышку и пляжный бар", "Beach beyond the map border: buy beach plots by the sea and build umbrellas, a lifeguard tower and a beach bar"],
 	["Река, море и океан: копайте воду пальцем, над дорогой будет мост, у домов — берег", "Rivers, seas and oceans: dig water with your finger, roads become bridges"],
 	["Лодки, корабли, утки, чайки, камни и камыши у воды", "Boats, ships, ducks, gulls, stones and reeds by the water"],
@@ -330,6 +331,9 @@ const B := {
 		"happy": 7, "radius": 9, "upkeep": 3},
 	"beach_bar": {"name": ["Пляжный бар", "Beach Bar"], "cat": "shop", "zones": ["beach"], "size": 2, "cost": 4500, "lvl": 8, "time": 80,
 		"jobs": 8, "use": 14, "income": 190, "cycle": 120, "upkeep": 35},
+	# the airport: one per city, needs a road to the highway; flights from the bought routes bring travellers (Game.flights)
+	"airport": {"name": ["Аэропорт", "Airport"], "cat": "service", "unique": true, "highway": true, "zones": ["industry", "leisure", "city"], "size": 4,
+		"cost": 60000, "gems": 12, "lvl": 16, "time": 420, "jobs": 60, "upkeep": 280, "svc": "airport", "radius": 999, "happy": 0},
 	# street lamps stand on the sidewalks and are placed with their own tool (see Game.place_lamp)
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
@@ -340,9 +344,32 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "airport",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
+## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
+## flag: stripes (top to bottom), cost/lvl: price of the route.
+const COUNTRIES := {
+	"russia": {"name": ["Россия", "Russia"], "flag": ["ffffff", "1c3fa8", "d52b1e"], "cost": 8000, "lvl": 16, "pax": 60, "spend": 14},
+	"uzbekistan": {"name": ["Узбекистан", "Uzbekistan"], "flag": ["1eb2e8", "ffffff", "1eb53a"], "cost": 8000, "lvl": 16, "pax": 50, "spend": 12},
+	"kazakhstan": {"name": ["Казахстан", "Kazakhstan"], "flag": ["00afca", "fec50c", "00afca"], "cost": 10000, "lvl": 16, "pax": 50, "spend": 14},
+	"kyrgyzstan": {"name": ["Кыргызстан", "Kyrgyzstan"], "flag": ["e8112d", "ffef00", "e8112d"], "cost": 10000, "lvl": 17, "pax": 40, "spend": 12},
+	"turkey": {"name": ["Турция", "Turkey"], "flag": ["e30a17", "ffffff", "e30a17"], "cost": 14000, "lvl": 17, "pax": 70, "spend": 16},
+	"uae": {"name": ["ОАЭ", "UAE"], "flag": ["00732f", "ffffff", "000000"], "cost": 18000, "lvl": 18, "pax": 80, "spend": 24},
+	"iran": {"name": ["Иран", "Iran"], "flag": ["239f40", "ffffff", "da0000"], "cost": 14000, "lvl": 18, "pax": 50, "spend": 14},
+	"china": {"name": ["Китай", "China"], "flag": ["de2910", "de2910", "ffde00"], "cost": 22000, "lvl": 19, "pax": 90, "spend": 18},
+	"india": {"name": ["Индия", "India"], "flag": ["ff9933", "ffffff", "138808"], "cost": 20000, "lvl": 19, "pax": 80, "spend": 14},
+	"germany": {"name": ["Германия", "Germany"], "flag": ["000000", "dd0000", "ffce00"], "cost": 26000, "lvl": 20, "pax": 60, "spend": 28},
+	"france": {"name": ["Франция", "France"], "flag": ["0055a4", "ffffff", "ef4135"], "cost": 26000, "lvl": 20, "pax": 60, "spend": 28},
+	"uk": {"name": ["Великобритания", "United Kingdom"], "flag": ["012169", "c8102e", "012169"], "cost": 28000, "lvl": 21, "pax": 60, "spend": 30},
+	"korea": {"name": ["Южная Корея", "South Korea"], "flag": ["ffffff", "cd2e3a", "0047a0"], "cost": 30000, "lvl": 22, "pax": 70, "spend": 26},
+	"japan": {"name": ["Япония", "Japan"], "flag": ["ffffff", "bc002d", "ffffff"], "cost": 32000, "lvl": 22, "pax": 70, "spend": 30},
+	"usa": {"name": ["США", "USA"], "flag": ["b22234", "ffffff", "3c3b6e"], "cost": 40000, "lvl": 24, "pax": 90, "spend": 34},
+	"brazil": {"name": ["Бразилия", "Brazil"], "flag": ["009c3b", "ffdf00", "002776"], "cost": 36000, "lvl": 24, "pax": 60, "spend": 24},
+}
+const COUNTRY_ORDER := ["russia", "uzbekistan", "kazakhstan", "kyrgyzstan", "turkey", "uae", "iran", "china", "india", "germany", "france", "uk", "korea", "japan", "usa", "brazil"]
+const FLIGHT_CHANCE := 0.5   ## chance per daytime hour that a route's plane lands
+
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
 ## build menu tabs: the categories plus the hotels, which have a window of their own
 const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
@@ -427,6 +454,10 @@ static func tab_of(id: String) -> String:
 
 static func name_of(id: String) -> String:
 	return Loc.pick(B[id].name)
+
+
+static func country_name(id: String) -> String:
+	return Loc.pick(COUNTRIES[id].name)
 
 
 static func stat(id: String, key: String, lvl: int) -> int:
