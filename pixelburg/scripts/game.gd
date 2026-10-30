@@ -945,9 +945,9 @@ func recalc() -> void:
 		if decor > 0:
 			reasons.append(["r_decor", decor])
 		h += decor
-		for key in ["edu", "fire", "police", "health", "bus", "metro", "sport", "tv"]:
+		for key in ["edu", "fire", "police", "health", "bus", "metro", "sport", "tv", "news"]:
 			if svc.has(key):
-				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6, "sport": 5, "tv": 4}[key]
+				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6, "sport": 5, "tv": 4, "news": 2}[key]
 				h += v
 				reasons.append(["r_" + key, v])
 		if water_ratio < 0.9:
@@ -2465,3 +2465,54 @@ func _update_music(delta: float) -> void:
 				_ambient.play()
 	if _ambient.playing:
 		_ambient.volume_db = move_toward(_ambient.volume_db, -14.0 if weather in ["rain", "storm"] else -20.0, delta * 8.0)
+
+
+# ====================================================================== newspaper
+## Loc keys of today's headlines (most important first), chosen by the state of the city.
+func paper_headlines() -> Array:
+	var h: Array = []
+	var burning := 0
+	for uid in buildings:
+		if buildings[uid].fire > 0.0:
+			burning += 1
+	if burning > 0:
+		h.append("n_fire")
+	for m in mood:
+		if str(m.why) == "crime":
+			h.append("n_crime")
+			break
+	if power_ratio < 0.85:
+		h.append("n_power")
+	if water_ratio < 0.9:
+		h.append("n_water")
+	if weather in ["storm", "heat"]:
+		h.append("n_" + weather)
+	if unemployment > 0.1:
+		h.append("n_jobless")
+	elif workers > 0 and unemployment <= 0.03:
+		h.append("n_work")
+	if happy >= 75.0:
+		h.append("n_happy")
+	elif happy < 35.0:
+		h.append("n_sad")
+	if coins >= 50000:
+		h.append("n_rich")
+	elif coins < 500:
+		h.append("n_poor")
+	if not loan.is_empty():
+		h.append("n_loan")
+	if pop >= 1000:
+		h.append("n_pop3")
+	elif pop >= 300:
+		h.append("n_pop2")
+	elif pop >= 50:
+		h.append("n_pop1")
+	for r in rules:
+		if rules[r]:
+			h.append("n_rules")
+			break
+	if has_service("tv"):
+		h.append("n_tv")
+	if h.is_empty():
+		h.append("n_calm")
+	return h

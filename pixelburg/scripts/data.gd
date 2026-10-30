@@ -93,6 +93,7 @@ const NEWS := [
 	["Выход из игры: кнопка в настройках и двойное «Назад»", "Quitting: a button in settings, or press Back twice"],
 	["Остановки разного вида: навес, стеклянная, с рекламой и экраном, деревенская", "Bus stops of every kind: simple, glass, with ads and a screen, village"],
 	["Телевидение: маленькая студия, телецентр и высокая телебашня — жители счастливее", "Television: a small studio, a TV centre and a tall TV tower make residents happier"],
+	["Газеты: киоск и редакция — новости о городе: население, счастье, деньги, пожары", "Newspapers: a newsstand and an office with news about your city: people, mood, money, fires"],
 ]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
@@ -263,6 +264,10 @@ const B := {
 		"jobs": 14, "upkeep": 80, "svc": "tv", "radius": 20, "happy": 6},
 	"tv_tower": {"name": ["Телебашня", "TV Tower"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 30000, "gems": 5, "lvl": 15, "time": 240,
 		"jobs": 8, "upkeep": 100, "svc": "tv", "radius": 32, "happy": 8},
+	"newsstand": {"name": ["Газетный киоск", "Newsstand"], "cat": "service", "zones": ["city", "leisure"], "size": 1, "cost": 500, "lvl": 4, "time": 15,
+		"jobs": 1, "upkeep": 3, "svc": "news", "radius": 6, "happy": 2},
+	"newspaper": {"name": ["Редакция газеты", "Newspaper Office"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 5000, "lvl": 7, "time": 70,
+		"jobs": 6, "upkeep": 35, "svc": "news", "radius": 14, "happy": 3},
 	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
 		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
@@ -305,7 +310,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]

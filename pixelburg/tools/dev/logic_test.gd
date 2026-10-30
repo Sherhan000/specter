@@ -328,6 +328,23 @@ func _ready() -> void:
 	check(Game.has_service("tv") and Game.covered_by("tv", spots[3]), "a TV studio covers its surroundings")
 	Game.demolish(tvb)
 	Game.recalc()
+	var nws := ["newsstand", "newspaper"]
+	check(nws.all(func(k): return Data.B.has(k) and Data.B[k].svc == "news" and Data.ORDER.has(k)), "newsstand and newspaper office exist")
+	var nb := Game._add_building("newsstand", spots[3].x, spots[3].y, true)
+	Game.recalc()
+	check(Game.covered_by("news", spots[3]), "a newsstand covers its surroundings")
+	Game.demolish(nb)
+	var hl: Array = Game.paper_headlines()
+	check(not hl.is_empty() and hl.all(func(k): return Loc.t(k) != k), "paper headlines all have texts")
+	var old_coins := Game.coins
+	Game.coins = 100000
+	check(Game.paper_headlines().has("n_rich"), "paper reports a full treasury")
+	Game.coins = old_coins
+	var fb := Game._add_building("house_small", spots[3].x, spots[3].y, true)
+	Game.buildings[fb].fire = 5.0
+	check(Game.paper_headlines()[0] == "n_fire", "paper puts a fire on the front page")
+	Game.demolish(fb)
+	Game.recalc()
 	var mixed := Game._add_building("bus_stop_village", spots[3].x, spots[3].y, true)
 	Game.recalc()
 	check(Game.bus_stops().has(mixed) and Game.bus_stops().size() == 3, "a village stop joins the same bus line")

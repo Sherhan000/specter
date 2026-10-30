@@ -1068,7 +1068,59 @@ def tv_tower(L, o):
     return cv
 
 
-BUILDERS = {"tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+def newsstand(L, o):
+    """A street newspaper kiosk: a small booth with a striped awning, a counter of papers and a sign."""
+    cv = Canvas(1, 100)
+    T = Orient(cv, o)
+    seed = 1201
+    ground(T, 0, 0, 160, 80, kit.paving("c8c2b6", 8.0, 4))
+    win = Win(w=18, h=14, sill=12, sp=36, margin=10, fh=44, frame="3a2a1e", style="vertical", tint="9ab8c8", group="shop")
+    fr = facade("plaster", "e8d8b0", win=win, plinth=("6a5a44", 4), seed=seed, lit=0.9)
+    sd = facade("plaster", "e8d8b0", plinth=("6a5a44", 4), seed=seed + 1, lit=0.9)
+    box(T, 40, 20, 120, 60, 0, 44, front=fr, back=sd, left=sd, right=sd, top=flat_top("7a3a2a", "e8d8b0", 3))
+    awning(T, 36, 124, 20, 36, 16, 8, "c8302a", "f6f2ea")
+    T.box(50, 8, 110, 18, 0, 14, all=flat("8a6a44"), top=flat("c8b890"))
+    for k, c in enumerate(("f4f0e0", "e8e0c8", "f4ecd4", "e0d8c0")):
+        T.box(54 + k * 14, 9, 64 + k * 14, 16, 14, 16, all=flat(c), top=flat("ffffff"))
+    sign_board(T, 80, 19, 46, "NEWS", 8, "1a1a20", "ffd84a")
+    entry(T, 80)
+    door(T, 66, 28, 8, 20)
+    if L >= 2:
+        bench(T, 20, 40, "f", "8a6a40")
+    if L >= 3:
+        lamp(T, 140, 12, "classic", 44)
+    return cv
+
+
+def newspaper(L, o):
+    """The editorial office: a brick block with a big NEWS sign, a press hall at the back and a delivery van."""
+    H = 62
+    cv = Canvas(2, H + 80)
+    T = Orient(cv, o)
+    seed = 1211
+    ground(T, 0, 0, 320, 320, kit.paving("c4c0b8", 10.0, 4))
+    win = Win(w=20, h=20, sill=12, sp=40, margin=14, fh=H, frame="2a2a30", style="vertical", tint="8ab0c8", group="work")
+    fr = facade("brick", "a8523a", win=win, doors=[(130, 60, 30, "double_glass")], plinth=("5a4a44", 5), seed=seed, lit=0.85)
+    sd = facade("brick", "a8523a", win=win, plinth=("5a4a44", 5), seed=seed + 1, lit=0.85)
+    box(T, 30, 110, 290, 280, 0, H, front=fr, back=sd, left=sd, right=sd, top=flat_top("5a5a60", "a8523a", 3))
+    slab(T, 40, 120, 130, 190, H, H + 14, "8a8e98")
+    sign_board(T, 160, 108, H - 16, "THE NEWS", 12, "1a1a20", "ffd84a")
+    canopy(T, 120, 200, 110, 30, 38, "2a2e34", "c8302a", posts=True)
+    door(T, 130, 60, 110, 34)
+    entry(T, 160)
+    # delivery van with a roll of papers
+    T.box(220, 30, 290, 62, 0, 24, all=flat("f4f0e0"), top=flat("d8d4c4"))
+    T.box(222, 31, 288, 33, 12, 22, all=flat("c8302a"), top=flat("a82a20"))
+    if L >= 2:
+        tree(T, 20, 60, "lime", 0.6, seed)
+        bench(T, 60, 70, "f", "8a6a40")
+    if L >= 3:
+        lamp(T, 100, 20, "modern", 48)
+        lamp(T, 200, 20, "modern", 48, "light2")
+    return cv
+
+
+BUILDERS = {"newsstand": newsstand, "newspaper": newspaper, "tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "bus_stop_simple": bus_stop_simple, "bus_stop_modern": bus_stop_modern, "bus_stop_ad": bus_stop_ad,
             "bus_stop_village": bus_stop_village, "metro_station": metro_station}

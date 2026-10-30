@@ -380,6 +380,20 @@ func watchtower(uid: int) -> void:
 	hud.popup(Loc.t("watchtower_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
 
 
+## The city paper: headlines picked by the state of the city (Game.paper_headlines).
+func newspaper() -> void:
+	var v := _vbox(5)
+	hud.text(Loc.t("paper_day") % Game.day, v, 11, Color("8a6a4a"), _w())
+	var list: Array = Game.paper_headlines()
+	for k in list.slice(0, 5):
+		var c := _card(v, 5)
+		var h := _hbox(6)
+		c.add_child(h)
+		hud.icon_rect("newspaper", h)
+		hud.text(Loc.t(k), h, 12, Color("3a2a1e"), _w() - 50)
+	hud.popup(Loc.t("paper_title"), "", [[Loc.t("close"), "blue", Callable()]], v)
+
+
 func building_details(uid: int) -> void:
 	if not Game.buildings.has(uid):
 		return
