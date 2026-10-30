@@ -519,6 +519,10 @@ static func lane_for(type: String, kind: String) -> float:
 			return 0.09
 		"boulevard":
 			return 0.125
+		"avenue":
+			return 0.15
+		"bus_lane":
+			return 0.16 if kind == "bus" else 0.07
 	return 0.105
 
 
@@ -1136,6 +1140,7 @@ func _ambient() -> void:
 				c.queue_free()
 			else:
 				spots[sp[0]] = c
+	_update_buses()
 	# garbage truck round in the early morning
 	if int(_hour) == 6 and not cars.any(func(c): return c.kind == "garbage") and Game.roads.size() > 10:
 		var tiles: Array = Game.roads.keys()
@@ -1147,6 +1152,44 @@ func _ambient() -> void:
 			var c := _make_car("garbage")
 			c.role = "service"
 			c.start_route(path, null)
+
+
+## City buses: one per two stops (up to three) once two stops stand by connected roads.
+func _update_buses() -> void:
+	var stops := Game.bus_stops()
+	var want := 0 if stops.size() < 2 else mini(3, (stops.size() + 1) / 2)
+	var buses := cars.filter(func(c): return is_instance_valid(c) and c.role == "city_bus" and c.state != "gone")
+	if buses.size() > want:
+		buses[0].vanish()
+	elif buses.size() < want and cars.filter(func(c): return c.moving()).size() < MAX_MOVING_CARS:
+		var k := randi() % stops.size()
+		var path := car_path(Game.entrance_tile(stops[k]), Game.entrance_tile(stops[(k + 1) % stops.size()]))
+		if path.size() > 1:
+			var c := _make_car("bus")
+			c.role = "city_bus"
+			c.stop_idx = (k + 1) % stops.size()
+			c.start_route(path, null)
+
+
+## A city bus reached its stop: wait a little, then drive on to the next stop.
+func bus_at_stop(car: Car) -> void:
+	car.state = "idle"
+	var tw := car.create_tween()
+	tw.tween_interval(4.0)
+	tw.tween_callback(func():
+		if not is_instance_valid(car) or car.state != "idle":
+			return
+		var stops := Game.bus_stops()
+		if stops.size() < 2:
+			car.vanish()
+			return
+		for _k in stops.size():
+			car.stop_idx = (car.stop_idx + 1) % stops.size()
+			var path := car_path(car.p.back(), Game.entrance_tile(stops[car.stop_idx]))
+			if path.size() > 1:
+				car.start_route(path, null)
+				return
+		car.vanish())
 
 
 ## A visitor or delivery car finished its stop: leave towards another town.
@@ -1459,7 +1502,7 @@ class Car extends Node2D:
 	## A vehicle: parked (in a spot) or driving along a tile path, lane by lane.
 	var life: Life
 	var kind := "sedan"
-	var role := "resident"     ## resident | through | visitor | delivery | service
+	var role := "resident"     ## resident | through | visitor | delivery | service | city_bus
 	var state := "idle"        ## idle | parked | driving | parking | unparking
 	var paint_color := Color.WHITE
 	var siren := false
@@ -1472,6 +1515,7 @@ class Car extends Node2D:
 	var target_spot: Array = []
 	var visit := 0
 	var station := 0
+	var stop_idx := 0
 	var g := Vector2.ZERO
 	var heading := Vector2(1, 0)
 	var v := 0.0
@@ -1607,8 +1651,9 @@ class Car extends Node2D:
 			s = 0.0 if role != "through" else 0.5
 			g = Life.eval_seg(seg, s)
 			v = CAR_SPEED * 0.6
-			modulate.a = 0.0
-			create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
+			if role != "city_bus" or modulate.a < 0.99:
+				modulate.a = 0.0
+				create_tween().tween_property(self, "modulate:a", 1.0, 0.6)
 		visible = delay <= 0.0
 		_visual()
 
@@ -1808,6 +1853,10 @@ class Car extends Node2D:
 		if _reserved != Vector2i(-99, -99):
 			life.release(self, _reserved)
 			_reserved = Vector2i(-99, -99)
+		if role == "city_bus":
+			v = 0.0
+			life.bus_at_stop(self)
+			return
 		if role == "service" and station > 0 and siren:
 			# at the scene: lights on for a while, then back to the station
 			state = "idle"

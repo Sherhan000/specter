@@ -192,6 +192,72 @@ func _ready() -> void:
 	check(Game.tower_cooldown(tower, true) > 0, "meeting starts its own cooldown")
 	Game.demolish(tower)
 
+	# ------------------------------------------------ new roads, hotels, buses, metro, see-through towers
+	for t in Data.ROAD_ORDER:
+		check(Data.ROADS.has(t) and Ground.ROAD_IDS.has(t), "road type %s drawn by the ground shader" % t)
+	check(Data.ROAD_ORDER.size() >= 7, "three new road types")
+	check(Data.HOTELS.size() == 5 and Data.HOTELS.all(func(h): return Data.tab_of(h) == "hotel" and Data.B[h].get("highway", false)),
+		"five hotels in their own tab, opened by the highway")
+	Game.level = 30
+	Game.coins = 999999
+	Game.gems = 9999
+	var spots: Array[Vector2i] = []
+	for yy in range(c - 12, c + 12):
+		for xx in range(c - 12, c + 12):
+			if Game.place_problem("bus_stop", xx, yy) == "" and Game._touches_road(xx, yy, 1) and spots.size() < 4:
+				var far := true
+				for o in spots:
+					if absi(o.x - xx) + absi(o.y - yy) < 3:
+						far = false
+				if far:
+					spots.append(Vector2i(xx, yy))
+	check(spots.size() == 4, "free spots by the roads for stops and stations (%d)" % spots.size())
+	var gate_roads := {}
+	for g in Data.gates():
+		if Game.roads.has(g):
+			gate_roads[g] = Game.roads[g]
+			Game.roads.erase(g)
+	check(not Game.is_connected_to_highway() and Game.place_problem("hotel_boutique", spots[0].x, spots[0].y) in ["need_highway", "bad_place"],
+		"hotels closed without a road to the highway")
+	var hotel_spot := ""
+	var hx := Vector2i(-1, -1)
+	for yy in range(c - 14, c + 14):
+		for xx in range(c - 14, c + 14):
+			if hx.x < 0 and Game.place_problem("hotel_boutique", xx, yy) == "need_highway":
+				hx = Vector2i(xx, yy)
+	check(hx.x >= 0, "a spot where only the highway is missing for a hotel")
+	Game.roads[Data.gates()[0]] = "asphalt"
+	check(Game.is_connected_to_highway() and Game.place_problem("hotel_boutique", hx.x, hx.y) == "", "hotels open once a road reaches the edge")
+	Game.roads.erase(Data.gates()[0])
+	for g in gate_roads:
+		Game.roads[g] = gate_roads[g]
+	var stops: Array[int] = []
+	for k in 2:
+		stops.append(Game._add_building("bus_stop", spots[k].x, spots[k].y, true))
+	Game.recalc()
+	check(Game.bus_stops().size() == 2 and Game.transit_fares() > 0, "two bus stops start a bus line with fares")
+	city.life._update_buses()
+	check(city.life.cars.any(func(car): return is_instance_valid(car) and car.role == "city_bus"), "a city bus drives between the stops")
+	var st1 := Game._add_building("metro_station", spots[2].x, spots[2].y, true)
+	Game.recalc()
+	check(not Game.metro_open(), "one metro station is not a line yet")
+	var fares1 := Game.transit_fares()
+	var st2 := Game._add_building("metro_station", spots[3].x, spots[3].y, true)
+	Game.recalc()
+	city.metro.refresh()
+	check(Game.metro_open() and Game.transit_fares() > fares1, "two stations open the metro")
+	check(city.metro.points.size() == 2 and city.metro.visible, "the train runs underground between the stations")
+	var tall := Game._add_building("twin_towers", c + 20, c + 20, true)
+	city._add_view(tall)
+	var tv: BuildingView = city.views[tall]
+	check(tv.is_tall(), "skybridge twins count as a tall building")
+	city.set_xray(true)
+	check(tv.faded(), "see-through mode fades tall buildings")
+	city.set_xray(false)
+	check(not tv.faded(), "see-through mode off")
+	for uid in [stops[0], stops[1], st1, st2, tall]:
+		Game.demolish(uid)
+
 	# ------------------------------------------------ animals and zoo
 	Game.level = 9
 	check(Game.place_problem("zoo", Data.LAND0 + 16, Data.LAND0 + 24) != "", "zoo needs animals and owned leisure land")

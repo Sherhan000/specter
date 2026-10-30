@@ -32,7 +32,7 @@ var mode_ok: TextureButton
 var mode_rot: TextureButton
 var mode_land: TextureButton
 var _ok_enabled := false
-var road_types: HBoxContainer
+var road_types: HFlowContainer
 var lamp_types: HBoxContainer
 var build_menu: PanelContainer
 var build_cards: HBoxContainer
@@ -520,6 +520,14 @@ func _build_side() -> void:
 		badge.add_theme_color_override("font_color", Color("ffe060"))
 		badge.position = Vector2(24, -4)
 		badges[spec[0]] = badge
+	# see-through tall buildings, to look at what stands behind them
+	var xray_cb := func():
+		city.set_xray(not city.xray)
+		Game.sfx("tap")
+		toast(Loc.t("xray_on" if city.xray else "xray_off"))
+	var xb := round_btn("eye", "blue", xray_cb, 34)
+	xb.name = "XrayButton"
+	side_buttons.add_child(xb)
 	side_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
 	side_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	side_buttons.grow_vertical = Control.GROW_DIRECTION_BOTH
@@ -575,8 +583,9 @@ func _build_mode_bar() -> void:
 	v.alignment = BoxContainer.ALIGNMENT_CENTER
 	v.add_theme_constant_override("separation", 3)
 	h.add_child(v)
-	road_types = HBoxContainer.new()
-	road_types.add_theme_constant_override("separation", 4)
+	road_types = HFlowContainer.new()
+	road_types.add_theme_constant_override("h_separation", 4)
+	road_types.add_theme_constant_override("v_separation", 3)
 	v.add_child(road_types)
 	for t in Data.ROAD_ORDER + ["remove"]:
 		var b := button(Loc.pick(Data.ROADS[t].name) if t != "remove" else Loc.t("road_remove"), "remove" if t == "remove" else "",
@@ -723,7 +732,7 @@ func _build_build_menu() -> void:
 	var tabs := HBoxContainer.new()
 	tabs.add_theme_constant_override("separation", 3)
 	v.add_child(tabs)
-	for cat in Data.CATS:
+	for cat in Data.TABS:
 		var b := button(Loc.t("cat_" + cat), "", "blue", func(): _set_cat(cat))
 		b.add_theme_font_size_override("font_size", 11)
 		tabs.add_child(b)
@@ -774,14 +783,40 @@ func _set_cat(cat: String) -> void:
 		b.add_theme_color_override("font_hover_color", Color.WHITE if c == cat else INK)
 	for c in build_cards.get_children():
 		c.queue_free()
+	if cat == "hotel":
+		build_cards.add_child(_hotel_banner())
 	for id in Data.ORDER:
-		if Data.B[id].cat == cat:
+		if Data.tab_of(id) == cat:
 			build_cards.add_child(_card(id))
+
+
+## The hotels window opens with a note: hotels need a road out to the highway.
+func _hotel_banner() -> Control:
+	var open := Game.is_connected_to_highway()
+	var p := PanelContainer.new()
+	p.custom_minimum_size = Vector2(150, 122)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color("3a2a4a") if open else Color("5a4a3a")
+	sb.border_color = Color("e8c060")
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	p.add_theme_stylebox_override("panel", sb)
+	var v := VBoxContainer.new()
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	p.add_child(v)
+	var title := text(Loc.t("hotels_title"), v, 15, Color("f4d070"))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var l := text(Loc.t("hotels_open" if open else "hotels_locked"), v, 10, Color("f4eee0"), 138)
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return p
 
 
 func _card(id: String) -> Button:
 	var d: Dictionary = Data.B[id]
 	var locked: bool = Game.level < d.lvl
+	var no_road: bool = d.get("highway", false) and not Game.is_connected_to_highway()
 	var card := Button.new()
 	card.focus_mode = Control.FOCUS_NONE
 	card.custom_minimum_size = Vector2(100, 122)
@@ -824,6 +859,14 @@ func _card(id: String) -> Button:
 		var l := _label(Loc.t("lvl_short") + " " + str(d.lvl), row)
 		l.add_theme_color_override("font_color", Color("a83a2a"))
 		pic.modulate = Color(0.2, 0.2, 0.25, 0.8)
+	elif no_road:
+		var row := HBoxContainer.new()
+		row.alignment = BoxContainer.ALIGNMENT_CENTER
+		v.add_child(row)
+		icon_rect("lock", row)
+		var l := _label(Loc.t("cat_hotel"), row)
+		l.add_theme_color_override("font_color", Color("a83a2a"))
+		pic.modulate = Color(0.45, 0.45, 0.5, 0.85)
 	else:
 		var pr := price_row(d.cost, d.get("gems", 0))
 		pr.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -862,6 +905,10 @@ func _card(id: String) -> Button:
 		if id == "zoo" and Game.caught.size() < Data.ZOO_ANIMALS:
 			Game.sfx("error")
 			toast(Loc.t("need_animals") % Data.ZOO_ANIMALS)
+			return
+		if d.get("highway", false) and not Game.is_connected_to_highway():
+			Game.sfx("error")
+			toast(Loc.t("need_highway"))
 			return
 		Game.sfx("tap")
 		build_menu.visible = false

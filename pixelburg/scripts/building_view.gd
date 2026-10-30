@@ -401,6 +401,32 @@ func contains_point(world_p: Vector2) -> bool:
 	return img.get_pixel(int(local.x), int(local.y)).a > 0.5
 
 
+## Tall enough to hide what stands behind it (towers, skyscrapers).
+func is_tall() -> bool:
+	return sprite.texture != null and sprite.texture.get_height() > 460
+
+
+## Whether a world point falls inside the picture of the building (its bounding box).
+func covers(world_p: Vector2) -> bool:
+	if sprite.texture == null:
+		return false
+	var local := world_p - global_position - sprite.offset
+	var sz := sprite.texture.get_size()
+	return local.x >= 0 and local.y >= 0 and local.x < sz.x and local.y < sz.y - size * Iso.HY
+
+
+var _fade := 1.0
+func set_fade(a: float) -> void:
+	if is_equal_approx(a, _fade):
+		return
+	_fade = a
+	create_tween().tween_property(self, "modulate:a", a, 0.25)
+
+
+func faded() -> bool:
+	return _fade < 0.99
+
+
 func bounce() -> void:
 	var tw := create_tween()
 	sprite.scale = Vector2.ONE

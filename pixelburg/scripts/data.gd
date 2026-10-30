@@ -52,10 +52,13 @@ const ROADS := {
 	"asphalt": {"name": ["Асфальт", "Asphalt"], "cost": 18, "upkeep": 0.5, "row": 3, "speed": 1.0},
 	"stone": {"name": ["Брусчатка", "Cobblestone"], "cost": 30, "upkeep": 0.8, "row": 4, "speed": 0.9},
 	"boulevard": {"name": ["Бульвар", "Boulevard"], "cost": 45, "upkeep": 1.2, "row": 7, "speed": 1.1},
+	"avenue": {"name": ["Проспект", "Avenue"], "cost": 60, "upkeep": 1.5, "row": 8, "speed": 1.3},
+	"brick": {"name": ["Кирпичная улица", "Brick street"], "cost": 35, "upkeep": 0.9, "row": 9, "speed": 0.85},
+	"bus_lane": {"name": ["Улица с автобусной полосой", "Bus lane street"], "cost": 40, "upkeep": 0.8, "row": 10, "speed": 1.05},
 	"highway": {"name": ["Трасса", "Highway"], "cost": 0, "upkeep": 0.0, "row": 5, "speed": 1.6},
 	"country": {"name": ["Загородная дорога", "Country road"], "cost": 0, "upkeep": 0.0, "row": 6, "speed": 1.25},
 }
-const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard"]
+const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane"]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
 ## zones: where it may be built. upkeep: coins per in-game day (salaries for services).
@@ -88,6 +91,26 @@ const B := {
 		"pop": 75, "rent": 240, "cycle": 270, "upkeep": 100},
 	"sky_home": {"name": ["Жилой небоскрёб", "Residential Skyscraper"], "cat": "home", "zones": ["city"], "size": 3, "cost": 48000, "gems": 20, "lvl": 24, "time": 420,
 		"pop": 420, "rent": 900, "cycle": 360, "upkeep": 420},
+	# towers with a signature design
+	"round_tower": {"name": ["Круглая башня", "Round Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 12000, "gems": 3, "lvl": 14, "time": 240,
+		"pop": 90, "rent": 280, "cycle": 270, "upkeep": 110},
+	"deco_tower": {"name": ["Башня ар-деко", "Art Deco Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 22000, "gems": 8, "lvl": 17, "time": 300,
+		"pop": 150, "rent": 420, "cycle": 300, "upkeep": 170},
+	"stack_tower": {"name": ["Башня-каскад", "Cascade Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 30000, "gems": 12, "lvl": 20, "time": 330,
+		"pop": 210, "rent": 520, "cycle": 300, "upkeep": 230},
+	"twin_towers": {"name": ["Башни-близнецы", "Skybridge Twins"], "cat": "home", "zones": ["city"], "size": 3, "cost": 42000, "gems": 16, "lvl": 22, "time": 400,
+		"pop": 360, "rent": 800, "cycle": 360, "upkeep": 360},
+	# ------------------------------------------------ hotels (own tab; open only with a road to the highway)
+	"hotel_boutique": {"name": ["Бутик-отель", "Boutique Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["city", "leisure"], "size": 2,
+		"cost": 9000, "gems": 2, "lvl": 10, "time": 200, "jobs": 12, "use": 0, "income": 300, "cycle": 240, "upkeep": 70},
+	"hotel_resort": {"name": ["Курортный отель", "Resort Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["leisure", "city"], "size": 3,
+		"cost": 18000, "gems": 5, "lvl": 14, "time": 260, "jobs": 24, "use": 0, "income": 520, "cycle": 260, "upkeep": 120},
+	"hotel_palace": {"name": ["Отель-дворец", "Palace Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["city", "leisure"], "size": 3,
+		"cost": 30000, "gems": 10, "lvl": 18, "time": 320, "jobs": 36, "use": 0, "income": 820, "cycle": 300, "upkeep": 180},
+	"hotel_sail": {"name": ["Отель «Парус»", "Sail Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["leisure", "city"], "size": 3,
+		"cost": 45000, "gems": 16, "lvl": 22, "time": 380, "jobs": 50, "use": 0, "income": 1200, "cycle": 330, "upkeep": 260},
+	"hotel_grand": {"name": ["Гранд-отель", "Grand Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["city"], "size": 3,
+		"cost": 65000, "gems": 24, "lvl": 26, "time": 450, "jobs": 70, "use": 0, "income": 1700, "cycle": 360, "upkeep": 360},
 	# ------------------------------------------------ shops and offices (jobs, goods used, income per cycle)
 	"bakery": {"name": ["Пекарня", "Bakery"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 250, "lvl": 1, "time": 15,
 		"jobs": 2, "use": 6, "income": 30, "cycle": 90, "upkeep": 8},
@@ -171,6 +194,10 @@ const B := {
 		"jobs": 8, "upkeep": 48, "svc": "power", "radius": 0, "happy": 0, "power": 120},
 	"solar_panel": {"name": ["Солнечные панели", "Solar Panels"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 650, "lvl": 2, "time": 20,
 		"jobs": 1, "upkeep": 3, "svc": "solar", "radius": 0, "happy": 1, "power": 8, "store": 48},
+	"bus_stop": {"name": ["Автобусная остановка", "Bus Stop"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 300, "lvl": 3, "time": 10,
+		"jobs": 1, "upkeep": 4, "svc": "bus", "radius": 7, "happy": 3},
+	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
+		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
 		"jobs": 1, "upkeep": 6, "svc": "parking", "radius": 6, "happy": 2},
 	# ------------------------------------------------ leisure businesses (tickets)
@@ -205,15 +232,19 @@ const B := {
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
-const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "tower", "sky_home",
+const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "twin_towers", "sky_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli",
+	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
+## build menu tabs: the categories plus the hotels, which have a window of their own
+const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
+const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
 const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy"]
 const ANIMALS := ["deer", "rabbit", "fox", "boar", "wolf", "bear"]
@@ -284,6 +315,10 @@ const MISSIONS := [
 
 static func xp_for_level(level: int) -> int:
 	return int(80.0 * pow(level, 1.6))
+
+
+static func tab_of(id: String) -> String:
+	return B[id].get("tab", B[id].cat)
 
 
 static func name_of(id: String) -> String:

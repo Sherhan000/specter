@@ -24,6 +24,7 @@ var camera: Camera2D
 var hud: CanvasLayer
 var life: Life
 var weather: WeatherFx
+var metro: MetroView
 
 var views := {}          ## uid -> BuildingView
 var lamp_nodes := {}     ## quarter Vector2i -> LampView
@@ -31,6 +32,7 @@ var sale_signs: Array[Node2D] = []
 var light_nodes := {}    ## Vector2i -> [TrafficLight, TrafficLight]
 var forest_animals: Array[ForestAnimal] = []
 var zoo_animals: Array[ForestAnimal] = []
+var xray := false        ## tall buildings are drawn see-through
 var input_lock := ""     ## while the tutorial runs: "" = free, otherwise only this action is allowed
 
 var mode := Mode.NONE
@@ -110,6 +112,9 @@ func _ready() -> void:
 	Events.fire_started.connect(_on_fire)
 	Events.crime.connect(func(caught): life.start_chase(caught))
 	_rebuild_zoo_animals()
+	metro.refresh()
+	for sig in [Game.building_updated, Game.building_removed, Game.building_moved]:
+		sig.connect(func(_uid): _on_metro_check.call_deferred())
 	_update_daylight()
 	scenery.update(_view_rect())
 
@@ -124,6 +129,9 @@ func _build_layers() -> void:
 	decals = Node2D.new()
 	decals.z_index = -9
 	add_child(decals)
+	metro = MetroView.new()
+	metro.z_index = -9
+	add_child(metro)
 	shadows = Node2D.new()
 	shadows.z_index = -8
 	add_child(shadows)
@@ -238,6 +246,17 @@ func _add_view(uid: int) -> void:
 	scenery.rebuild_land_trees()
 
 
+## The metro line follows the stations; redraw it only when they change.
+var _metro_key := ""
+func _on_metro_check() -> void:
+	var key := ""
+	for uid in Game.metro_stations():
+		key += "%d,%d;" % [Game.buildings[uid].x, Game.buildings[uid].y]
+	if key != _metro_key:
+		_metro_key = key
+		metro.refresh()
+
+
 func _on_building_removed(uid: int) -> void:
 	if views.has(uid):
 		var v: BuildingView = views[uid]
@@ -348,6 +367,35 @@ func _cull() -> void:
 		var mode := Node.PROCESS_MODE_INHERIT if on else Node.PROCESS_MODE_DISABLED
 		if v.process_mode != mode:
 			v.process_mode = mode
+	_update_fades()
+
+
+func set_xray(on: bool) -> void:
+	xray = on
+	_update_fades()
+
+
+## Tall buildings fade out when see-through is on, and those standing in front of the spot
+## where you are building or drawing a road fade on their own so you can see what you do.
+func _update_fades() -> void:
+	var focus := Vector2.INF
+	var depth := 0
+	if ghost != null and mode in [Mode.PLACE, Mode.MOVE]:
+		focus = ghost.position
+		depth = ghost_tile.x + ghost_tile.y + _ghost_size()
+	elif mode in [Mode.ROAD, Mode.LAMP, Mode.DEMOLISH] and not road_tiles.is_empty():
+		var c: Vector2i = road_tiles.back()
+		focus = Iso.center(c)
+		depth = c.x + c.y + 1
+	for uid in views:
+		var v: BuildingView = views[uid]
+		var a := 1.0
+		if v.is_tall():
+			if xray:
+				a = 0.3
+			elif focus != Vector2.INF and v.tile.x + v.tile.y + v.size > depth and v.covers(focus):
+				a = 0.3
+		v.set_fade(a)
 
 
 const SKY_DAY := [Color(0.36, 0.58, 0.84), Color(0.78, 0.87, 0.94)]
@@ -705,12 +753,19 @@ func _lamp_at(wp: Vector2) -> Vector2i:
 
 
 func pick_view(wp: Vector2) -> BuildingView:
+	# see-through buildings give way to whatever stands behind them
 	var best: BuildingView = null
+	var faded: BuildingView = null
 	for uid in views:
 		var v: BuildingView = views[uid]
-		if v.visible and v.contains_point(wp) and (best == null or v.position.y > best.position.y):
+		if not v.visible or not v.contains_point(wp):
+			continue
+		if v.faded():
+			if faded == null or v.position.y > faded.position.y:
+				faded = v
+		elif best == null or v.position.y > best.position.y:
 			best = v
-	return best
+	return best if best != null else faded
 
 
 func _tap_building(v: BuildingView) -> void:
@@ -995,6 +1050,7 @@ func _set_ghost_tile(t: Vector2i) -> void:
 	_add_cursors(around, "cursor_road")
 	if mode == Mode.PLACE:
 		hud.place_hint(why, not around.is_empty())
+	_update_fades()
 
 
 func _footprint(t: Vector2i, n: int) -> Array[Vector2i]:

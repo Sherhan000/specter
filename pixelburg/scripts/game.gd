@@ -569,6 +569,8 @@ func _end_of_day() -> void:
 			var b: Dictionary = buildings[uid]
 			if Data.B[b.id].cat == "fun" and _works(uid):
 				tour += 60 * b.lvl
+			elif Data.B[b.id].get("tab", "") == "hotel" and _works(uid):
+				tour += 120 * b.lvl
 		tour = int(tour * law_mult("tour"))
 		if tour > 0:
 			_earn("tourism", tour)
@@ -576,6 +578,9 @@ func _end_of_day() -> void:
 			var sold := (goods - 400) / 4
 			goods -= sold
 			_earn("export", sold / 2)
+	var fares := transit_fares()
+	if fares > 0:
+		_earn("transit", fares)
 	if deposit > 0:
 		var interest := maxi(1, int(deposit * 0.015))
 		deposit += interest
@@ -714,6 +719,10 @@ func _sim_building(uid: int, dt: float) -> bool:
 			b.prog = 0.0
 			if b.priv == "":
 				add_xp(int(d.cost / 10) + 5)
+			if b.id == "metro_station":
+				toast.emit(Loc.t("metro_ready" if metro_open() else "metro_wait"))
+			elif b.id == "bus_stop" and bus_stops().size() < 2:
+				toast.emit(Loc.t("bus_wait"))
 			dirty = true
 			building_updated.emit(uid)
 		return dirty
@@ -864,6 +873,7 @@ func recalc() -> void:
 	for uid in infl:
 		if Data.B[buildings[uid].id].get("svc", "") == "gov":
 			has_gov = true
+	var metro_ok := metro_open()
 	var total := 0.0
 	var weight := 0
 	for uid in homes:
@@ -886,7 +896,7 @@ func recalc() -> void:
 					if dist <= od.radius:
 						decor += Data.stat(ob.id, "happy", ob.lvl)
 				"service":
-					if od.svc == "gov" or dist <= od.radius:
+					if (od.svc != "metro" or metro_ok) and (od.svc == "gov" or dist <= od.radius):
 						svc[od.svc] = true
 				"fun":
 					if dist <= od.radius:
@@ -903,9 +913,9 @@ func recalc() -> void:
 		if decor > 0:
 			reasons.append(["r_decor", decor])
 		h += decor
-		for key in ["edu", "fire", "police", "health"]:
+		for key in ["edu", "fire", "police", "health", "bus", "metro"]:
 			if svc.has(key):
-				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9}[key]
+				var v: int = {"edu": 8, "fire": 5, "police": 7, "health": 9, "bus": 3, "metro": 6}[key]
 				h += v
 				reasons.append(["r_" + key, v])
 		if water_ratio < 0.9:
@@ -929,8 +939,10 @@ func recalc() -> void:
 		var rt := _road_type_near(b.x, b.y, n)
 		if rt == "stone":
 			h += 2
-		elif rt == "boulevard":
+		elif rt in ["boulevard", "brick"]:
 			h += 3
+		elif rt == "bus_lane":
+			h += 1
 		elif rt == "dirt":
 			h -= 2
 			reasons.append(["r_dirt", -2])
@@ -1059,6 +1071,45 @@ func _rebuild_net() -> void:
 			if net.has(nc) and not connected.has(nc):
 				connected[nc] = true
 				queue.append(nc)
+
+
+## Built metro stations in the order they were built: the line runs underground from one to the next.
+func metro_stations() -> Array[int]:
+	var out: Array[int] = []
+	for uid in buildings:
+		var b: Dictionary = buildings[uid]
+		if b.id == "metro_station" and b.built and not b.closed:
+			out.append(uid)
+	out.sort()
+	return out
+
+
+## Tickets for a day of buses (once two stops are served) and metro (once two stations are built).
+func transit_fares() -> int:
+	var n := 0
+	var stops := bus_stops().size()
+	if stops >= 2 and not laws.has("free_bus"):
+		n += 15 * stops
+	var st := metro_stations().size()
+	if st >= 2:
+		n += 80 * st
+	return n
+
+
+## The metro works once there are two stations: one where the line starts and one where it goes.
+func metro_open() -> bool:
+	return metro_stations().size() >= 2
+
+
+## Bus stops the city bus serves, in the order they were built.
+func bus_stops() -> Array[int]:
+	var out: Array[int] = []
+	for uid in buildings:
+		var b: Dictionary = buildings[uid]
+		if b.id == "bus_stop" and b.built and not b.closed and road_ok.get(uid, false):
+			out.append(uid)
+	out.sort()
+	return out
 
 
 func is_connected_to_highway() -> bool:
@@ -1368,6 +1419,8 @@ func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
 				return "wrong_zone"
 	if id == "zoo" and ignore_uid == 0 and caught.size() < Data.ZOO_ANIMALS:
 		return "need_animals"
+	if Data.B[id].get("highway", false) and not is_connected_to_highway():
+		return "need_highway"
 	return ""
 
 

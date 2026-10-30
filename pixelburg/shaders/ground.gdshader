@@ -141,7 +141,22 @@ vec3 terrain(vec2 g, out float water_mask) {
 }
 
 // ------------------------------------------------------------------ roads
-// returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street, 7 boulevard
+// red brick paving in running bond, about 0.8 x 0.4 m
+vec3 bricks(vec2 g) {
+	vec2 b = g * vec2(20.0, 40.0);
+	float row = floor(b.y);
+	b.x += mod(row, 2.0) * 0.5;
+	vec2 cell = floor(b);
+	vec2 fr = fract(b);
+	float h = hash(cell + vec2(row * 3.1, 7.0));
+	vec3 c = mix(vec3(0.62, 0.3, 0.22), vec3(0.74, 0.42, 0.3), h);
+	c = mix(c, vec3(0.55, 0.36, 0.3), step(0.86, hash(cell + 1.7)) * 0.6);
+	float joint = 1.0 - smoothstep(0.0, 0.08, min(min(fr.x, 1.0 - fr.x) * 0.5, min(fr.y, 1.0 - fr.y)));
+	return mix(c, vec3(0.7, 0.66, 0.6), joint * 0.7);
+}
+
+// returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street, 7 boulevard,
+// 8 avenue (wide, four lanes), 9 brick street, 10 street with bus lanes
 vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	int type = d.r;
 	int arms = d.g & 15;
@@ -204,7 +219,7 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	}
 
 	vec3 m;
-	float half = 0.21;
+	float half = type == 8 ? 0.3 : (type == 10 ? 0.25 : 0.21);
 	float dc = carriage(f, arms, half, m);
 	vec3 asph = tex_g(4.0, g, 0.5);
 
@@ -228,7 +243,7 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	}
 
 	// city streets (asphalt, cobblestone, town): carriageway + parking + sidewalks with curbs
-	bool cobble = type == 3;
+	bool cobble = type == 3 || type == 9;
 	float dpark = 1.0;
 	if (park && (arms == 10 || arms == 5)) {
 		float along = m.x;
@@ -243,7 +258,8 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 		dpark = bx;
 	}
 	float droad = min(dc, dpark);
-	vec3 surf = cobble ? tex_g(6.0, g, 3.0) : asph;
+	vec3 surf = type == 9 ? bricks(g) : (cobble ? tex_g(6.0, g, 3.0) : asph);
+	if (type == 8) surf *= 0.9;
 	vec3 pav = tex_g(5.0, g, 0.5);
 	// sidewalk slabs, one metre
 	vec2 sl = fract(g * 16.0);
@@ -281,6 +297,28 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 				gm = mix(gm, gm * vec3(0.6, 0.8, 0.55), bush);
 				gm = mix(gm, CURB, 1.0 - smoothstep(0.004, 0.009, 0.05 - off));
 				c = gm;
+			}
+		} else if ((type == 8 || type == 10) && m.z > 0.0 && (arms == 10 || arms == 5 || m.z > 1.5)) {
+			float off = abs(m.y - 0.5);
+			if (type == 8) {
+				// avenue: double yellow centre line, dashed lines between the two lanes each way
+				float tw = 1.0 - smoothstep(0.02, 0.05, abs(off - 0.08)) + 1.0 - smoothstep(0.02, 0.05, abs(off - 0.22));
+				c *= 1.0 - tw * 0.05;
+				float yel = 1.0 - smoothstep(0.003, 0.006, abs(off - 0.012));
+				c = mix(c, vec3(0.92, 0.75, 0.25), yel);
+				float dash = (1.0 - smoothstep(0.003, 0.006, abs(off - 0.15))) * step(fract(m.x * 3.0), 0.5);
+				c = mix(c, PAINT, dash * 0.9);
+			} else {
+				// bus lanes along both curbs: red surface behind a solid white line, a dashed centre line
+				if (off > 0.13) c = mix(c, vec3(0.62, 0.24, 0.2), 0.75);
+				float sol = 1.0 - smoothstep(0.003, 0.007, abs(off - 0.13));
+				c = mix(c, PAINT, sol);
+				float cl = (1.0 - smoothstep(0.003, 0.006, off)) * step(fract(m.x * 3.0), 0.55);
+				c = mix(c, PAINT, cl);
+				// a pale diamond on the bus lane every tile
+				vec2 dm = vec2(fract(m.x) - 0.5, off - 0.19);
+				float dia = 1.0 - smoothstep(0.0, 0.006, abs(abs(dm.x) * 0.35 + abs(dm.y)) - 0.03);
+				c = mix(c, PAINT, dia * 0.7);
 			}
 		} else if (!cobble) {
 			// wear in the wheel tracks, centre line

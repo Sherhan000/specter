@@ -3,8 +3,9 @@ extends Node2D
 ## The valley floor: one big polygon drawn by shaders/ground.gdshader, fed with small data
 ## textures: terrain weights (static), road tiles and zones / ownership (rebuilt on change).
 
-const ROAD_IDS := {"dirt": 1, "asphalt": 2, "stone": 3, "highway": 4, "country": 5, "town": 6, "boulevard": 7}
-const STREETS := ["asphalt", "stone", "town", "boulevard"]
+const ROAD_IDS := {"dirt": 1, "asphalt": 2, "stone": 3, "highway": 4, "country": 5, "town": 6, "boulevard": 7,
+	"avenue": 8, "brick": 9, "bus_lane": 10}
+const STREETS := ["asphalt", "stone", "town", "boulevard", "avenue", "brick", "bus_lane"]
 ## arm bits: north (-y) 1, east (+x) 2, south (+y) 4, west (-x) 8
 const ARM_DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 
@@ -100,7 +101,7 @@ func update_roads(net: Dictionary) -> void:
 	for c in all:
 		var t: String = all[c]
 		var a: int = arms[c]
-		if not t in STREETS or t == "boulevard" or (a != 10 and a != 5):
+		if not t in STREETS or t in ["boulevard", "avenue", "bus_lane"] or (a != 10 and a != 5):
 			continue
 		parking[c] = "x" if a == 10 else "y"
 		var step := Vector2i(1, 0) if a == 10 else Vector2i(0, 1)
