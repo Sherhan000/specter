@@ -594,88 +594,105 @@ def crane(T, s, f, z0, h, jib=150):
     T.box(s + jib - 6, f - 1, s + jib - 4, f + 1, z0 + h - 60, z0 + h, all=flat("4a4a50"), top=flat("4a4a50"))
 
 
+def slit_glow(fh=20, lit=1.0):
+    """The bright gap between the two halves of the tower: light floors behind glass."""
+    def fn(u, v, L, H):
+        line = np.mod(v, fh) < 2.0
+        rgb = np.where(line[..., None], C("8a9aac"), C("e8f4ff")) * np.ones(u.shape + (1,))
+        em = np.zeros(u.shape + (4,))
+        em[~line] = np.array([230, 244, 255, 230.0 * lit])
+        return rgb, np.ones(u.shape, bool), em
+    return fn
+
+
 def dushanbe_tower(L, o):
-    """Dushanbe Tower complex: a slender 77-floor glass shaft rising to a sloped blade crown, with four more
-    rounded glass towers with roof gardens around it, on a podium with a lake in front.
+    """Dushanbe Tower, after the architect's model: the main tower is two curved glass blades that taper to
+    points of different height, with a glowing slit between them; two oval glass towers with roof gardens
+    flank it; a curved podium and an oval plaza in front, a lake behind.
     Level 1 is still being built, level 2 is topped out, level 3 is finished and lit."""
-    fh = 20                       # the floors are drawn at reduced scale so the tower fits on screen
+    fh = 20                       # the 77 floors are drawn at reduced scale so the tower fits on screen
+    full = 77 * fh
     floors = 77 if L >= 2 else 46
-    pod = 60
-    H = pod + floors * fh
-    cv = Canvas(4, pod + 77 * fh + 340)
+    pod = 40
+    top = pod + floors * fh
+    cv = Canvas(4, pod + full + 200)
     T = Orient(cv, o)
     seed = 951
-    glass = "2f6aa8"
     lit = [0.25, 0.4, 0.6][L - 1]
-    # podium: mall and lobby with a green roof
-    podf = facade("stone", "d8d4cc", shop=(30, 610, 34), doors=[(180, 80, 40, "double_glass")], plinth=None, seed=seed, lit=0.8,
-                  win=Win(w=28, h=24, sill=30, sp=34, margin=10, fh=pod, frame="3a3a40", group="work"))
-    box(T, 10, 120, 630, 620, 0, pod, all=podf, top=flat_top("5e8a4e", "7aa860", 6))
-    canopy(T, 160, 280, 120, 30, 44, "2e3238", "2e3238", posts=False)
-    door(T, 180, 80, 120, 40)
-    entry(T, 220)
-    # four rounded glass towers with bulging, vase-like profiles and gardens on top
-    grow = [0.7, 0.9, 1.0][L - 1]
-
-    def round_tower_(sc, fc, fl, r0, k):
-        cx, cy = T.pt(sc, fc)
-        segs = max(3, int(fl * grow) // 3)
+    ground(T, 0, 0, 640, 640, kit.paving("d8d0c2", 12.0, 4))
+    # lake and park behind the tower
+    pool(T, 140, 470, 500, 620)
+    for k, (ss, ff) in enumerate(((60, 460), (100, 600), (560, 600), (590, 450), (120, 300), (520, 300))):
+        tree(T, ss, ff, "maple", 0.8, seed + 40 + k)
+    # main tower: two blades, each a stack of two-floor slices that narrow, lean apart and end in a point
+    seg = 2 * fh
+    gap = 14
+    cs, cf = 320, 360
+    W0, D0 = 120, 92
+    glass = facade("concrete", "a8c0d8", win=Win(w=6, h=14, sill=3, sp=9, margin=2, fh=fh, frame="d8e2ec", style="vertical",
+                                                 tint="3a6aa0", group="work", top_skip=0), plinth=None, seed=seed + 1, lit=lit)
+    for side, h_end in ((-1, full), (1, full - 120)):
+        z = pod
+        while z < min(top, pod + h_end):
+            t = (z - pod) / h_end
+            w = W0 * max(0.06, (1 - t) ** 0.7) * (1.08 - 0.08 * t)
+            d = D0 * (1 - 0.55 * t)
+            lean = 26 * t * side           # the blades twist away from each other towards the top
+            inner = cs + side * gap / 2 * (1 - 0.5 * t)
+            outer = inner + side * w
+            s0, s1 = min(inner, outer), max(inner, outer)
+            z1 = min(z + seg, top, pod + h_end)
+            T.box(s0, cf - d + lean, s1, cf + d + lean, z, z1, all=glass, top=flat("7e9ab8"))
+            z = z1
+    # the glowing slit between the blades
+    slit_top = min(top, pod + full - 160)
+    T.box(cs - gap / 2, cf - 40, cs + gap / 2, cf + 40, pod, slit_top, all=slit_glow(fh, 1.0 if L == 3 else 0.5), top=flat("dce6f0"))
+    if L == 1:
+        crane(T, cs - 30, cf, top, 120)
+        crane(T, cs + 30, cf - 20, top - 40, 90)
+    else:
+        spire(T, cs - 8, cf - 10, pod + full, 50, "e8eef4", beacon=True)
+    # two oval glass towers with gardens on top, flanking the main one
+    grow = [0.75, 0.95, 1.0][L - 1]
+    for k, (sc, fc, fl, r0) in enumerate(((120, 150, 34, 54), (520, 520, 30, 52))):
+        th = int(fl * grow) * fh
+        segs = max(3, th // seg)
         for j in range(segs):
             t = j / segs
-            r = r0 * (0.8 + 0.3 * np.sin(np.pi * (0.1 + 0.85 * t)))
-            z0 = pod + j * 3 * fh
-            T.cv.cylinder(cx, cy, r, z0, z0 + 3 * fh, ring_glass(r, "4a82b8", "e4eaf0", fh, 16, lit, seed + 20 + k, "f4f6f8"))
-            tier_ring(T, cx, cy, r + 3, z0 + 3 * fh - 2, 2, "f4f6f8")
-        zt = pod + segs * 3 * fh
-        rt = r0 * (0.8 + 0.3 * np.sin(np.pi * 0.95))
-        T.cv.cylinder(cx, cy, rt, zt, zt + 2, solid_side("f4f6f8"), cap=lambda u, v: (C("6a9a50") * np.ones(u.shape + (3,)), nores(u.shape), None))
-        for j in range(5):
-            a = j / 5 * 2 * np.pi
-            T.cv.ellipsoid(cx + np.cos(a) * rt * 0.5, cy + np.sin(a) * rt * 0.5, zt + 6, 10, 10, 9, lambda wx, wy, wz, nx, ny, nz: (
+            r = r0 * (1.0 - 0.18 * t)
+            z0 = pod + j * seg
+            for dd in (-r0 * 0.45, r0 * 0.45):        # two overlapping drums make the oval plan
+                cx, cy = T.pt(sc + dd, fc - dd * 0.4)
+                T.cv.cylinder(cx, cy, r, z0, z0 + seg, ring_glass(r, "4a7ab0", "d8e2ec", fh, 10, lit, seed + 20 + k, "e8eef4"))
+        zt = pod + segs * seg
+        rt = r0 * 0.82
+        for dd in (-r0 * 0.45, r0 * 0.45):
+            cx, cy = T.pt(sc + dd, fc - dd * 0.4)
+            T.cv.cylinder(cx, cy, rt, zt, zt + 3, solid_side("e8eef4"), cap=lambda u, v: (C("6a9a50") * np.ones(u.shape + (3,)), nores(u.shape), None))
+        for j in range(6):
+            a = j / 6 * 2 * np.pi
+            cx, cy = T.pt(sc + np.cos(a) * r0 * 0.6, fc + np.sin(a) * r0 * 0.35)
+            T.cv.ellipsoid(cx, cy, zt + 9, 11, 11, 10, lambda wx, wy, wz, nx, ny, nz: (
                 C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
         if L == 1 and k == 0:
-            crane(T, sc, fc, zt, 80, 90)
-
-    # two tall ones at the sides, two lower ones in front of the main tower
-    round_tower_(90, 150, 40, 64, 1)
-    round_tower_(550, 520, 36, 62, 2)
-    # main shaft: square glass tower that slims in three steps
-    win = Win(w=10, h=14, sill=3, sp=13, margin=3, fh=fh, frame="b8cce0", style="vertical", tint=glass, group="work", top_skip=0)
-    steps_ = [(230, 410, 290, 470), (242, 398, 302, 458), (254, 386, 314, 446)]
-    zs = [pod, pod + int(floors * 0.45) * fh, pod + int(floors * 0.75) * fh, H]
-    for k in range(3):
-        s0, s1, f0, f1 = steps_[k]
-        fa = facade("concrete", "a8c4dc", win=win, seed=seed + k, plinth=None, lit=lit)
-        box(T, s0, f0, s1, f1, zs[k], zs[k + 1], all=fa, top=flat_top("8a929a", "dce4ec", 3))
-        fin = flat("e8eef4", 3)
-        for a in (s0 - 3, s1 - 5):
-            T.box(a, f0 - 4, a + 8, f0 + 4, zs[k], zs[k + 1] + 6, all=fin, top=fin)
-    s0, s1, f0, f1 = steps_[2]
-    if L == 1:
-        crane(T, 320, 380, H, 120)
-    else:
-        # the blade crown: glass rising in a slope to a sharp point, lit at night when finished
-        n = 18
-        for k in range(n):
-            cut = s0 + (s1 - s0) * k / n
-            z0 = H + k * 16
-            crown = facade("concrete", "c8dcec", win=Win(w=8, h=10, sill=3, sp=12, margin=2, fh=16, frame="e8eef4", style="vertical",
-                                                         tint="8ac0e8", group="work", top_skip=0), plinth=None, seed=seed + 10, lit=1.0 if L == 3 else 0.2)
-            T.box(cut, f0 + 6, s1, f1 - 6, z0, z0 + 16, all=crown, top=flat("e8eef4"))
-        spire(T, s1 - 6, (f0 + f1) / 2, H + n * 16, 70, "e8eef4", beacon=True)
-        if L == 3:
-            T.box(s1 - 2, (f0 + f1) / 2 - 3, s1 + 2, (f0 + f1) / 2 + 3, H, H + n * 16, all=lambda u, v, LL, HH: glow_res("bfe4ff", u.shape),
-                  top=flat("e8eef4"))
-    round_tower_(350, 200, 26, 56, 3)
-    round_tower_(520, 330, 22, 54, 4)
-    # lake and park in front
-    ground(T, 0, 0, 640, 120, kit.paving("d0c8bc", 12.0, 4))
-    pool(T, 20, 16, 140, 104)
-    pool(T, 310, 16, 620, 104)
-    for k, ss in enumerate((150, 290)):
-        tree(T, ss, 30, "maple", 0.75, seed + 30 + k)
-    lamp(T, 180, 14, "modern", 55)
-    lamp(T, 260, 14, "modern", 55, "light2")
+            crane(T, sc, fc, zt, 70, 80)
+    # the curved podium: a low white drum with a glass band, an oval plaza in front of it
+    px, py = T.pt(320, 200)
+    T.cv.cylinder(px, py, 120, 0, pod, ring_glass(120, "6a9ac0", "f4f6f8", pod, 18, 0.8, seed + 5, "f4f6f8"),
+                  cap=lambda u, v: (C("7aa860") * np.ones(u.shape + (3,)), nores(u.shape), None))
+    T.cv.cylinder(px, py, 124, pod - 4, pod, solid_side("f4f6f8"))
+    for k in range(5):
+        a = k / 5 * 2 * np.pi
+        bx, by = px + np.cos(a) * 60, py + np.sin(a) * 60
+        T.cv.ellipsoid(bx, by, pod + 6, 9, 9, 8, lambda wx, wy, wz, nx, ny, nz: (
+            C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
+    T.flat(240, 20, 400, 76, 0.5, lambda u, v, LL, D: (np.where(((u - LL / 2) / (LL / 2)) ** 2 + ((v - D / 2) / (D / 2)) ** 2 < 1,
+                                                                 1, 0)[..., None] * C("f4f2ee") + np.where(
+        ((u - LL / 2) / (LL / 2)) ** 2 + ((v - D / 2) / (D / 2)) ** 2 < 1, 0, 1)[..., None] * C("d8d0c2"), nores(u.shape), None), ground=True)
+    door(T, 300, 40, 80, 30)
+    entry(T, 320)
+    lamp(T, 230, 14, "modern", 55)
+    lamp(T, 410, 14, "modern", 55, "light2")
     return cv
 
 
