@@ -26,13 +26,14 @@ const JOB_KINDS := {
 	"police": "police", "hospital": "doctor", "fire_station": "firefighter", "school": "business",
 	"farm": "farmer", "orchard": "farmer", "greenhouse": "farmer", "ranch": "farmer", "warehouse": "builder",
 	"sawmill": "builder", "workshop": "builder", "power_plant": "builder", "water_station": "builder", "solar_panel": "builder", "factory": "builder", "logistics": "builder",
-	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "post_office": "postman",
+	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "coffee_kiosk": "chef", "shawarma": "chef",
+	"donut_shop": "chef", "burger_bar": "chef", "food_trucks": "chef", "chaikhana": "chef", "drive_thru": "chef", "post_office": "postman",
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
-const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall"]
+const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]
 const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum",
-	"stadium", "cinema", "restaurant", "library", "gym", "cafe"]
+	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks"]
 
 var city: Node
 var car_grid := AStarGrid2D.new()
@@ -1028,7 +1029,7 @@ func _update_lights() -> void:
 			var open := 7.0 <= h and h < 20.0
 			if b.id in ["hospital", "police", "fire_station", "hotel", "gas_station"]:
 				open = true
-			elif cat == "fun" or b.id in ["restaurant", "cinema", "cafe", "pizzeria"]:
+			elif cat == "fun" or b.id in ["restaurant", "cinema", "cafe", "pizzeria", "shawarma", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]:
 				open = 10.0 <= h and h < 23.5
 			v.openness = (1.0 if open else 0.12) if Game.works(uid) else 0.0
 			var w := 1.0 if open and Game.works(uid) else 0.0

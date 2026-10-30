@@ -82,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Кафе и фастфуд, каждый со своим видом: кофейня-киоск с огромной чашкой, шаурма, пончиковая, бургерная, дворик фудтраков, чайхана с топчанами и фастфуд с автоокном", "Cafes and fast food, each with its own look: a coffee kiosk with a giant cup, a shawarma grill, a donut shop, a burger bar, a food truck court, a chaikhana teahouse and a drive-thru"],
 	["Двери открываются по-настоящему: створка поворачивается внутрь, видно освещённую комнату, а ночью свет падает на тротуар", "Doors open for real: the leaf swings inside, you can see the lit room, and at night light spills onto the sidewalk"],
 	["Аэропорт: купите рейсы в 16 стран — самолёты привозят путешественников со всего мира, а аналитика покажет, из какой страны пришло больше всего людей", "Airport: buy flights to 16 countries; planes bring travellers from all over the world, and the analytics show which country sends the most people"],
 	["Пляж за границей карты: купите участки пляжа у моря и стройте зонты, спасательную вышку и пляжный бар", "Beach beyond the map border: buy beach plots by the sea and build umbrellas, a lifeguard tower and a beach bar"],
@@ -176,6 +177,21 @@ const B := {
 		"jobs": 2, "use": 6, "income": 30, "cycle": 90, "upkeep": 8},
 	"cafe": {"name": ["Кафе", "Cafe"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 700, "lvl": 2, "time": 30,
 		"jobs": 3, "use": 8, "income": 48, "cycle": 100, "upkeep": 12},
+	# cafes and fast food, each with its own look (tools/art/b_food.py)
+	"coffee_kiosk": {"name": ["Кофейня-киоск", "Coffee Kiosk"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 500, "lvl": 2, "time": 20,
+		"jobs": 2, "use": 5, "income": 38, "cycle": 90, "upkeep": 7},
+	"shawarma": {"name": ["Шаурма", "Shawarma Grill"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 900, "lvl": 3, "time": 25,
+		"jobs": 2, "use": 7, "income": 50, "cycle": 95, "upkeep": 9},
+	"donut_shop": {"name": ["Пончиковая", "Donut Shop"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 1300, "lvl": 4, "time": 35,
+		"jobs": 3, "use": 9, "income": 62, "cycle": 105, "upkeep": 13},
+	"burger_bar": {"name": ["Бургерная", "Burger Bar"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 1500, "lvl": 5, "time": 40,
+		"jobs": 4, "use": 10, "income": 72, "cycle": 110, "upkeep": 16},
+	"food_trucks": {"name": ["Дворик фудтраков", "Food Truck Court"], "cat": "shop", "zones": ["city", "leisure"], "size": 2, "cost": 3400, "lvl": 7, "time": 70,
+		"jobs": 9, "use": 18, "income": 140, "cycle": 140, "upkeep": 36},
+	"chaikhana": {"name": ["Чайхана", "Teahouse (Chaikhana)"], "cat": "shop", "zones": ["city", "leisure"], "size": 2, "cost": 5200, "lvl": 9, "time": 110,
+		"jobs": 10, "use": 22, "income": 175, "cycle": 150, "upkeep": 44},
+	"drive_thru": {"name": ["Фастфуд с автоокном", "Drive-Thru"], "cat": "shop", "zones": ["city", "industry"], "size": 2, "cost": 6500, "lvl": 11, "time": 130,
+		"jobs": 12, "use": 28, "income": 205, "cycle": 160, "upkeep": 55},
 	"flowershop": {"name": ["Цветочный", "Flower Shop"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 1100, "lvl": 4, "time": 40,
 		"jobs": 3, "use": 10, "income": 62, "cycle": 110, "upkeep": 15},
 	"pharmacy": {"name": ["Аптека", "Pharmacy"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 1400, "lvl": 5, "time": 45,
@@ -340,7 +356,7 @@ const B := {
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
 const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
-	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
+	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
@@ -378,7 +394,7 @@ const LANDMARK_HOMES := 42   ## homes of the quarter (as in the project) that br
 const LANDMARK_RADIUS := 16  ## homes this close to the tower are happier
 const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
-const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy"]
+const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar"]
 const ANIMALS := ["deer", "rabbit", "fox", "boar", "wolf", "bear"]
 ## lots people walk through (their props are drawn as part of the building)
 const WALKABLE := ["park", "plaza", "bench", "fountain", "statue", "playground", "pond", "flowerbed", "zoo", "funfair"]

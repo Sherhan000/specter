@@ -390,6 +390,15 @@ func _ready() -> void:
 		if mb != 0:
 			Game.demolish(mb)
 	Game.recalc()
+	# cafes and fast food: each kind is a working shop with its own sprite, residents eat there
+	for fid in ["coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]:
+		check(Data.B.has(fid) and Data.ORDER.has(fid) and Data.B[fid].cat == "shop" and Data.B[fid].income > 0, "%s is a shop in the list" % fid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % fid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % fid), "%s has its own sprites" % fid)
+		var food_b := Game._add_building(fid, spots[3].x, spots[3].y, true)
+		check(food_b != 0 and Game.buildings.has(food_b), "%s can be placed" % fid)
+		if food_b != 0:
+			Game.demolish(food_b)
+	check(Data.PRIVATE_KINDS.all(func(k): return Data.B.has(k) and int(Data.B[k].size) == 1), "residents propose only small businesses")
 	check(Data.beach_seg(Vector2i(75, 100)) == 2 and Data.beach_seg(Vector2i(80, 100)) == -1 and Data.zone_at(Vector2i(75, 100)) == "beach", "beach tiles map to segments")
 	Game.beach = []
 	check(not Game.is_owned(Vector2i(75, 100)) and Game.beach_buyable(3) == Game.plots.has(Vector2i(0, 3)), "beach is not owned at the start")
