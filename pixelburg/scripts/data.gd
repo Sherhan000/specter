@@ -91,6 +91,9 @@ const B := {
 		"pop": 75, "rent": 240, "cycle": 270, "upkeep": 100},
 	"sky_home": {"name": ["Жилой небоскрёб", "Residential Skyscraper"], "cat": "home", "zones": ["city"], "size": 3, "cost": 48000, "gems": 20, "lvl": 24, "time": 420,
 		"pop": 420, "rent": 900, "cycle": 360, "upkeep": 420},
+	# the 40-floor homes of the Dushanbe Tower district: built once the tower stands, happier close to it
+	"dushanbe_home": {"name": ["Дом Душанбе-Сити", "Dushanbe City Home"], "cat": "home", "zones": ["city"], "size": 2, "cost": 26000, "gems": 6,
+		"lvl": 27, "time": 300, "needs": "dushanbe_tower", "pop": 240, "rent": 560, "cycle": 320, "upkeep": 220},
 	# towers with a signature design
 	"round_tower": {"name": ["Круглая башня", "Round Tower"], "cat": "home", "zones": ["city"], "size": 2, "cost": 12000, "gems": 3, "lvl": 14, "time": 240,
 		"pop": 90, "rent": 280, "cycle": 270, "upkeep": 110},
@@ -100,8 +103,8 @@ const B := {
 		"pop": 210, "rent": 520, "cycle": 300, "upkeep": 230},
 	"twin_towers": {"name": ["Башни-близнецы", "Skybridge Twins"], "cat": "home", "zones": ["city"], "size": 3, "cost": 42000, "gems": 16, "lvl": 22, "time": 400,
 		"pop": 360, "rent": 800, "cycle": 360, "upkeep": 360},
-	# the landmark: one per city (77 floors, offices, mall, hotel); brings tourists
-	"dushanbe_tower": {"name": ["Башня Душанбе", "Dushanbe Tower"], "cat": "shop", "unique": true, "landmark": true, "zones": ["city"], "size": 3,
+	# the landmark: one per city (77-floor tower and four more high-rises, offices, mall, hotel); brings tourists
+	"dushanbe_tower": {"name": ["Башня Душанбе", "Dushanbe Tower"], "cat": "shop", "unique": true, "landmark": true, "zones": ["city"], "size": 4,
 		"cost": 120000, "gems": 40, "lvl": 27, "time": 600, "jobs": 300, "use": 0, "income": 3200, "cycle": 400, "upkeep": 600},
 	# ------------------------------------------------ hotels (own tab; open only with a road to the highway)
 	"hotel_boutique": {"name": ["Бутик-отель", "Boutique Hotel"], "cat": "shop", "tab": "hotel", "highway": true, "zones": ["city", "leisure"], "size": 2,
@@ -235,7 +238,7 @@ const B := {
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
-const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "twin_towers", "sky_home",
+const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "twin_towers", "sky_home", "dushanbe_home",
 	"bakery", "cafe", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
@@ -247,6 +250,8 @@ const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
 ## build menu tabs: the categories plus the hotels, which have a window of their own
 const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
+const LANDMARK_HOMES := 40   ## homes of the district that bring the tower to full income
+const LANDMARK_RADIUS := 16  ## homes this close to the tower are happier
 const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
 const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy"]

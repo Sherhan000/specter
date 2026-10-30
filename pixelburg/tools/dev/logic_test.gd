@@ -255,8 +255,21 @@ func _ready() -> void:
 	check(tv.faded(), "see-through mode fades tall buildings")
 	city.set_xray(false)
 	check(not tv.faded(), "see-through mode off")
-	var landmark := Game._add_building("dushanbe_tower", c - 20, c + 20, true)
+	check(Game.place_problem("dushanbe_home", hx.x, hx.y) == "need_landmark", "district homes need the Dushanbe Tower")
+	var landmark := Game._add_building("dushanbe_tower", hx.x + 3, hx.y, true)
 	check(Game.place_problem("dushanbe_tower", c + 30, c - 30) == "already_built", "Dushanbe Tower can be built only once")
+	check(Game.place_problem("dushanbe_home", hx.x, hx.y) == "", "district homes allowed once the tower stands")
+	var b0 := Game.landmark_bonus()
+	var hp := hx
+	for yy in range(hx.y - 12, hx.y + 12):
+		for xx in range(hx.x - 12, hx.x + 12):
+			if hp == hx and Game.place_problem("dushanbe_home", xx, yy) == "" and Game._touches_road(xx, yy, 2):
+				hp = Vector2i(xx, yy)
+	var dh := Game._add_building("dushanbe_home", hp.x, hp.y, true)
+	check(Game.landmark_bonus() > b0, "every district home raises the tower's income")
+	Game.recalc()
+	check(Game.home_reasons.get(dh, []).any(func(r): return r[0] == "r_landmark"), "homes near the tower are happier")
+	Game.demolish(dh)
 	Game.demolish(landmark)
 	for uid in [stops[0], stops[1], st1, st2, tall]:
 		Game.demolish(uid)

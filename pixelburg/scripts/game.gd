@@ -876,6 +876,11 @@ func recalc() -> void:
 		if Data.B[buildings[uid].id].get("svc", "") == "gov":
 			has_gov = true
 	var metro_ok := metro_open()
+	var landmarks: Array[Vector2] = []
+	for uid in buildings:
+		var lb: Dictionary = buildings[uid]
+		if Data.B[lb.id].get("landmark", false) and lb.built:
+			landmarks.append(Vector2(lb.x + Data.B[lb.id].size / 2.0, lb.y + Data.B[lb.id].size / 2.0))
 	var total := 0.0
 	var weight := 0
 	for uid in homes:
@@ -924,6 +929,11 @@ func recalc() -> void:
 			var wp := int(round((1.0 - water_ratio) * 20.0))
 			h -= wp
 			reasons.append(["r_water", -wp])
+		for lm in landmarks:
+			if maxf(absf(lm.x - hc.x), absf(lm.y - hc.y)) <= Data.LANDMARK_RADIUS:
+				h += 6
+				reasons.append(["r_landmark", 6])
+				break
 		if has_gov:
 			h += 6
 		if fun > 0:
@@ -1084,6 +1094,15 @@ func metro_stations() -> Array[int]:
 			out.append(uid)
 	out.sort()
 	return out
+
+
+## The landmark earns more with every district home around it: x2 with all of them.
+func landmark_bonus() -> float:
+	var n := 0
+	for uid in buildings:
+		if buildings[uid].id == "dushanbe_home" and buildings[uid].built:
+			n += 1
+	return 1.0 + minf(n, Data.LANDMARK_HOMES) / float(Data.LANDMARK_HOMES)
 
 
 ## Tickets for a day of buses (once two stops are served) and metro (once two stations are built).
@@ -1410,6 +1429,11 @@ func pay(c: int, g: int, key := "build") -> bool:
 
 func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
 	var n: int = maxi(1, Data.B[id].size) if id != "road" else 1
+	if id != "road":
+		if Data.B[id].get("unique", false) and ignore_uid == 0 and buildings.values().any(func(b): return b.id == id):
+			return "already_built"
+		if Data.B[id].has("needs") and not buildings.values().any(func(b): return b.id == Data.B[id].needs):
+			return "need_landmark"
 	for dy in n:
 		for dx in n:
 			var c := Vector2i(x + dx, y + dy)
@@ -1421,8 +1445,6 @@ func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
 				return "wrong_zone"
 	if id == "zoo" and ignore_uid == 0 and caught.size() < Data.ZOO_ANIMALS:
 		return "need_animals"
-	if Data.B[id].get("unique", false) and ignore_uid == 0 and buildings.values().any(func(b): return b.id == id):
-		return "already_built"
 	if Data.B[id].get("highway", false) and not is_connected_to_highway():
 		return "need_highway"
 	return ""
@@ -1864,6 +1886,8 @@ func collect(uid: int) -> Dictionary:
 			var fill := clampf(float(b.occ) / maxf(1.0, cap), 0.0, 1.0)
 			res = {"coins": maxi(1, int(round(Data.stat(b.id, "rent", b.lvl) * fill * tax / 10.0 * mf)))}
 		"shop", "fun":
+			if d.get("landmark", false):
+				mf *= landmark_bonus()
 			res = {"coins": maxi(1, int(round(Data.stat(b.id, "income", b.lvl) * mf)))}
 			b.stocked = false
 		"ind":

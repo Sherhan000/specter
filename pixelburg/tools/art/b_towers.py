@@ -595,81 +595,127 @@ def crane(T, s, f, z0, h, jib=150):
 
 
 def dushanbe_tower(L, o):
-    """Dushanbe Tower: a slender glass shaft rising to a sloped blade crown, two rounded glass towers
-    with roof gardens at its feet. Level 1 is still being built, level 2 is topped out, level 3 is finished and lit."""
-    fh = 20                       # the 77 floors are drawn at reduced scale so the tower fits on screen
+    """Dushanbe Tower complex: a slender 77-floor glass shaft rising to a sloped blade crown, with four more
+    rounded glass towers with roof gardens around it, on a podium with a lake in front.
+    Level 1 is still being built, level 2 is topped out, level 3 is finished and lit."""
+    fh = 20                       # the floors are drawn at reduced scale so the tower fits on screen
     floors = 77 if L >= 2 else 46
     pod = 60
     H = pod + floors * fh
-    cv = Canvas(3, pod + 77 * fh + 340)
+    cv = Canvas(4, pod + 77 * fh + 340)
     T = Orient(cv, o)
     seed = 951
     glass = "2f6aa8"
     lit = [0.25, 0.4, 0.6][L - 1]
     # podium: mall and lobby with a green roof
-    podf = facade("stone", "d8d4cc", shop=(30, 450, 34), doors=[(200, 80, 40, "double_glass")], plinth=None, seed=seed, lit=0.8,
+    podf = facade("stone", "d8d4cc", shop=(30, 610, 34), doors=[(180, 80, 40, "double_glass")], plinth=None, seed=seed, lit=0.8,
                   win=Win(w=28, h=24, sill=30, sp=34, margin=10, fh=pod, frame="3a3a40", group="work"))
-    box(T, 10, 60, 470, 460, 0, pod, all=podf, top=flat_top("5e8a4e", "7aa860", 6))
-    canopy(T, 180, 300, 60, 30, 44, "2e3238", "2e3238", posts=False)
-    door(T, 200, 80, 60, 40)
-    entry(T, 240)
+    box(T, 10, 120, 630, 620, 0, pod, all=podf, top=flat_top("5e8a4e", "7aa860", 6))
+    canopy(T, 160, 280, 120, 30, 44, "2e3238", "2e3238", posts=False)
+    door(T, 180, 80, 120, 40)
+    entry(T, 220)
+    # four rounded glass towers with bulging, vase-like profiles and gardens on top
+    grow = [0.7, 0.9, 1.0][L - 1]
+
+    def round_tower_(sc, fc, fl, r0, k):
+        cx, cy = T.pt(sc, fc)
+        segs = max(3, int(fl * grow) // 3)
+        for j in range(segs):
+            t = j / segs
+            r = r0 * (0.8 + 0.3 * np.sin(np.pi * (0.1 + 0.85 * t)))
+            z0 = pod + j * 3 * fh
+            T.cv.cylinder(cx, cy, r, z0, z0 + 3 * fh, ring_glass(r, "4a82b8", "e4eaf0", fh, 16, lit, seed + 20 + k, "f4f6f8"))
+            tier_ring(T, cx, cy, r + 3, z0 + 3 * fh - 2, 2, "f4f6f8")
+        zt = pod + segs * 3 * fh
+        rt = r0 * (0.8 + 0.3 * np.sin(np.pi * 0.95))
+        T.cv.cylinder(cx, cy, rt, zt, zt + 2, solid_side("f4f6f8"), cap=lambda u, v: (C("6a9a50") * np.ones(u.shape + (3,)), nores(u.shape), None))
+        for j in range(5):
+            a = j / 5 * 2 * np.pi
+            T.cv.ellipsoid(cx + np.cos(a) * rt * 0.5, cy + np.sin(a) * rt * 0.5, zt + 6, 10, 10, 9, lambda wx, wy, wz, nx, ny, nz: (
+                C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
+        if L == 1 and k == 0:
+            crane(T, sc, fc, zt, 80, 90)
+
+    # two tall ones at the sides, two lower ones in front of the main tower
+    round_tower_(90, 150, 40, 64, 1)
+    round_tower_(550, 520, 36, 62, 2)
     # main shaft: square glass tower that slims in three steps
     win = Win(w=10, h=14, sill=3, sp=13, margin=3, fh=fh, frame="b8cce0", style="vertical", tint=glass, group="work", top_skip=0)
-    steps_ = [(150, 330, 200, 380), (162, 318, 212, 368), (174, 306, 224, 356)]
+    steps_ = [(230, 410, 290, 470), (242, 398, 302, 458), (254, 386, 314, 446)]
     zs = [pod, pod + int(floors * 0.45) * fh, pod + int(floors * 0.75) * fh, H]
     for k in range(3):
         s0, s1, f0, f1 = steps_[k]
         fa = facade("concrete", "a8c4dc", win=win, seed=seed + k, plinth=None, lit=lit)
         box(T, s0, f0, s1, f1, zs[k], zs[k + 1], all=fa, top=flat_top("8a929a", "dce4ec", 3))
-        # silver fins up the corners
         fin = flat("e8eef4", 3)
         for a in (s0 - 3, s1 - 5):
             T.box(a, f0 - 4, a + 8, f0 + 4, zs[k], zs[k + 1] + 6, all=fin, top=fin)
     s0, s1, f0, f1 = steps_[2]
     if L == 1:
-        crane(T, 240, 290, H, 120)
+        crane(T, 320, 380, H, 120)
     else:
         # the blade crown: glass rising in a slope to a sharp point, lit at night when finished
         n = 18
         for k in range(n):
-            t = k / n
-            cut = s0 + (s1 - s0) * t
+            cut = s0 + (s1 - s0) * k / n
             z0 = H + k * 16
             crown = facade("concrete", "c8dcec", win=Win(w=8, h=10, sill=3, sp=12, margin=2, fh=16, frame="e8eef4", style="vertical",
                                                          tint="8ac0e8", group="work", top_skip=0), plinth=None, seed=seed + 10, lit=1.0 if L == 3 else 0.2)
             T.box(cut, f0 + 6, s1, f1 - 6, z0, z0 + 16, all=crown, top=flat("e8eef4"))
         spire(T, s1 - 6, (f0 + f1) / 2, H + n * 16, 70, "e8eef4", beacon=True)
         if L == 3:
-            T.box(s1 - 2, (f0 + f1) / 2 - 3, s1 + 2, (f0 + f1) / 2 + 3, H, H + n * 16, all=lambda u, v, LL, HH: glow_res("bfe4ff", u.shape), top=flat("e8eef4"))
-    # two rounded glass towers with bulging, vase-like profiles and gardens on top
-    for k, (sc, fc, hh, r0) in enumerate(((80, 330, 0.42, 58), (400, 330, 0.36, 54))):
-        th = int(77 * hh) if L == 3 else int(77 * hh * (0.7 if L == 1 else 0.9))
-        cx, cy = T.pt(sc, fc)
-        segs = max(4, th // 3)
-        for j in range(segs):
-            t = j / segs
-            r = r0 * (0.82 + 0.28 * np.sin(np.pi * (0.15 + 0.8 * t)))
-            z0 = pod + j * 3 * fh
-            T.cv.cylinder(cx, cy, r, z0, z0 + 3 * fh, ring_glass(r, "5a8ab8", "e4eaf0", fh, 16, lit, seed + 20 + k, "f4f6f8"))
-            tier_ring(T, cx, cy, r + 3, z0 + 3 * fh - 2, 2, "f4f6f8")
-        zt = pod + segs * 3 * fh
-        rt = r0 * (0.82 + 0.28 * np.sin(np.pi * 0.95))
-        T.cv.cylinder(cx, cy, rt, zt, zt + 2, solid_side("f4f6f8"), cap=lambda u, v: (C("6a9a50") * np.ones(u.shape + (3,)), nores(u.shape), None))
-        for j in range(5):
-            a = j / 5 * 2 * np.pi
-            T.cv.ellipsoid(cx + np.cos(a) * rt * 0.5, cy + np.sin(a) * rt * 0.5, zt + 6, 10, 10, 9, lambda wx, wy, wz, nx, ny, nz: (
-                C("4a8a3a") * (0.75 + 0.35 * nz)[..., None] * np.ones(wx.shape + (1,)), nores(wx.shape), None))
+            T.box(s1 - 2, (f0 + f1) / 2 - 3, s1 + 2, (f0 + f1) / 2 + 3, H, H + n * 16, all=lambda u, v, LL, HH: glow_res("bfe4ff", u.shape),
+                  top=flat("e8eef4"))
+    round_tower_(350, 200, 26, 56, 3)
+    round_tower_(520, 330, 22, 54, 4)
     # lake and park in front
-    ground(T, 0, 0, 480, 60, kit.paving("d0c8bc", 12.0, 4))
-    pool(T, 30, 6, 160, 54)
-    pool(T, 320, 6, 450, 54)
-    for k, ss in enumerate((180, 300)):
-        tree(T, ss, 20, "maple", 0.75, seed + 30 + k)
-    lamp(T, 200, 14, "modern", 55)
-    lamp(T, 280, 14, "modern", 55, "light2")
+    ground(T, 0, 0, 640, 120, kit.paving("d0c8bc", 12.0, 4))
+    pool(T, 20, 16, 140, 104)
+    pool(T, 310, 16, 620, 104)
+    for k, ss in enumerate((150, 290)):
+        tree(T, ss, 30, "maple", 0.75, seed + 30 + k)
+    lamp(T, 180, 14, "modern", 55)
+    lamp(T, 260, 14, "modern", 55, "light2")
     return cv
 
 
-BUILDERS = {"dushanbe_tower": dushanbe_tower, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+def dushanbe_home(L, o):
+    """A residential high-rise of the Dushanbe Tower district: cream stone, bronze frames, a roof garden."""
+    floors = [30, 35, 40][L - 1]
+    fh = 20                       # same reduced scale as the tower
+    pod = 40
+    H = pod + floors * fh
+    cv = Canvas(2, H + 120)
+    T = Orient(cv, o)
+    seed = 971
+    stone = ["eadcc0", "e6d6b8", "efe2c8"][L - 1]
+    podf = facade("stone", "d8ccb4", shop=(20, 140, 28), doors=[(160, 40, 30, "double_glass")], plinth=None, seed=seed, lit=0.7,
+                  win=Win(w=22, h=18, sill=12, sp=30, margin=10, fh=pod, frame="5a4a3e", group="work"))
+    box(T, 20, 50, 300, 290, 0, pod, all=podf, top=flat_top("6e9a5a", "d8ccb4", 5))
+    canopy(T, 150, 220, 50, 20, 32, "5a4a3e", "5a4a3e", posts=False)
+    door(T, 160, 40, 50, 30)
+    entry(T, 180)
+    win = Win(w=12, h=13, sill=4, sp=20, margin=8, fh=fh, frame="5a4a3e", style="vertical", tint="6a8aa8", group="flats", top_skip=2)
+    bands = [(fh * k - 1, fh * k + 1, "f6efe0") for k in range(1, floors + 1)]
+    fa = facade("stone", stone, win=win, seed=seed + 1, plinth=None, bands=bands, cornice=("f6efe0", 5))
+    s0, s1, f0, f1 = 50, 270, 80, 260
+    box(T, s0, f0, s1, f1, pod, H, all=fa, top=flat_top("6e9a5a", "f6efe0", 5))
+    # bronze piers frame the front, a lit crown on top
+    pier = facade("metal", "7a5a3e", plinth=None, seed=seed + 2)
+    for a in (s0 - 4, s1 - 10, (s0 + s1) / 2 - 7):
+        T.box(a, f0 - 6, a + 14, f0, pod, H + 10, all=pier, top=flat("7a5a3e"))
+    T.box(s0 + 40, f0 + 30, s1 - 40, f1 - 30, H, H + 22, all=facade("stone", stone, plinth=None, seed=seed + 3, win=Win(
+        w=14, h=14, sill=4, sp=22, margin=8, fh=22, frame="5a4a3e", group="work"), lit=0.9), top=flat_top("807c78", "f6efe0", 3))
+    for j in range(4):
+        bush(T, s0 + 20 + j * 55, f1 - 14, 0.5, seed + j)
+    for ss in (30, 290):
+        tree(T, ss, 24, "lime", 0.7, seed + ss)
+    ground(T, 0, 0, 320, 50, kit.paving("d0c8bc", 12.0, 4))
+    lamp(T, 100, 16, "modern", 50)
+    lamp(T, 220, 16, "modern", 50, "light2")
+    return cv
+
+
+BUILDERS = {"dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "metro_station": metro_station}
