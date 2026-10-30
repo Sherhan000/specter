@@ -86,6 +86,10 @@ vec3 tex_g(float layer, vec2 g, float scale) {
 }
 
 // ------------------------------------------------------------------ terrain
+void w_b_boost(inout float wm, float sea) {
+	wm = max(wm, sea);
+}
+
 vec3 terrain(vec2 g, out float water_mask) {
 	vec4 nz = texture(noise_tex, g / 24.0);
 	vec4 nz2 = texture(noise_tex, g / 5.0 + 0.31);
@@ -129,6 +133,13 @@ vec3 terrain(vec2 g, out float water_mask) {
 	water_mask = smoothstep(0.5, 0.56, w.b);
 	float shore = smoothstep(0.3, 0.45, w.b) * (1.0 - water_mask);
 	c = mix(c, tex_g(3.0, g, 0.5) * vec3(1.15, 1.1, 0.95), shore);
+	// the beach west of the land: sand sloping down to the sea
+	float by = smoothstep(land0.y - 8.0, land0.y - 1.0, g.y) * (1.0 - smoothstep(land0.y + land_size + 1.0, land0.y + land_size + 8.0, g.y));
+	float edge = land0.x - 14.0 + (nz.r - 0.5) * 3.0 + sin(g.y * 0.4) * 1.2;
+	float sand = smoothstep(edge - 1.5, edge + 1.5, g.x) * (1.0 - smoothstep(land0.x - 1.0, land0.x, g.x)) * by;
+	float sea = smoothstep(edge + 0.8, edge - 0.6, g.x) * by;
+	c = mix(c, tex_g(3.0, g, 0.5) * vec3(1.22, 1.12, 0.9), sand * 0.9);
+	w_b_boost(water_mask, sea);
 	if (water_mask > 0.0) {
 		float depth = smoothstep(0.55, 1.0, w.b);
 		vec3 wc = mix(vec3(0.3, 0.55, 0.62), vec3(0.16, 0.36, 0.5), depth);

@@ -439,7 +439,28 @@ func land_info() -> void:
 	hud.popup(Loc.t("land"), "", [[Loc.t("ok"), "blue", Callable()]], v)
 
 
+func beach_plot(i: int) -> void:
+	if Game.beach.has(i):
+		hud.popup(Loc.t("beach_title"), Loc.t("beach_owned"), [[Loc.t("ok"), "blue", Callable()]])
+		return
+	if not Game.beach_buyable(i):
+		hud.popup(Loc.t("beach_title"), Loc.t("beach_far"), [[Loc.t("ok"), "blue", Callable()]])
+		return
+	var price := Data.beach_price(Game.beach.size())
+	var buttons := [[Loc.t("cancel"), "red", Callable()]]
+	if Game.level >= price.level:
+		buttons.append([Loc.num(price.coins), "green", func(): Game.buy_beach(i, false), "coin"])
+	buttons.append([str(price.gems), "purple", func(): Game.buy_beach(i, true), "gem"])
+	var t := Loc.t("beach_text")
+	if Game.level < price.level:
+		t += "\n" + Loc.t("plot_lvl") % price.level
+	hud.popup(Loc.t("beach_title"), t, buttons)
+
+
 func plot(p: Vector2i) -> void:
+	if p.x < 0:
+		beach_plot(p.y)
+		return
 	var z := Data.zone_of_plot(p)
 	if not Game.plot_buyable(p):
 		hud.popup(Loc.t("plot_title"), Loc.t("plot_far") + "\n" + Loc.t("zone") + ": " + Data.zone_name(z), [[Loc.t("ok"), "blue", Callable()]])

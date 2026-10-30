@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–7.
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–8.
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы).
@@ -11,7 +11,14 @@
 - Вода: река → море (30) → океан (120), мосты, острова, жизнь на воде (water_life.gd). Стены и украшения улиц (street_props.gd).
 - Фонари: classic, modern, lantern. «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (пункт 7)
+## Сделано в последней сессии (пункт 8)
+- Пляж за западной границей земли: тайлы x 70..79, y 80..159 (Data.BEACH_X0/BEACH_W, beach_seg(c) → сегмент 0..7 по рядам участков), зона "beach", region "beach".
+  Покупка по сегментам: Game.beach (в сохранении, ключ "beach", SAVE_VERSION не менялся), beach_buyable/buy_beach, Data.beach_price, panels.beach_plot,
+  таблички продажи в city._rebuild_signs, подсветка в ground.update_info. Песок и море рисует ground.gdshader (по константам land0), деревья не растут (Data.beach_area).
+- Здания только на пляже (zones ["beach"]): beach_umbrella, lifeguard_tower (decor), beach_bar (shop, доход). Графика tools/art/b_beach.py (модуль в MODULES). Проверки в logic_test, Data.NEWS дополнен.
+- Не проверено глазами в игре (скриншоты showcase не снимались): стоит глянуть вид песка/моря на телефоне.
+
+## Пункт 7 (ранее)
 - Рынок (cat shop, приносит доход): market_stall (1x1), market (2x2, открытый рынок), bazaar (3x3, крытый базар, 4 гема). data.gd (B, ORDER), в life.gd SHOPS (жители ходят на рынок).
   Графика tools/art/b_market.py (новый модуль в MODULES gen_assets.py). В logic_test добавлены проверки, «DONE: 0 failed». Data.NEWS дополнен.
 

@@ -202,6 +202,19 @@ func _rebuild_signs() -> void:
 			z.position = Vector2(0, -26)
 			s.add_child(z)
 			sale_signs.append(s)
+	for i in Data.PLOTS:
+		if not Game.beach_buyable(i):
+			continue
+		var bc := Vector2i(Data.LAND0 - Data.BEACH_W / 2, Data.LAND0 + i * Data.PLOT + Data.PLOT / 2)
+		var bs := _sprite("units/sale_sign", m, Iso.center(bc), Assets.world_mat, world)
+		bs.set_meta("plot", Vector2i(-1, i))
+		var bz := Sprite2D.new()
+		bz.texture = Assets.ui_icon("zoo")
+		var bts := bz.texture.get_size()
+		bz.scale = Vector2(26.0, 26.0) / maxf(bts.x, 1.0)
+		bz.position = Vector2(0, -26)
+		bs.add_child(bz)
+		sale_signs.append(bs)
 
 
 func _rebuild_lights() -> void:
@@ -749,7 +762,9 @@ func _tap(screen_p: Vector2) -> void:
 			else:
 				Game.sfx("tap")
 		Mode.LAND:
-			if Data.in_land(tile) and Game.plot_buyable(Data.plot_of(tile)):
+			if Data.beach_seg(tile) >= 0:
+				hud.open_plot(Vector2i(-1, Data.beach_seg(tile)))
+			elif Data.in_land(tile) and Game.plot_buyable(Data.plot_of(tile)):
 				hud.open_plot(Data.plot_of(tile))
 			else:
 				Game.sfx("error")

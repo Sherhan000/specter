@@ -189,7 +189,7 @@ func _make_chunk(ch: Vector2i) -> Node2D:
 func _decorate(c: Vector2i, parent: Node2D) -> void:
 	if c.x + c.y < Data.HORIZON + 1:
 		return
-	if Data.in_land(c):
+	if Data.in_land(c) or Data.beach_area(c):
 		return
 	if Game.net.has(c) or village_roads.has(c):
 		return

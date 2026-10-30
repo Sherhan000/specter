@@ -36,6 +36,7 @@ var gems := 0
 var goods := 0
 var xp := 0
 var level := 1
+var beach: Array = []        ## owned beach segments (0..7, one per plot row)
 var plots: Array = []        ## owned plots (Vector2i)
 var roads := {}              ## Vector2i -> road type (player roads)
 var lights := {}             ## Vector2i -> true (traffic lights on intersections)
@@ -181,6 +182,9 @@ func _in_start_layout(c: Vector2i) -> bool:
 
 
 func is_owned(c: Vector2i) -> bool:
+	var seg := Data.beach_seg(c)
+	if seg >= 0:
+		return beach.has(seg)
 	return Data.in_land(c) and plots.has(Data.plot_of(c))
 
 
@@ -197,6 +201,32 @@ func plot_buyable(p: Vector2i) -> bool:
 		if plots.has(p + d):
 			return true
 	return false
+
+
+func beach_buyable(i: int) -> bool:
+	if i < 0 or i >= Data.PLOTS or beach.has(i):
+		return false
+	return plots.has(Vector2i(0, i)) or beach.has(i - 1) or beach.has(i + 1)
+
+
+func buy_beach(i: int, with_gems: bool) -> bool:
+	if not beach_buyable(i):
+		return false
+	var price := Data.beach_price(beach.size())
+	if level < price.level and not with_gems:
+		toast.emit(Loc.t("locked_lvl") % price.level)
+		sfx("error")
+		return false
+	if not pay(0 if with_gems else price.coins, price.gems if with_gems else 0, "land"):
+		return false
+	beach.append(i)
+	add_xp(price.coins / 60)
+	land_changed.emit()
+	changed.emit()
+	sfx("done")
+	toast.emit(Loc.t("beach_bought"))
+	save_game()
+	return true
 
 
 func abs_hour() -> int:
@@ -227,6 +257,7 @@ func new_game() -> void:
 	xp = 0
 	level = 1
 	plots = Data.START_PLOTS.duplicate()
+	beach = []
 	roads = {}
 	lights = {}
 	lamps = {}
@@ -328,6 +359,7 @@ func to_dict() -> Dictionary:
 		"v": SAVE_VERSION, "time": Time.get_unix_time_from_system(),
 		"coins": coins, "gems": gems, "goods": goods, "xp": xp, "level": level,
 		"plots": plots.map(func(p): return [p.x, p.y]),
+		"beach": beach.duplicate(),
 		"roads": roads.keys().map(func(v): return [v.x, v.y, roads[v]]),
 		"lights": lights.keys().map(func(v): return [v.x, v.y]),
 		"lamps": lamps.keys().map(func(v): return [v.x, v.y, lamps[v]]),
@@ -402,6 +434,9 @@ func from_dict(p: Dictionary) -> bool:
 	cleared_trees = {}
 	for v in p.cleared:
 		cleared_trees[_v2(v)] = true
+	beach = []
+	for v in p.get("beach", []):
+		beach.append(int(v))
 	water = {}
 	for v in p.get("water", []):
 		water[_v2(v)] = true

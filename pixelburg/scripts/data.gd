@@ -14,9 +14,11 @@ const LAND1 := LAND0 + PLOT * PLOTS  ## first tile after the land (160)
 const MAP := LAND1 + MARGIN          ## whole valley (240 x 240)
 const CENTER := LAND0 + PLOT * PLOTS / 2  ## 120
 const HORIZON := 2 * LAND0 - 18      ## tiles with x + y below this are beyond the horizon
+const BEACH_W := 10          ## width of the beach strip west of the land, in tiles (one segment per plot row)
+const BEACH_X0 := LAND0 - BEACH_W
 const HIGHWAY_Y := LAND1 + 6         ## the highway runs along x on this row
 const START_PLOTS := [Vector2i(3, 3), Vector2i(4, 3), Vector2i(3, 4), Vector2i(4, 4), Vector2i(5, 3)]
-const ZONES := ["city", "farm", "industry", "leisure"]
+const ZONES := ["city", "farm", "industry", "leisure"]  ## (the "beach" zone is only the bought beach strip)
 const LAKES := [[56, 196, 7.0], [200, 70, 6.0], [190, 186, 5.0]]
 
 # ---------------------------------------------------------------- balance
@@ -80,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Пляж за границей карты: купите участки пляжа у моря и стройте зонты, спасательную вышку и пляжный бар", "Beach beyond the map border: buy beach plots by the sea and build umbrellas, a lifeguard tower and a beach bar"],
 	["Река, море и океан: копайте воду пальцем, над дорогой будет мост, у домов — берег", "Rivers, seas and oceans: dig water with your finger, roads become bridges"],
 	["Лодки, корабли, утки, чайки, камни и камыши у воды", "Boats, ships, ducks, gulls, stones and reeds by the water"],
 	["Башня Душанбе и квартал жёлтых домов вокруг неё", "Dushanbe Tower and its quarter of yellow homes"],
@@ -320,6 +323,13 @@ const B := {
 		"happy": 1, "radius": 4, "upkeep": 0},
 	"site_crane": {"name": ["Стройка с краном", "Building Site with Crane"], "cat": "decor", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 15,
 		"happy": 1, "radius": 5, "upkeep": 0},
+	# beach buildings: only on the bought beach
+	"beach_umbrella": {"name": ["Пляжный зонт", "Beach Umbrella"], "cat": "decor", "zones": ["beach"], "size": 1, "cost": 500, "lvl": 7, "time": 8,
+		"happy": 4, "radius": 6, "upkeep": 1},
+	"lifeguard_tower": {"name": ["Спасательная вышка", "Lifeguard Tower"], "cat": "decor", "zones": ["beach"], "size": 1, "cost": 1500, "lvl": 8, "time": 20,
+		"happy": 7, "radius": 9, "upkeep": 3},
+	"beach_bar": {"name": ["Пляжный бар", "Beach Bar"], "cat": "shop", "zones": ["beach"], "size": 2, "cost": 4500, "lvl": 8, "time": 80,
+		"jobs": 8, "use": 14, "income": 190, "cycle": 120, "upkeep": 35},
 	# street lamps stand on the sidewalks and are placed with their own tool (see Game.place_lamp)
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
@@ -332,7 +342,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
-	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane"]
+	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
 ## build menu tabs: the categories plus the hotels, which have a window of their own
 const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
@@ -456,6 +466,22 @@ static func in_land(c: Vector2i) -> bool:
 	return c.x >= LAND0 and c.y >= LAND0 and c.x < LAND1 and c.y < LAND1
 
 
+## The beach beyond the land border: tiles x 70..79, split into one segment per plot row (-1 if not a beach tile)
+static func beach_seg(c: Vector2i) -> int:
+	if c.x < BEACH_X0 or c.x >= LAND0 or c.y < LAND0 or c.y >= LAND1:
+		return -1
+	return (c.y - LAND0) / PLOT
+
+
+## Tiles of the beach and the sea in front of it (kept free of trees)
+static func beach_area(c: Vector2i) -> bool:
+	return c.x >= LAND0 - 28 and c.x < LAND0 and c.y >= LAND0 - 6 and c.y < LAND1 + 6
+
+
+static func beach_price(owned: int) -> Dictionary:
+	return {"coins": 9000 + owned * 3500, "gems": 25 + owned * 6, "level": 7 + owned}
+
+
 static func zone_of_plot(p: Vector2i) -> String:
 	if p.x <= 1:
 		return "leisure"
@@ -467,6 +493,8 @@ static func zone_of_plot(p: Vector2i) -> String:
 
 
 static func zone_at(c: Vector2i) -> String:
+	if beach_seg(c) >= 0:
+		return "beach"
 	return zone_of_plot(plot_of(c)) if in_land(c) else ""
 
 
@@ -484,6 +512,8 @@ static func region(c: Vector2i) -> String:
 		return "outside"
 	if c.x + c.y < HORIZON:
 		return "beyond"
+	if beach_seg(c) >= 0:
+		return "beach"
 	if in_land(c):
 		return "land"
 	var dx: int = maxi(LAND0 - c.x, c.x - (LAND1 - 1))

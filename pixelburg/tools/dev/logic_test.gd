@@ -390,6 +390,25 @@ func _ready() -> void:
 		if mb != 0:
 			Game.demolish(mb)
 	Game.recalc()
+	check(Data.beach_seg(Vector2i(75, 100)) == 2 and Data.beach_seg(Vector2i(80, 100)) == -1 and Data.zone_at(Vector2i(75, 100)) == "beach", "beach tiles map to segments")
+	Game.beach = []
+	check(not Game.is_owned(Vector2i(75, 100)) and Game.beach_buyable(3) == Game.plots.has(Vector2i(0, 3)), "beach is not owned at the start")
+	Game.plots.append(Vector2i(0, 2))
+	Game.coins = 100000
+	Game.level = 20
+	check(Game.beach_buyable(2) and Game.buy_beach(2, false) and Game.is_owned(Vector2i(75, 100)), "beach segment can be bought")
+	check(Game.beach_buyable(3) and not Game.beach_buyable(5), "beach is bought segment by segment")
+	for bid in ["beach_umbrella", "lifeguard_tower", "beach_bar"]:
+		check(Data.B.has(bid) and Data.ORDER.has(bid), "%s is in the build list" % bid)
+		check(Game.place_problem(bid, 74, 101) == "", "%s can be placed on the bought beach" % bid)
+		check(Game.place_problem(bid, 74, 121) != "", "%s cannot be placed on unbought beach" % bid)
+	check(Game.place_problem("house_small", 74, 101) == "wrong_zone", "homes cannot be built on the beach")
+	var bb := Game._add_building("beach_bar", 74, 101, true)
+	check(bb != 0 and Game.buildings.has(bb), "beach bar can be built")
+	if bb != 0:
+		Game.demolish(bb)
+	Game.beach = []
+	Game.plots.erase(Vector2i(0, 2))
 	for sid in ["site_small", "site_house", "site_crane"]:
 		check(Data.B.has(sid) and Data.ORDER.has(sid) and Data.B[sid].cat == "decor", "%s is a decor building in the list" % sid)
 		var sb := Game._add_building(sid, spots[3].x, spots[3].y, true)

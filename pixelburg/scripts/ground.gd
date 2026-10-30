@@ -161,6 +161,10 @@ func update_info() -> void:
 			var p := Data.plot_of(c)
 			info_img.set_pixel(x, y, Color8(zid[Data.zone_of_plot(p)], 255 if Game.plots.has(p) else 0,
 				255 if Game.plot_buyable(p) else 0, 255))
+	for y in range(Data.LAND0, Data.LAND1):
+		for x in range(Data.BEACH_X0, Data.LAND0):
+			var seg := Data.beach_seg(Vector2i(x, y))
+			info_img.set_pixel(x, y, Color8(4, 255 if Game.beach.has(seg) else 0, 255 if Game.beach_buyable(seg) else 0, 255))
 	info_tex.update(info_img)
 
 
