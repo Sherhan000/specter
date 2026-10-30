@@ -178,7 +178,7 @@ func _gen_trees() -> void:
 			if start:
 				dens = minf(dens, 0.15)
 			if rng.randf() < dens:
-				natural_trees[c] = "tree_%d" % rng.randi_range(0, 7)
+				natural_trees[c] = "tree_%d" % rng.randi_range(0, Scenery.SINGLES - 1)
 
 
 func _in_start_layout(c: Vector2i) -> bool:

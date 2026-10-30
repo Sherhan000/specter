@@ -82,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Новые деревья, у каждого свой вид: берёзы, сосны и ели, тополя, яблоня с яблоками, осенний клён, плакучая ива, сакура, пальмы и чинара — ставятся как украшение и растут в природе", "New trees, each with its own look: birches, pines and spruces, poplars, an apple tree, an autumn maple, a weeping willow, sakura, palms and a chinar - place them as decoration, and they also grow in the wild"],
 	["Новые здания для ферм, у каждого свой вид: пасека с ульями, птичник с курами, бахча с дынями и навесом на сваях, виноградник со шпалерами, мельница с крыльями, рыбное хозяйство с садками и большая молочная ферма", "New farm buildings, each with its own look: an apiary with beehives, a poultry farm with chickens, a melon field with a shelter on stilts, a vineyard with trellises, a windmill with sails, a fish farm with net cages and a big dairy"],
 	["Кафе и фастфуд, каждый со своим видом: кофейня-киоск с огромной чашкой, шаурма, пончиковая, бургерная, дворик фудтраков, чайхана с топчанами и фастфуд с автоокном", "Cafes and fast food, each with its own look: a coffee kiosk with a giant cup, a shawarma grill, a donut shop, a burger bar, a food truck court, a chaikhana teahouse and a drive-thru"],
 	["Двери открываются по-настоящему: створка поворачивается внутрь, видно освещённую комнату, а ночью свет падает на тротуар", "Doors open for real: the leaf swings inside, you can see the lit room, and at night light spills onto the sidewalk"],
@@ -334,6 +335,25 @@ const B := {
 	# ------------------------------------------------ decor (happiness in a radius)
 	"tree": {"name": ["Деревья", "Trees"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 30, "lvl": 1, "time": 2,
 		"happy": 2, "radius": 4, "upkeep": 0},
+	# new kinds of trees, each with its own look (they also grow wild on the land)
+	"tree_birch": {"name": ["Берёзы", "Birches"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 40, "lvl": 1, "time": 2,
+		"happy": 2, "radius": 4, "upkeep": 0},
+	"tree_pine": {"name": ["Сосны и ели", "Pines and Spruces"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 50, "lvl": 2, "time": 3,
+		"happy": 2, "radius": 5, "upkeep": 0},
+	"tree_poplar": {"name": ["Тополя", "Poplars"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 50, "lvl": 2, "time": 3,
+		"happy": 2, "radius": 5, "upkeep": 0},
+	"tree_apple": {"name": ["Яблоня", "Apple Tree"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 70, "lvl": 3, "time": 4,
+		"happy": 3, "radius": 4, "upkeep": 0},
+	"tree_autumn": {"name": ["Осенний клён", "Autumn Maple"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 80, "lvl": 4, "time": 4,
+		"happy": 3, "radius": 5, "upkeep": 0},
+	"tree_willow": {"name": ["Плакучая ива", "Weeping Willow"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 100, "lvl": 5, "time": 5,
+		"happy": 3, "radius": 5, "upkeep": 1},
+	"tree_sakura": {"name": ["Сакура", "Sakura"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 150, "lvl": 6, "time": 6,
+		"happy": 4, "radius": 5, "upkeep": 1},
+	"tree_palm": {"name": ["Пальмы", "Palms"], "cat": "decor", "zones": ["city", "leisure", "beach"], "size": 1, "cost": 180, "lvl": 7, "time": 6,
+		"happy": 4, "radius": 5, "upkeep": 1},
+	"tree_chinar": {"name": ["Чинара", "Chinar Tree"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 250, "lvl": 8, "time": 8,
+		"happy": 5, "radius": 6, "upkeep": 1},
 	"flowerbed": {"name": ["Цветник", "Flower Garden"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 80, "lvl": 1, "time": 4,
 		"happy": 3, "radius": 4, "upkeep": 1},
 	"bench": {"name": ["Скверик", "Small Square"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 150, "lvl": 2, "time": 5,
@@ -379,7 +399,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "airport",
 	"museum", "zoo", "funfair", "stadium",
-	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
+	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.
 const COUNTRIES := {

@@ -407,6 +407,20 @@ func _ready() -> void:
 		check(farm_b != 0 and Game.buildings.has(farm_b), "%s can be placed in farmland" % fid)
 		if farm_b != 0:
 			Game.demolish(farm_b)
+	# new kinds of trees: decoration with their own sprites, and they grow in the wild too
+	for tid in ["tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar"]:
+		check(Data.B.has(tid) and Data.ORDER.has(tid) and Data.B[tid].cat == "decor" and int(Data.B[tid].size) == 1 and Data.B[tid].happy > 0, "%s is a tree in the decor list" % tid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % tid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % tid), "%s has its own sprites" % tid)
+		var tree_b := Game._add_building(tid, c - 4, c + 2, true)
+		check(tree_b != 0 and Game.buildings.has(tree_b), "%s can be placed in the city" % tid)
+		if tree_b != 0:
+			Game.demolish(tree_b)
+	check(Data.B.tree_palm.zones.has("beach"), "palms can stand on the beach")
+	var wild := {}
+	for k in Game.natural_trees.values():
+		wild[k] = true
+	check(range(Scenery.SINGLES).all(func(i): return not Assets.nature("tree_%d" % i).is_empty() and FileAccess.file_exists("res://assets/nature/tree_%d.png" % i)), "every wild tree kind has a sprite")
+	check(wild.has("tree_8") and wild.has("tree_%d" % (Scenery.SINGLES - 1)), "new kinds of trees grow in the wild")
 	Game.recalc()
 	check(Data.PRIVATE_KINDS.all(func(k): return Data.B.has(k) and int(Data.B[k].size) == 1), "residents propose only small businesses")
 	check(Data.beach_seg(Vector2i(75, 100)) == 2 and Data.beach_seg(Vector2i(80, 100)) == -1 and Data.zone_at(Vector2i(75, 100)) == "beach", "beach tiles map to segments")

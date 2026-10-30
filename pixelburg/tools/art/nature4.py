@@ -67,6 +67,16 @@ def _single(seed, kind):
     elif kind == "pair":
         kit.tree(cv, 60, 70, ["oak", "lime"][seed % 2], 0.95, seed)
         kit.tree(cv, 110, 105, ["birch", "maple"][seed % 2], 0.85, seed + 1)
+    elif kind == "pine":
+        kit.pine(cv, 80, 80, rng.uniform(0.9, 1.1), seed)
+    elif kind == "poplars":
+        kit.poplar(cv, 55, 60, 0.95, seed)
+        kit.poplar(cv, 105, 100, 0.85, seed + 1)
+    elif kind == "birches":
+        for i, (bx, by, bs) in enumerate(((60, 60, 1.0), (110, 80, 0.85), (75, 115, 0.8))):
+            kit.tree(cv, bx, by, "birch", bs, seed + i)
+    elif kind in ("willow", "chinar", "apple", "sakura", "autumn"):
+        getattr(kit, kind)(cv, 80, 80, rng.uniform(0.9, 1.05), seed)
     else:
         kit.tree(cv, 80, 80, kind, rng.uniform(0.95, 1.15), seed)
     return cv
@@ -104,6 +114,20 @@ def gen(out):
     for i, kd in enumerate(("bushes", "bushes", "rocks", "stump")):
         _save(_under(400 + i, kd), "under_%d" % i, out, meta)
     json.dump(meta, open(os.path.join(out, "meta.json"), "w"), separators=(",", ":"))
+    return meta
+
+
+NEW_SINGLES = ["willow", "pine", "chinar", "apple", "sakura", "autumn", "poplars", "birches"]
+
+
+def gen_new_trees(out):
+    """Only the wild trees added in roadmap 13 (tree_8 ...), merged into the existing meta."""
+    np.seterr(all="ignore")
+    path = os.path.join(out, "meta.json")
+    meta = json.load(open(path))
+    for i, kd in enumerate(NEW_SINGLES):
+        _save(_single(310 + i, kd), "tree_%d" % (8 + i), out, meta)
+    json.dump(meta, open(path, "w"), separators=(",", ":"))
     return meta
 
 

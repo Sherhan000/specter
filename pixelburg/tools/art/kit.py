@@ -15,6 +15,11 @@ LEAF = {
     "spruce": ["1f4a34", "275a3e", "336a48", "447c54"],
     "fruit": ["3e7230", "4e8638", "609a42", "7aae56"],
     "hedge": ["325e28", "3e7030", "4c8238", "609446"],
+    "sakura": ["b0507a", "cc7098", "e494b6", "f6bcd2"],
+    "autumn": ["8a2c1c", "b4421e", "d86a26", "eea23c"],
+    "willow": ["44682a", "587e34", "6e9640", "8cae56"],
+    "chinar": ["30602a", "407432", "52883c", "6ca04e"],
+    "palm": ["2c5a22", "3a6e28", "4c8432", "64a040"],
 }
 
 
@@ -108,6 +113,115 @@ def tree(cv, x, y, kind="oak", s=1.0, seed=0, blossom=None, z=0.0):
     R = {"oak": 32, "lime": 30, "maple": 28, "birch": 20, "fruit": 22}.get(kind, 26) * s
     H = {"birch": 50, "fruit": 30}.get(kind, 42) * s
     crown(cv, x, y, z + th - 6 * s, R, H, kind, seed, 8 if not birch else 6, blossom)
+
+
+def bark_fn(col, patch, light):
+    """Mottled bark that peels in patches (plane tree)."""
+    c, cp, cl = C(col), C(patch), C(light)
+
+    def side(ang, v, nx, ny):
+        shape = ang.shape
+        rgb = np.broadcast_to(c, shape + (3,)).copy()
+        h = hash2(np.floor(ang * 3), np.floor(v / 5), 11)
+        rgb[h < 0.3] = cp
+        rgb[h > 0.75] = cl
+        rgb *= (0.88 + 0.16 * hash2(np.floor(ang * 8), np.floor(v / 2), 12))[..., None]
+        return rgb, nores(shape), None
+    return side
+
+
+def sakura(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Japanese cherry: short dark trunk, wide flat crown covered in pink blossom."""
+    cv.cylinder(x, y, 2.4 * s, z, z + 26 * s, trunk_fn("4a3430"))
+    crown(cv, x, y, z + 20 * s, 30 * s, 26 * s, "sakura", seed, 9, "fff2f6", flat_top=0.8)
+
+
+def autumn(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Maple in its autumn dress: orange and red."""
+    tree(cv, x, y, "autumn", s, seed, "f6d04a", z)
+
+
+def apple(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Apple tree: low round crown hung with red apples."""
+    cv.cylinder(x, y, 2.2 * s, z, z + 22 * s, trunk_fn("6a4a30"))
+    crown(cv, x, y, z + 16 * s, 24 * s, 28 * s, "fruit", seed, 8, "d8302a")
+
+
+def willow(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Weeping willow: a dome whose long thin strands hang almost to the ground."""
+    rng = np.random.default_rng(seed)
+    cv.cylinder(x, y, 3.2 * s, z, z + 34 * s, trunk_fn("5e4a34"))
+    R = 34 * s
+    top = z + 70 * s
+    w = int(2 * R) + 6
+    ys, xs = np.mgrid[0:w, 0:w].astype(float) + 0.5
+    xs -= w / 2
+    ys -= w / 2
+    d = np.hypot(xs, ys) / R
+    ang = np.arctan2(ys, xs)
+    ok = d < 1.0
+    T = np.where(ok, top - 30 * s * d ** 2, -np.inf)
+    strand = hash2(np.floor(ang * 18 + rng.uniform(0, 9)), 0, seed + 3)
+    hem = z + (6 + 20 * strand + 26 * (1 - d) ** 1.5) * s
+    B = np.where(ok, hem, np.inf)
+    nz = value_noise(w, w, 5, seed, 3)
+    T = np.where(ok, T + (nz - 0.5) * 5, T)
+    cv.heightfield(x - w / 2, y - w / 2, T, leaf_fn("willow", seed, zr=(z, top)), zmin=z + 4 * s, step=0.5, bottom=B)
+
+
+def chinar(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Oriental plane tree (chinar): thick mottled trunk and a huge broad crown."""
+    cv.cylinder(x, y, 5.5 * s, z, z + 62 * s, bark_fn("c4b494", "7e7058", "e8e2d0"))
+    cv.cylinder(x, y, 7.5 * s, z, z + 5 * s, bark_fn("a89878", "7e7058", "d2ccb8"))
+    crown(cv, x, y, z + 58 * s, 46 * s, 40 * s, "chinar", seed, 12, flat_top=0.85)
+
+
+def palm(cv, x, y, s=1.0, seed=0, z=0.0):
+    """Date palm: a gently bent ringed trunk and a fan of drooping fronds with coconuts."""
+    rng = np.random.default_rng(seed)
+    lean = rng.uniform(0, 2 * math.pi)
+    bend = rng.uniform(6, 12) * s
+    hgt = rng.uniform(78, 92) * s
+    ring = C("8a6a48")
+
+    def rings(ang, v, nx, ny):
+        shape = ang.shape
+        rgb = np.broadcast_to(ring, shape + (3,)).copy()
+        band = (v % 4.0) < 1.2
+        rgb[band] *= 0.7
+        return rgb, nores(shape), None
+    n = 12
+    for i in range(n):
+        f = i / n
+        off = bend * f * f
+        cv.cylinder(x + math.cos(lean) * off, y + math.sin(lean) * off, (3.0 - 0.9 * f) * s, z + hgt * f, z + hgt * (f + 1.0 / n) + 1, rings)
+    tx, ty, tz = x + math.cos(lean) * bend, y + math.sin(lean) * bend, z + hgt
+    R = 40 * s
+    w = int(2 * R) + 6
+    ys, xs = np.mgrid[0:w, 0:w].astype(float) + 0.5
+    xs -= w / 2
+    ys -= w / 2
+    d = np.hypot(xs, ys)
+    ang = np.arctan2(ys, xs)
+    H = np.full(d.shape, -np.inf)
+    fronds = 9
+    ph = rng.uniform(0, 2 * math.pi)
+    for k in range(fronds):
+        a = ph + k * 2 * math.pi / fronds + rng.uniform(-0.15, 0.15)
+        L = R * rng.uniform(0.8, 1.0)
+        da = np.angle(np.exp(1j * (ang - a)))
+        across = np.abs(da) * d
+        t = d / L
+        width = (6.5 * np.sin(np.clip(t, 0, 1) * math.pi) + 1.0) * s
+        serr = hash2(np.floor(d / 2.2), k, seed + k) < 0.2
+        m = (t < 1) & (across < width) & ~(serr & (across > width * 0.5))
+        h = tz + 4 * s - (t ** 1.7) * 34 * s + (1 - across / np.maximum(width, 0.1)) * 2
+        H = np.where(m, np.maximum(H, h), H)
+    cv.heightfield(tx - w / 2, ty - w / 2, H, leaf_fn("palm", seed, zr=(tz - 34 * s, tz + 6 * s)), zmin=tz - 36 * s, thick=3.0)
+    for k in range(4):
+        a = ph + k * 1.6
+        cv.ellipsoid(tx + math.cos(a) * 3.5 * s, ty + math.sin(a) * 3.5 * s, tz - 2 * s, 2.6 * s, 2.6 * s, 2.8 * s,
+                     lambda wx, wy, wz, nx, ny, nz: solid_res(C("6a4a24") * (0.75 + 0.35 * nz[..., None]), wx.shape))
 
 
 def poplar(cv, x, y, s=1.0, seed=0, z=0.0):

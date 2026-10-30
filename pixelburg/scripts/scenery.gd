@@ -6,7 +6,7 @@ extends Node
 
 const CHUNK := 8
 const CLUMPS := 20
-const SINGLES := 8
+const SINGLES := 16    ## wild single trees tree_0 .. tree_15 (8.. are the kinds of roadmap 13)
 
 var city: Node
 var land_trees := {}        ## tile -> Sprite2D
