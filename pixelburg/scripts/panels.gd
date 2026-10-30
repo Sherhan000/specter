@@ -614,6 +614,22 @@ func settings() -> void:
 	v.add_child(hud.button("%s: %s" % [Loc.t("music"), Loc.t("on" if Game.settings.music else "off")], "music", "blue", func():
 		Game.set_setting("music", not Game.settings.music)
 		settings()))
+	var sz := _hbox(6)
+	sz.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_child(sz)
+	var minus: Button = hud.button("−", "", "blue", func():
+		hud.step_ui_scale(-1)
+		settings(), Vector2(34, 26))
+	minus.disabled = hud.ui_scale() <= hud.UI_SCALES[0]
+	sz.add_child(minus)
+	var sl: Label = hud.text("%s: %d%%" % [Loc.t("ui_scale"), roundi(hud.ui_scale() * 100.0)], sz, 12, Color("3a2a1e"))
+	sl.custom_minimum_size.x = 130
+	sl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var plus: Button = hud.button("+", "", "blue", func():
+		hud.step_ui_scale(1)
+		settings(), Vector2(34, 26))
+	plus.disabled = hud.ui_scale() >= hud.max_ui_scale()
+	sz.add_child(plus)
 	v.add_child(hud.button(Loc.t("language"), "globe", "blue", func():
 		Game.set_setting("lang", "en" if Loc.lang == "ru" else "ru")
 		settings()))

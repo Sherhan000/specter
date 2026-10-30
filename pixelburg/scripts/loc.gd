@@ -155,6 +155,7 @@ const S := {
 	"highway_no": ["Проведите дорогу к трассе (въезды в середине каждого края долины) — будут туристы и экспорт.", "Build a road to the highway (gates in the middle of each valley edge) for tourists and exports."],
 	"sound": ["Звуки", "Sounds"],
 	"music": ["Музыка", "Music"],
+	"ui_scale": ["Размер кнопок", "Button size"],
 	"language": ["Язык: Русский", "Language: English"],
 	"on": ["вкл", "on"],
 	"off": ["выкл", "off"],

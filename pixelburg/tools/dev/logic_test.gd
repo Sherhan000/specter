@@ -233,6 +233,40 @@ func _ready() -> void:
 	city.hud.close_modal()
 	check(city.has_method("quit_game"), "the game can be quit from the menu")
 
+	# ------------------------------------------------ interface size (settings)
+	var csz0 := get_window().content_scale_size
+	get_window().content_scale_size = Vector2i(1600, 720)   # a phone-shaped screen (the headless window is square)
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_IGNORE
+	city.hud._fit()
+	print("ui viewport %s, base scale %.2f, max step %.2f" % [get_viewport().get_visible_rect().size, city.hud.S, city.hud.max_ui_scale()])
+	var hud_s: float = city.hud.S
+	check(is_equal_approx(city.hud.ui_scale(), 1.0), "interface size starts at 100%")
+	city.hud.step_ui_scale(1)
+	check(Game.settings.ui_scale > 1.0 and city.hud.S > hud_s and city.hud.root.size.y < city.hud.get_viewport().get_visible_rect().size.y / hud_s,
+		"bigger interface: buttons and icons grow (%.2f -> %.2f)" % [hud_s, city.hud.S])
+	for i in 10:
+		city.hud.step_ui_scale(1)
+	check(is_equal_approx(city.hud.ui_scale(), city.hud.max_ui_scale()) and city.hud.ui_scale() > 1.0
+		and city.hud.root.size.y >= city.hud.MIN_UI_H - 0.5 and city.hud.root.size.x >= city.hud.MIN_UI_W - 0.5,
+		"interface size stops at the largest step that fits (%d%%)" % roundi(city.hud.ui_scale() * 100.0))
+	for i in 20:
+		city.hud.step_ui_scale(-1)
+	check(is_equal_approx(city.hud.ui_scale(), city.hud.UI_SCALES[0]) and city.hud.S < hud_s, "interface can be made smaller")
+	city.hud.panels.settings()
+	check(city.hud.modal.visible, "settings window opens with the size control")
+	city.hud.close_modal()
+	city.hud.step_ui_scale(3)
+	Game.save_game()
+	Game.settings.ui_scale = 1.0
+	Game.load_game()
+	check(is_equal_approx(city.hud.ui_scale(), city.hud.UI_SCALES[3]), "interface size is saved (%.2f)" % city.hud.ui_scale())
+	Game.set_setting("ui_scale", 1.0)
+	city.hud._fit()
+	check(is_equal_approx(city.hud.S, hud_s), "interface back to normal size")
+	get_window().content_scale_size = csz0
+	get_window().content_scale_aspect = Window.CONTENT_SCALE_ASPECT_EXPAND
+	city.hud._fit()
+
 	# ------------------------------------------------ water, bridges, walls, street decoration
 	Game.coins = 999999
 	var free_land: Array[Vector2i] = []

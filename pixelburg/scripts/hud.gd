@@ -9,6 +9,10 @@ var body_font: FontFile      ## Inter Regular: running text
 var bold_font: Font          ## Inter SemiBold: buttons
 var ui_theme: Theme
 var S := 2.0
+## Interface size steps the player picks in the settings (multiplies the automatic scale).
+const UI_SCALES := [0.8, 0.9, 1.0, 1.1, 1.2, 1.35, 1.5]
+const MIN_UI_H := 240.0               ## bigger steps are skipped once fewer units than this fit on the screen
+const MIN_UI_W := 540.0
 
 var root: Control
 var safe: Control
@@ -22,7 +26,7 @@ var clock_label: Label
 var weather_icon: TextureRect
 var main_buttons: Control
 var badges := {}
-var side_buttons: VBoxContainer
+var side_buttons: VFlowContainer
 var mode_bar: PanelContainer
 var mode_title: Label
 var mode_sub: Label
@@ -139,7 +143,7 @@ func _ready() -> void:
 
 func _fit() -> void:
 	var vp := get_viewport().get_visible_rect().size
-	S = maxf(1.0, roundf(vp.y / 360.0 * 2.0) / 2.0)
+	S = _base_scale() * ui_scale()
 	root.scale = Vector2(S, S)
 	root.size = vp / S
 	var win := Vector2(DisplayServer.window_get_size())
@@ -158,6 +162,37 @@ func _fit() -> void:
 	safe.size = root.size - Vector2(left + right + 12, top + bottom + 10)
 	if modal:
 		modal.size = root.size
+	_place_side()
+
+
+func _base_scale() -> float:
+	return maxf(1.0, roundf(get_viewport().get_visible_rect().size.y / 360.0 * 2.0) / 2.0)
+
+
+## The biggest step that still leaves room for the whole interface on this screen.
+func max_ui_scale() -> float:
+	var vp := get_viewport().get_visible_rect().size
+	var best := 1.0
+	for k in UI_SCALES:
+		if k > best and _base_scale() * k <= minf(vp.y / MIN_UI_H, vp.x / MIN_UI_W) + 0.001:
+			best = k
+	return best
+
+
+## The player's interface size (Game.settings.ui_scale), one of UI_SCALES.
+func ui_scale() -> float:
+	return clampf(float(Game.settings.get("ui_scale", 1.0)), UI_SCALES[0], max_ui_scale())
+
+
+## Steps the interface size up or down and lays everything out again.
+func step_ui_scale(dir: int) -> void:
+	var i := 0
+	for k in UI_SCALES.size():
+		if absf(UI_SCALES[k] - ui_scale()) < absf(UI_SCALES[i] - ui_scale()):
+			i = k
+	i = clampi(i + dir, 0, UI_SCALES.find(max_ui_scale()))
+	Game.set_setting("ui_scale", UI_SCALES[i])
+	_fit()
 
 
 # ====================================================================== theme + widgets
@@ -512,8 +547,9 @@ func _build_top() -> void:
 
 
 func _build_side() -> void:
-	side_buttons = VBoxContainer.new()
-	side_buttons.add_theme_constant_override("separation", 4)
+	side_buttons = VFlowContainer.new()
+	side_buttons.add_theme_constant_override("v_separation", 4)
+	side_buttons.add_theme_constant_override("h_separation", 4)
 	safe.add_child(side_buttons)
 	for spec in [["mail", "orange", func(): panels.inbox()], ["finance", "green", func(): panels.finance()],
 			["mission", "blue", func(): panels.missions()], ["law", "purple", func(): panels.city_info()]]:
@@ -533,9 +569,26 @@ func _build_side() -> void:
 	var xb := round_btn("eye", "blue", xray_cb, 34)
 	xb.name = "XrayButton"
 	side_buttons.add_child(xb)
-	side_buttons.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
+	side_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	side_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	side_buttons.grow_vertical = Control.GROW_DIRECTION_BOTH
+	_place_side()
+
+
+## The side column sits mid-right between the top bar and the build button; with big buttons
+## on a short screen it wraps into a second column instead of covering them.
+func _place_side() -> void:
+	if side_buttons == null:
+		return
+	var col := -4.0
+	for b in side_buttons.get_children():
+		col += (b as Control).get_combined_minimum_size().y + 4.0
+	var top := 40.0
+	var bottom := safe.size.y - 60.0
+	var h := minf(col, bottom - top)
+	side_buttons.offset_top = clampf(safe.size.y / 2.0 - col / 2.0, top, maxf(top, bottom - h))
+	side_buttons.offset_bottom = side_buttons.offset_top + h
+	side_buttons.offset_right = 0.0
+	side_buttons.offset_left = 0.0
 
 
 func _build_bottom() -> void:
