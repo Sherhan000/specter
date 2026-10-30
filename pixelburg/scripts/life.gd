@@ -32,7 +32,7 @@ const JOB_KINDS := {
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
 const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]
-const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station"]
+const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum",
 	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks"]
 
@@ -1028,7 +1028,7 @@ func _update_lights() -> void:
 					1.0 if share > 0.6 else 0.0, 1.0 if share > 0.2 and hsh < 50 else 0.0)
 		else:
 			var open := 7.0 <= h and h < 20.0
-			if b.id in ["hospital", "police", "fire_station", "hotel", "gas_station"]:
+			if b.id in ["hospital", "police", "fire_station", "hotel", "gas_station", "ev_station", "gas_highway"]:
 				open = true
 			elif cat == "fun" or b.id in ["restaurant", "cinema", "cafe", "pizzeria", "shawarma", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]:
 				open = 10.0 <= h and h < 23.5

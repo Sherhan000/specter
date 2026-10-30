@@ -398,6 +398,16 @@ func _ready() -> void:
 		check(food_b != 0 and Game.buildings.has(food_b), "%s can be placed" % fid)
 		if food_b != 0:
 			Game.demolish(food_b)
+	# new filling stations: each is a working shop with its own sprite, open around the clock, the old one stays
+	check(Data.B.has("gas_station") and Data.ORDER.has("gas_station"), "the old gas station is still there")
+	for gid in ["ev_station", "gas_highway"]:
+		check(Data.B.has(gid) and Data.ORDER.has(gid) and Data.B[gid].cat == "shop" and Data.B[gid].income > 0, "%s is a shop in the list" % gid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % gid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % gid), "%s has its own sprites" % gid)
+		check(Life.SHOPS.has(gid), "residents refuel at %s" % gid)
+		var fuel_b := Game._add_building(gid, spots[3].x, spots[3].y, true)
+		check(fuel_b != 0 and Game.buildings.has(fuel_b), "%s can be placed" % gid)
+		if fuel_b != 0:
+			Game.demolish(fuel_b)
 	# new farm buildings: each one produces goods in the farm zone and has its own sprite
 	for fid in ["apiary", "chicken_farm", "melon_field", "vineyard", "windmill", "fish_farm", "dairy"]:
 		check(Data.B.has(fid) and Data.ORDER.has(fid) and Data.B[fid].cat == "ind" and Data.B[fid].out > 0 and Data.B[fid].zones == ["farm"], "%s is a farm building in the list" % fid)

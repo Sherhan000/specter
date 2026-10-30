@@ -82,6 +82,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Два новых вида заправки, у каждой свой вид: электрозаправка с солнечными панелями на навесе и электромобилями на зарядке и большая заправка у трассы с колонками, магазином, кафе, автомойкой и стелой с ценами", "Two new kinds of filling stations, each with its own look: an EV charging station with a solar roof and electric cars plugged in, and a big highway fuel stop with pumps, a shop, a cafe, a car wash and a price pylon"],
 	["Новые деревья, у каждого свой вид: берёзы, сосны и ели, тополя, яблоня с яблоками, осенний клён, плакучая ива, сакура, пальмы и чинара — ставятся как украшение и растут в природе", "New trees, each with its own look: birches, pines and spruces, poplars, an apple tree, an autumn maple, a weeping willow, sakura, palms and a chinar - place them as decoration, and they also grow in the wild"],
 	["Новые здания для ферм, у каждого свой вид: пасека с ульями, птичник с курами, бахча с дынями и навесом на сваях, виноградник со шпалерами, мельница с крыльями, рыбное хозяйство с садками и большая молочная ферма", "New farm buildings, each with its own look: an apiary with beehives, a poultry farm with chickens, a melon field with a shelter on stilts, a vineyard with trellises, a windmill with sails, a fish farm with net cages and a big dairy"],
 	["Кафе и фастфуд, каждый со своим видом: кофейня-киоск с огромной чашкой, шаурма, пончиковая, бургерная, дворик фудтраков, чайхана с топчанами и фастфуд с автоокном", "Cafes and fast food, each with its own look: a coffee kiosk with a giant cup, a shawarma grill, a donut shop, a burger bar, a food truck court, a chaikhana teahouse and a drive-thru"],
@@ -202,6 +203,10 @@ const B := {
 		"jobs": 4, "use": 12, "income": 85, "cycle": 120, "upkeep": 20},
 	"gas_station": {"name": ["Заправка", "Gas Station"], "cat": "shop", "zones": ["city", "industry", "farm"], "size": 1, "cost": 2200, "lvl": 7, "time": 55,
 		"jobs": 3, "use": 10, "income": 95, "cycle": 110, "upkeep": 20},
+	"ev_station": {"name": ["Электрозаправка", "EV Charging Station"], "cat": "shop", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 3200, "lvl": 9, "time": 60,
+		"jobs": 2, "use": 10, "income": 115, "cycle": 120, "upkeep": 18},
+	"gas_highway": {"name": ["Заправка у трассы", "Highway Fuel Stop"], "cat": "shop", "zones": ["city", "industry", "farm"], "size": 2, "cost": 7800, "lvl": 12, "time": 150,
+		"jobs": 14, "use": 32, "income": 240, "cycle": 170, "upkeep": 60},
 	"boutique": {"name": ["Бутик", "Boutique"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 2600, "lvl": 8, "time": 60,
 		"jobs": 4, "use": 14, "income": 110, "cycle": 130, "upkeep": 26},
 	"supermarket": {"name": ["Супермаркет", "Supermarket"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 10, "time": 120,
@@ -392,7 +397,7 @@ const B := {
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
 const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
-	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "pizzeria", "gas_station", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
+	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "pizzeria", "gas_station", "ev_station", "gas_highway", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "factory", "logistics",
