@@ -539,6 +539,135 @@ def bus_stop(L, o):
     return cv
 
 
+def _glass(tint="a8c8d8", glow_from=None, a=90.0):
+    """Shelter glass panel; the upper part glows at night when glow_from is set."""
+    return lambda u, v, LL, HH: (C(tint) * np.ones(u.shape + (3,)), nores(u.shape),
+                                 np.where((v > glow_from)[..., None], np.array([200, 230, 255, a]), 0) * np.ones(u.shape + (4,))
+                                 if glow_from is not None else None)
+
+
+def _planks(col="8a6a48", w=6.0):
+    """Wooden boards: vertical planks with dark gaps."""
+    return lambda u, v, LL, HH: (np.where((np.mod(u, w) < 0.8)[..., None], C(col) * 0.6, C(col)) * np.ones(u.shape + (3,)), nores(u.shape), None)
+
+
+def _stop_sign(T, s=145, f=18, plate="2a9a4a"):
+    post(T, s, f, 0, 46, "8a8a90", 1.8)
+    sign_board(T, s, f + 2, 38, "BUS", 8, plate, "ffffff")
+
+
+def bus_stop_simple(L, o):
+    """A simple shelter: a metal roof on two posts, a bench and a sign."""
+    cv = Canvas(1, 120)
+    T = Orient(cv, o)
+    seed = 905
+    ground(T, 0, 0, 160, 80, kit.paving("bcb8b0", 8.0, 4))
+    for (s, f) in ((40, 48), (120, 48)):
+        post(T, s, f, 0, 28, "5a6a5a", 2.0)
+    slab(T, 34, 26, 126, 54, 28, 30, "6a8a6a", flat("4a6a4a"))
+    T.box(40, 50, 120, 52, 4, 24, all=flat("7a8a7a"), top=flat("5a6a5a"))
+    bench(T, 80, 40, "s", "9a6a40")
+    _stop_sign(T, plate="2a6ab0")
+    entry(T, 80)
+    door(T, 70, 20, 30, 24)
+    if L >= 2:
+        tree(T, 18, 70, "lime", 0.45, seed)
+    if L >= 3:
+        lamp(T, 10, 12, "classic", 44)
+    return cv
+
+
+def bus_stop_modern(L, o):
+    """A modern all-glass shelter with a thin white roof and a digital timetable column."""
+    cv = Canvas(1, 120)
+    T = Orient(cv, o)
+    seed = 911
+    ground(T, 0, 0, 160, 80, kit.paving("d8d4cc", 10.0, 3))
+    for (s, f) in ((26, 24), (134, 24), (26, 52), (134, 52)):
+        post(T, s, f, 0, 32, "d8dce0", 1.6)
+    T.panel(26, 134, 52, 2, 32, _glass("b8dcea", 22, 110), "s")
+    T.panel(24, 52, 26, 2, 32, _glass("b8dcea"), "f")
+    T.panel(24, 52, 134, 2, 32, _glass("b8dcea"), "f")
+    slab(T, 20, 16, 140, 58, 32, 34, "f4f4f2", flat("e0e2e4"))
+    # timetable column with a blue screen
+    T.box(12, 30, 20, 38, 0, 40, all=lambda u, v, LL, HH: (np.where(((v > 20) & (v < 36))[..., None], C("3a8ad8"), C("3a3e44")) * np.ones(u.shape + (3,)),
+                                                          nores(u.shape), np.where(((v > 20) & (v < 36))[..., None], np.array([120, 190, 255, 220.0]), 0)
+                                                          * np.ones(u.shape + (4,))), top=flat("2a2e34"))
+    bench(T, 70, 42, "s", "c8ccd0")
+    bench(T, 100, 42, "s", "c8ccd0")
+    _stop_sign(T, s=148)
+    entry(T, 80)
+    door(T, 70, 20, 30, 24)
+    if L >= 2:
+        flowerbed(T, 40, 64, 120, 76, seed)
+    if L >= 3:
+        lamp(T, 150, 70, "modern", 48)
+    return cv
+
+
+def bus_stop_ad(L, o):
+    """A city shelter with a lit advertising wall and a big arrivals screen on the roof."""
+    cv = Canvas(1, 130)
+    T = Orient(cv, o)
+    seed = 917
+    ground(T, 0, 0, 160, 80, kit.paving("c8c0b4", 8.0, 4))
+    for (s, f) in ((30, 24), (130, 24), (30, 50), (130, 50)):
+        post(T, s, f, 0, 30, "2a2e34", 2.2)
+    T.panel(18, 50, 30, 2, 30, _glass("a8c8d8"), "f")
+    slab(T, 24, 18, 136, 56, 30, 33, "2a2e34", flat("3a3e44"))
+    # back: a lit poster panel (colour blocks) and a screen box on the roof
+    ad = ["e84a8a", "f4c040", "4ab8e8"]
+
+    def poster(u, v, LL, HH):
+        k = np.clip((u / max(LL, 1) * 3).astype(int), 0, 2)
+        col = np.array([C(c) for c in ad])[k]
+        frame = (np.mod(u, LL / 3) < 1.5) | (v < 2) | (v > HH - 2)
+        col = np.where(frame[..., None], C("1a1a20"), col)
+        return col, nores(u.shape), np.where(frame[..., None], 0, np.array([255, 240, 220, 170.0])) * np.ones(u.shape + (4,))
+    T.box(36, 51, 130, 55, 0, 30, all=poster, top=flat("2a2e34"))
+    T.box(60, 30, 110, 34, 33, 46, all=lambda u, v, LL, HH: (np.where(((v > 2) & (v < 11) & (u > 2) & (u < LL - 2))[..., None],
+                                                                     np.where((np.mod(v, 3) < 1.5)[..., None], C("f4a020"), C("2a1a08")), C("1a1a20"))
+                                                            * np.ones(u.shape + (3,)), nores(u.shape),
+                                                            np.where(((v > 2) & (v < 11))[..., None], np.array([255, 170, 40, 230.0]), 0) * np.ones(u.shape + (4,))),
+          top=flat("1a1a20"))
+    post(T, 75, 32, 33, 34, "1a1a20", 1.5)
+    post(T, 95, 32, 33, 34, "1a1a20", 1.5)
+    bench(T, 80, 40, "s", "6a6e74")
+    _stop_sign(T, plate="d84a3a")
+    entry(T, 80)
+    door(T, 70, 20, 30, 24)
+    if L >= 2:
+        T.box(146, 60, 154, 68, 0, 36, all=poster, top=flat("2a2e34"))
+    if L >= 3:
+        lamp(T, 10, 12, "modern", 48)
+    return cv
+
+
+def bus_stop_village(L, o):
+    """A wooden village stop: a log hut open to the road with a shingle roof and a bench."""
+    cv = Canvas(1, 130)
+    T = Orient(cv, o)
+    seed = 923
+    ground(T, 0, 0, 160, 80, kit.paving("b8a888", 12.0, 6))
+    wood = _planks("9a7048")
+    T.box(40, 52, 120, 56, 0, 26, all=wood, top=flat("6a4a30"))
+    T.box(40, 30, 44, 56, 0, 26, all=wood, top=flat("6a4a30"))
+    T.box(116, 30, 120, 56, 0, 26, all=wood, top=flat("6a4a30"))
+    T.gable(34, 24, 126, 60, 26, 16, roof_mat("7a4a30", "shingle"), _planks("8a6040"), ridge="s", o=3)
+    bench(T, 80, 44, "s", "8a6040")
+    # a wooden sign on a post
+    post(T, 145, 18, 0, 40, "6a4a30", 2.0)
+    sign_board(T, 145, 20, 34, "BUS", 8, "6a4a30", "f4e8c8", glow=False)
+    entry(T, 80)
+    door(T, 70, 20, 30, 24)
+    tree(T, 16, 66, "oak", 0.55, seed)
+    if L >= 2:
+        flowerbed(T, 100, 64, 150, 76, seed + 1)
+    if L >= 3:
+        lamp(T, 10, 12, "lantern", 42)
+    return cv
+
+
 def metro_station(L, o):
     """A metro entrance: a glass pavilion over stairs going down and a slender tower with a glowing M."""
     H = [90, 110, 130][L - 1]
@@ -821,4 +950,5 @@ def sport_tower(L, o):
 
 BUILDERS = {"sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
-            "hotel_grand": hotel_grand, "bus_stop": bus_stop, "metro_station": metro_station}
+            "hotel_grand": hotel_grand, "bus_stop": bus_stop, "bus_stop_simple": bus_stop_simple, "bus_stop_modern": bus_stop_modern, "bus_stop_ad": bus_stop_ad,
+            "bus_stop_village": bus_stop_village, "metro_station": metro_station}

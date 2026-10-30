@@ -318,6 +318,13 @@ func _ready() -> void:
 		stops.append(Game._add_building("bus_stop", spots[k].x, spots[k].y, true))
 	Game.recalc()
 	check(Game.bus_stops().size() == 2 and Game.transit_fares() > 0, "two bus stops start a bus line with fares")
+	var kinds := ["bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village"]
+	check(kinds.all(func(k): return Data.B.has(k) and Data.B[k].svc == "bus" and Data.ORDER.has(k)), "four new kinds of bus stops")
+	var mixed := Game._add_building("bus_stop_village", spots[3].x, spots[3].y, true)
+	Game.recalc()
+	check(Game.bus_stops().has(mixed) and Game.bus_stops().size() == 3, "a village stop joins the same bus line")
+	Game.demolish(mixed)
+	Game.recalc()
 	city.life._update_buses()
 	check(city.life.cars.any(func(car): return is_instance_valid(car) and car.role == "city_bus"), "a city bus drives between the stops")
 	var st1 := Game._add_building("metro_station", spots[2].x, spots[2].y, true)

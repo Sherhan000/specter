@@ -748,7 +748,7 @@ func _sim_building(uid: int, dt: float) -> bool:
 				add_xp(int(d.cost / 10) + 5)
 			if b.id == "metro_station":
 				toast.emit(Loc.t("metro_ready" if metro_open() else "metro_wait"))
-			elif b.id == "bus_stop" and bus_stops().size() < 2:
+			elif Data.B[b.id].get("svc", "") == "bus" and bus_stops().size() < 2:
 				toast.emit(Loc.t("bus_wait"))
 			dirty = true
 			building_updated.emit(uid)
@@ -1162,7 +1162,7 @@ func bus_stops() -> Array[int]:
 	var out: Array[int] = []
 	for uid in buildings:
 		var b: Dictionary = buildings[uid]
-		if b.id == "bus_stop" and b.built and not b.closed and road_ok.get(uid, false):
+		if Data.B[b.id].get("svc", "") == "bus" and b.built and not b.closed and road_ok.get(uid, false):
 			out.append(uid)
 	out.sort()
 	return out

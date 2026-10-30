@@ -91,6 +91,7 @@ const NEWS := [
 	["Стены, украшения улиц и новый фонарь", "Walls, street decoration and a new street lamp"],
 	["Кнопка-глаз делает высокие здания прозрачными", "The eye button makes tall buildings see-through"],
 	["Выход из игры: кнопка в настройках и двойное «Назад»", "Quitting: a button in settings, or press Back twice"],
+	["Остановки разного вида: навес, стеклянная, с рекламой и экраном, деревенская", "Bus stops of every kind: simple, glass, with ads and a screen, village"],
 ]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
@@ -247,6 +248,14 @@ const B := {
 		"lvl": 15, "time": 260, "jobs": 14, "upkeep": 90, "svc": "sport", "radius": 18, "happy": 7},
 	"bus_stop": {"name": ["Автобусная остановка", "Bus Stop"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 300, "lvl": 3, "time": 10,
 		"jobs": 1, "upkeep": 4, "svc": "bus", "radius": 7, "happy": 3},
+	"bus_stop_simple": {"name": ["Остановка-навес", "Simple Bus Shelter"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 200, "lvl": 3, "time": 8,
+		"jobs": 1, "upkeep": 3, "svc": "bus", "radius": 6, "happy": 2},
+	"bus_stop_modern": {"name": ["Стеклянная остановка", "Glass Bus Stop"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 600, "lvl": 6, "time": 15,
+		"jobs": 1, "upkeep": 5, "svc": "bus", "radius": 8, "happy": 4},
+	"bus_stop_ad": {"name": ["Остановка с рекламой", "Bus Stop with Ads"], "cat": "service", "zones": ["city", "leisure"], "size": 1, "cost": 900, "lvl": 8, "time": 18,
+		"jobs": 1, "upkeep": 2, "svc": "bus", "radius": 8, "happy": 4},
+	"bus_stop_village": {"name": ["Деревенская остановка", "Village Bus Stop"], "cat": "service", "zones": ["farm", "city", "leisure"], "size": 1, "cost": 250, "lvl": 3, "time": 10,
+		"jobs": 1, "upkeep": 3, "svc": "bus", "radius": 7, "happy": 3},
 	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
 		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
@@ -289,7 +298,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
