@@ -1181,7 +1181,84 @@ def recycling_plant(L, o):
     return cv
 
 
-BUILDERS = {"garbage_depot": garbage_depot, "recycling_plant": recycling_plant, "newsstand": newsstand, "newspaper": newspaper, "tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+def _scaffold(T, s0, f0, s1, f1, h, col="c8a050"):
+    """Poles, ledgers and plank decks along the front face (f0) of a building under construction."""
+    n = max(2, int((s1 - s0) // 40))
+    for k in range(n + 1):
+        post(T, s0 + k * (s1 - s0) / n, f0, 0, h, col, 1.4)
+    for z in range(16, int(h), 28):
+        T.box(s0, f0 - 8, s1, f0, z, z + 3, all=flat("8a6a40"), top=flat("c8a068"))
+
+
+def site_house(L, o):
+    """A house under construction: L1 foundation and pillars, L2 a floor of walls with scaffolding, L3 walls and a roof frame."""
+    cv = Canvas(2, 150)
+    T = Orient(cv, o)
+    seed = 1301
+    ground(T, 0, 0, 320, 320, kit.paving("b8a888", 10.0, 4))
+    slab(T, 60, 100, 270, 260, 0, 6, "a8a8a4")
+    walls = {1: 0, 2: 46, 3: 92}[L]
+    for (a, b) in ((70, 110), (250, 110), (70, 250), (250, 250), (160, 110), (160, 250)):
+        post(T, a, b, 6, 6 + 46 + (46 if L >= 2 else 0) + (30 if L >= 3 else 0), "9a9a98", 5.0)
+    if L >= 2:
+        slab(T, 60, 100, 270, 260, 52, 58, "b4b4b0")
+        sd = facade("brick", "b0583c", win=None, plinth=("7a7a76", 4), seed=seed, lit=0.0)
+        box(T, 72, 112, 250, 126, 6, 52, front=sd, back=sd, left=sd, right=sd, top=flat_top("8a8a88", "b0583c", 2))
+        box(T, 72, 112, 86, 250, 6, 52, front=sd, back=sd, left=sd, right=sd, top=flat_top("8a8a88", "b0583c", 2))
+        _scaffold(T, 60, 100, 270, 112, 120)
+    if L >= 3:
+        slab(T, 60, 100, 270, 260, 98, 104, "b4b4b0")
+        for k in range(5):
+            T.box(70 + k * 44, 110, 76 + k * 44, 250, 104, 110, all=flat("a0683a"), top=flat("c88a54"))
+        T.box(70, 170, 262, 176, 104, 110, all=flat("a0683a"), top=flat("c88a54"))
+    # materials and a small mixer
+    T.box(30, 20, 60, 44, 0, 14, all=flat("c8b080"), top=flat("d8c898"))
+    T.box(70, 24, 96, 40, 0, 10, all=flat("8a8a88"), top=flat("a8a8a4"))
+    T.box(250, 28, 276, 48, 0, 16, all=flat("e8b030"), top=flat("2a2e34"))
+    return cv
+
+
+def site_crane(L, o):
+    """A construction yard: a tower crane, a fenced pit, piles of sand and bricks, a cabin and a cement mixer."""
+    cv = Canvas(2, 190)
+    T = Orient(cv, o)
+    seed = 1311
+    ground(T, 0, 0, 320, 320, kit.paving("b4a080", 10.0, 4))
+    slab(T, 80, 120, 230, 260, 0, 3, "8a7a64")
+    # tower crane: a lattice mast, a jib with a counterweight and a hanging load
+    post(T, 60, 70, 0, 150, "e8b030", 4.0)
+    for z in range(10, 150, 20):
+        T.box(54, 64, 68, 78, z, z + 2, all=flat("e8b030"), top=flat("f0c850"))
+    T.box(50, 60, 250, 68, 150, 158, all=flat("e8b030"), top=flat("f0c850"))
+    T.box(30, 58, 52, 70, 140, 156, all=flat("6a6a6c"), top=flat("8a8a8c"))
+    T.box(54, 62, 70, 74, 158, 170, all=flat("e8b030"), top=flat("f0c850"))
+    if L >= 2:
+        post(T, 220, 64, 70, 150, "2a2a2e", 0.8)
+        T.box(206, 54, 234, 74, 54, 72, all=flat("a8a4a0"), top=flat("c8c4c0"))
+    if L >= 3:
+        slab(T, 100, 140, 210, 240, 3, 40, "a8a8a4")
+    T.box(240, 200, 300, 240, 0, 30, all=flat("3a7ad8"), top=flat("2a5ab0"))
+    T.box(242, 201, 298, 203, 14, 26, all=_screen_panel("2a3a5a", (160, 190, 220, 80.0)), top=flat("2a2e34"))
+    T.box(30, 220, 76, 250, 0, 12, all=flat("e8d8a0"), top=flat("f0e4b8"))
+    T.box(86, 236, 106, 252, 0, 16, all=flat("c8604a"), top=flat("d8806a"))
+    T.box(230, 100, 260, 130, 0, 14, all=flat("8a8a88"), top=flat("a8a8a4"))
+    return cv
+
+
+def site_small(L, o):
+    """A tiny plot with a half-laid wall, a pallet of bricks and a wheelbarrow."""
+    cv = Canvas(1, 70)
+    T = Orient(cv, o)
+    ground(T, 0, 0, 160, 160, kit.paving("b8a888", 8.0, 4))
+    sd = facade("brick", "b0583c", win=None, plinth=("7a7a76", 3), seed=1321, lit=0.0)
+    box(T, 30, 60, 110, 70, 0, 12 + L * 8, front=sd, back=sd, left=sd, right=sd, top=flat_top("8a8a88", "b0583c", 2))
+    T.box(30, 60, 40, 140, 0, 8 + L * 6, all=flat("b0583c"), top=flat("c07860"))
+    T.box(90, 20, 130, 44, 0, 14, all=flat("c8b080"), top=flat("d8c898"))
+    T.box(40, 24, 64, 38, 4, 10, all=flat("e8b030"), top=flat("2a2e34"))
+    return cv
+
+
+BUILDERS = {"site_house": site_house, "site_crane": site_crane, "site_small": site_small, "garbage_depot": garbage_depot, "recycling_plant": recycling_plant, "newsstand": newsstand, "newspaper": newspaper, "tv_studio": tv_studio, "tv_center": tv_center, "tv_tower": tv_tower, "sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "bus_stop_simple": bus_stop_simple, "bus_stop_modern": bus_stop_modern, "bus_stop_ad": bus_stop_ad,
             "bus_stop_village": bus_stop_village, "metro_station": metro_station}

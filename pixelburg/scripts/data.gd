@@ -94,6 +94,7 @@ const NEWS := [
 	["Остановки разного вида: навес, стеклянная, с рекламой и экраном, деревенская", "Bus stops of every kind: simple, glass, with ads and a screen, village"],
 	["Телевидение: маленькая студия, телецентр и высокая телебашня — жители счастливее", "Television: a small studio, a TV centre and a tall TV tower make residents happier"],
 	["Газеты: киоск и редакция — новости о городе: население, счастье, деньги, пожары", "Newspapers: a newsstand and an office with news about your city: people, mood, money, fires"],
+	["Недостроенные дома и стройки с краном — для красоты, как будто идёт стройка", "Unfinished houses and building sites with a crane, for looks, as if a construction is going on"],
 	["Мусор: жители производят отходы, станция вывоза и завод отправляют мусоровозки по дорогам — иначе падает счастье и растёт загрязнение", "Garbage: residents make waste; depots and recycling plants send trucks along the roads, or mood drops and pollution rises"],
 ]
 
@@ -305,6 +306,13 @@ const B := {
 		"happy": 10, "radius": 8, "upkeep": 5},
 	"statue": {"name": ["Статуя", "Statue"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 5000, "gems": 3, "lvl": 10, "time": 60,
 		"happy": 20, "radius": 10, "upkeep": 8},
+	# unfinished houses and building yards: pure decoration, "as if a construction is going on"
+	"site_small": {"name": ["Стройка: кладка стены", "Building: laying a wall"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 120, "lvl": 2, "time": 5,
+		"happy": 1, "radius": 3, "upkeep": 0},
+	"site_house": {"name": ["Недостроенный дом", "Unfinished House"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 2, "cost": 400, "lvl": 3, "time": 10,
+		"happy": 1, "radius": 4, "upkeep": 0},
+	"site_crane": {"name": ["Стройка с краном", "Building Site with Crane"], "cat": "decor", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 15,
+		"happy": 1, "radius": 5, "upkeep": 0},
 	# street lamps stand on the sidewalks and are placed with their own tool (see Game.place_lamp)
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
@@ -317,7 +325,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
-	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
+	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]
 ## build menu tabs: the categories plus the hotels, which have a window of their own
 const TABS := ["home", "shop", "hotel", "ind", "service", "fun", "decor"]
