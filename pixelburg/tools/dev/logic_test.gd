@@ -200,6 +200,23 @@ func _ready() -> void:
 	await get_tree().process_frame
 	var cards: int = city.hud.build_cards.get_children().filter(func(n): return not n.is_queued_for_deletion()).size()
 	check(cards == 1 + Data.HOTELS.size(), "hotels window: a note and five hotel cards (%d)" % cards)
+	# bike lanes bring cyclists out
+	var saved_roads := Game.roads.duplicate()
+	for rc in Game.roads:
+		Game.roads[rc] = "bike"
+	Game.phase = "day"
+	Game.weather = "clear"
+	for k in 5:
+		city.life._update_cyclists()
+	check(city.life.cyclists.size() > 0, "cyclists ride on bike lanes (%d)" % city.life.cyclists.size())
+	if city.life.cyclists.size() > 0:
+		var cy: Cyclist = city.life.cyclists[0]
+		var p0 := cy.g
+		for k in 10:
+			cy.step(0.1)
+		check(cy.g != p0 or cy.done, "a cyclist moves along the street")
+	Game.roads = saved_roads
+	check(Data.B.has("sport_tower") and Data.B.sport_tower.svc == "sport", "sports tower is a sports service")
 	city.hud._set_cat("home")
 	check(city.hud.road_types.get_child_count() == Data.ROAD_ORDER.size() + 1, "road bar lists every road type")
 	check(Data.HOTELS.size() == 5 and Data.HOTELS.all(func(h): return Data.tab_of(h) == "hotel" and Data.B[h].get("highway", false)),

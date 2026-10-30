@@ -156,7 +156,7 @@ vec3 bricks(vec2 g) {
 }
 
 // returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street, 7 boulevard,
-// 8 avenue (wide, four lanes), 9 brick street, 10 street with bus lanes
+// 8 avenue (wide, four lanes), 9 brick street, 10 street with bus lanes, 11 street with bike lanes
 vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	int type = d.r;
 	int arms = d.g & 15;
@@ -219,7 +219,7 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	}
 
 	vec3 m;
-	float half = type == 8 ? 0.3 : (type == 10 ? 0.25 : 0.21);
+	float half = type == 8 ? 0.3 : ((type == 10 || type == 11) ? 0.25 : 0.21);
 	float dc = carriage(f, arms, half, m);
 	vec3 asph = tex_g(4.0, g, 0.5);
 
@@ -298,6 +298,19 @@ vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 				gm = mix(gm, CURB, 1.0 - smoothstep(0.004, 0.009, 0.05 - off));
 				c = gm;
 			}
+		} else if (type == 11 && m.z > 0.0 && (arms == 10 || arms == 5 || m.z > 1.5)) {
+			// bike lanes along both curbs: green surface behind a dashed white line, a bicycle mark every tile
+			float off = abs(m.y - 0.5);
+			if (off > 0.14) c = mix(c, vec3(0.3, 0.58, 0.36), 0.8);
+			float dl = (1.0 - smoothstep(0.003, 0.007, abs(off - 0.14))) * step(fract(m.x * 6.0), 0.6);
+			c = mix(c, PAINT, dl);
+			float cl = (1.0 - smoothstep(0.003, 0.006, off)) * step(fract(m.x * 3.0), 0.55);
+			c = mix(c, PAINT, cl);
+			vec2 bk = vec2(fract(m.x) - 0.5, off - 0.195);
+			float wheel = max(1.0 - smoothstep(0.003, 0.006, abs(length(bk - vec2(-0.025, 0.0)) - 0.016)),
+				1.0 - smoothstep(0.003, 0.006, abs(length(bk - vec2(0.025, 0.0)) - 0.016)));
+			float bar = (1.0 - smoothstep(0.002, 0.005, abs(bk.y + 0.004))) * step(abs(bk.x), 0.025);
+			c = mix(c, PAINT, max(wheel, bar) * 0.85);
 		} else if ((type == 8 || type == 10) && m.z > 0.0 && (arms == 10 || arms == 5 || m.z > 1.5)) {
 			float off = abs(m.y - 0.5);
 			if (type == 8) {

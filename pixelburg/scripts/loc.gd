@@ -283,6 +283,7 @@ const S := {
 	"r_health": ["Больница рядом", "Hospital nearby"],
 	"r_bus": ["Автобусная остановка рядом", "Bus stop nearby"],
 	"r_metro": ["Метро рядом", "Metro nearby"],
+	"r_sport": ["Спорт рядом", "Sports nearby"],
 	"r_landmark": ["Рядом Башня Душанбе", "Dushanbe Tower nearby"],
 	"r_fun": ["Места отдыха", "Leisure spots"],
 	"r_shop": ["Магазин рядом", "Shop nearby"],

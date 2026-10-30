@@ -55,10 +55,11 @@ const ROADS := {
 	"avenue": {"name": ["Проспект", "Avenue"], "cost": 60, "upkeep": 1.5, "row": 8, "speed": 1.3},
 	"brick": {"name": ["Кирпичная улица", "Brick street"], "cost": 35, "upkeep": 0.9, "row": 9, "speed": 0.85},
 	"bus_lane": {"name": ["Улица с автобусной полосой", "Bus lane street"], "cost": 40, "upkeep": 0.8, "row": 10, "speed": 1.05},
+	"bike": {"name": ["Улица с велодорожкой", "Bike lane street"], "cost": 38, "upkeep": 0.7, "row": 11, "speed": 0.95},
 	"highway": {"name": ["Трасса", "Highway"], "cost": 0, "upkeep": 0.0, "row": 5, "speed": 1.6},
 	"country": {"name": ["Загородная дорога", "Country road"], "cost": 0, "upkeep": 0.0, "row": 6, "speed": 1.25},
 }
-const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane"]
+const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
 ## Category: home | shop | ind | service | fun (leisure businesses) | decor.
 ## zones: where it may be built. upkeep: coins per in-game day (salaries for services).
@@ -200,6 +201,8 @@ const B := {
 		"jobs": 8, "upkeep": 48, "svc": "power", "radius": 0, "happy": 0, "power": 120},
 	"solar_panel": {"name": ["Солнечные панели", "Solar Panels"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 650, "lvl": 2, "time": 20,
 		"jobs": 1, "upkeep": 3, "svc": "solar", "radius": 0, "happy": 1, "power": 8, "store": 48},
+	"sport_tower": {"name": ["Спортивная башня", "Sports Tower"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 16000, "gems": 4,
+		"lvl": 15, "time": 260, "jobs": 14, "upkeep": 90, "svc": "sport", "radius": 18, "happy": 7},
 	"bus_stop": {"name": ["Автобусная остановка", "Bus Stop"], "cat": "service", "zones": ["city", "industry", "farm", "leisure"], "size": 1, "cost": 300, "lvl": 3, "time": 10,
 		"jobs": 1, "upkeep": 4, "svc": "bus", "radius": 7, "happy": 3},
 	"metro_station": {"name": ["Станция метро", "Metro Station"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 1, "cost": 6000, "gems": 2, "lvl": 10, "time": 120,
@@ -244,7 +247,7 @@ const ORDER := ["house_small", "cottage", "bungalow", "townhouse", "khrushchevka
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "orchard", "greenhouse", "warehouse", "ranch", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "metro_station", "parking",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "metro_station", "parking",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue"]
 const CATS := ["home", "shop", "ind", "service", "fun", "decor"]

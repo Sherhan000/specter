@@ -726,6 +726,99 @@ def dushanbe_home(L, o):
     return cv
 
 
-BUILDERS = {"dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
+# ====================================================================== sport_tower: sports stacked up in a glass tower
+def court(col, line="f4f4f4", kind="tennis"):
+    """A sports floor seen from above: coloured surface with white lines."""
+    c = C(col)
+
+    def fn(u, v, L, D):
+        rgb = np.broadcast_to(c, u.shape + (3,)).copy()
+        x, y = u / max(L, 1), v / max(D, 1)
+        m = (np.abs(x - 0.08) < 0.012) | (np.abs(x - 0.92) < 0.012) | (np.abs(y - 0.1) < 0.015) | (np.abs(y - 0.9) < 0.015)
+        m |= np.abs(x - 0.5) < 0.01
+        if kind == "football":
+            m |= np.abs(np.hypot((x - 0.5) * L, (y - 0.5) * D) - min(L, D) * 0.15) < 1.0
+        elif kind == "basket":
+            m |= (np.abs(np.hypot((x - 0.08) * L, (y - 0.5) * D) - D * 0.25) < 1.0) & (x < 0.3)
+            m |= (np.abs(np.hypot((x - 0.92) * L, (y - 0.5) * D) - D * 0.25) < 1.0) & (x > 0.7)
+        rgb[m] = C(line)
+        return rgb, nores(u.shape), None
+    return fn
+
+
+def track_side(r):
+    """Red running track around a drum, with white lane lines."""
+    def fn(a, z, nx, ny):
+        lines = (np.mod(z, 3.0) < 0.5)
+        rgb = np.where(lines[..., None], C("f4f0e8"), C("c8442e")) * np.ones(a.shape + (1,))
+        return rgb, nores(a.shape), None
+    return fn
+
+
+def sport_tower(L, o):
+    """A sports tower: open floors with a tennis and a basketball court, a pool with a glass wall, a climbing wall
+    up one side, a running track and a football pitch on the roof, bicycles parked at the foot."""
+    fh = 30
+    n = [10, 13, 16][L - 1]
+    H = n * fh
+    cv = Canvas(2, H + 140)
+    T = Orient(cv, o)
+    seed = 1001
+    ground(T, 0, 0, 320, 320, kit.paving("c8c4bc", 12.0, 4))
+    # the core: glass and steel
+    core = facade("concrete", "dfe6ec", win=Win(w=22, h=26, sill=4, sp=28, margin=6, fh=fh, frame="3a4450", style="vertical",
+                                                tint="6a9ac0", group="work", top_skip=0), doors=[(30, 40, 30, "double_glass")], plinth=None,
+                  seed=seed, lit=0.9)
+    box(T, 190, 90, 270, 250, 0, H, all=core, top=flat_top("8a8e94", "dfe6ec", 3))
+    # open sports floors cantilevered from the core
+    kinds = [("2a7ac8", "tennis"), ("e8843a", "basket"), (None, "pool"), ("3a9a4a", "football"), ("8a5ad8", "basket"), ("2a7ac8", "tennis"),
+             ("e8843a", "basket")]
+    for k in range(n):
+        z = k * fh
+        slab(T, 50, 90, 190, 250, z, z + 4, "e8ecf0")
+        col, kind = kinds[k % len(kinds)]
+        if kind == "pool":
+            T.flat(56, 96, 184, 244, z + 4.2, lambda u, v, LL, D: (C("4aa8d8") * (0.9 + 0.1 * np.sin(u * 0.4 + np.sin(v * 0.3) * 2))[..., None]
+                                                                    * np.ones(u.shape + (1,)), nores(u.shape), None))
+        elif k > 0:
+            T.flat(54, 94, 186, 246, z + 4.2, court(col, kind=kind))
+        # thin columns and a glass railing at the edge of each open floor
+        for (ss, ff) in ((54, 94), (54, 246), (120, 94)):
+            post(T, ss, ff, z + 4, z + fh, "c8ccd0", 3)
+        T.panel(50, 190, 90, z + 4, z + 14, glass_rail, "s")
+    # roof: running track around a football pitch
+    slab(T, 40, 80, 280, 260, H, H + 4, "e8ecf0")
+    T.flat(50, 90, 270, 250, H + 4.2, court("3a9a4a", kind="football"))
+    T.box(40, 80, 280, 86, H + 4, H + 7, all=flat("c8442e"), top=flat("c8442e"))
+    T.box(40, 254, 280, 260, H + 4, H + 7, all=flat("c8442e"), top=flat("c8442e"))
+    for a in (40, 274):
+        T.box(a, 80, a + 6, 260, H + 4, H + 7, all=flat("c8442e"), top=flat("c8442e"))
+    for (ss, ff) in ((42, 82), (278, 82), (42, 258), (278, 258)):
+        post(T, ss, ff, H + 4, H + 40, "8a8e94", 1.6)
+    # climbing wall up the side of the core: coloured holds
+    def wall(u, v, LL, HH):
+        rgb = np.broadcast_to(C("d8c8a8"), u.shape + (3,)).copy()
+        hold = hash2(np.floor(u / 7), np.floor(v / 7), 33) > 0.72
+        pick = (hash2(np.floor(u / 7), np.floor(v / 7), 34) * 4).astype(int) % 4
+        cols = np.stack([C("e84a3a"), C("f4c040"), C("2a8ad8"), C("3aa858")])
+        m = hold & (np.mod(u, 7) > 2) & (np.mod(u, 7) < 5) & (np.mod(v, 7) > 2) & (np.mod(v, 7) < 5)
+        rgb[m] = cols[pick][m]
+        return rgb, nores(u.shape), None
+    T.panel(90, 250, 272, 0, H, wall, "f")
+    # sign and bicycles at the foot
+    sign_board(T, 230, 88, H - 26, "SPORT", 12, "e8843a", "ffffff")
+    door(T, 210, 40, 90, 30)
+    entry(T, 230)
+    for k in range(6):
+        bx, by = T.pt(30 + k * 22, 30)
+        T.cv.cylinder(bx - 4, by, 3.5, 3, 4, solid_side("2a2a30"))
+        T.cv.cylinder(bx + 4, by, 3.5, 3, 4, solid_side("2a2a30"))
+        T.box(26 + k * 22, 28, 34 + k * 22, 32, 4, 7, all=flat(["e84a3a", "2a8ad8", "f4c040"][k % 3]), top=flat("e84a3a"))
+    tree(T, 300, 20, "lime", 0.6, seed)
+    lamp(T, 180, 14, "modern", 48)
+    return cv
+
+
+BUILDERS = {"sport_tower": sport_tower, "dushanbe_tower": dushanbe_tower, "dushanbe_home": dushanbe_home, "round_tower": round_tower, "deco_tower": deco_tower, "stack_tower": stack_tower, "twin_towers": twin_towers,
             "hotel_boutique": hotel_boutique, "hotel_resort": hotel_resort, "hotel_palace": hotel_palace, "hotel_sail": hotel_sail,
             "hotel_grand": hotel_grand, "bus_stop": bus_stop, "metro_station": metro_station}

@@ -40,6 +40,7 @@ var walk := AStar2D.new()
 var crossings := {}      ## "a:b" sidewalk edge -> [tile, arm (0..3) or 4 for mid-block]
 var persons: Array = []
 var walkers: Array = []  ## Walker nodes outside
+var cyclists: Array = [] ## Cyclist nodes riding around
 var cars: Array = []     ## every Car node (parked or driving)
 var spots := {}          ## parking spot key -> Car (or a reservation)
 var reserve := {}        ## intersection tile -> Array of [car, din, dout]
@@ -523,6 +524,8 @@ static func lane_for(type: String, kind: String) -> float:
 			return 0.15
 		"bus_lane":
 			return 0.16 if kind == "bus" else 0.07
+		"bike":
+			return 0.075
 	return 0.105
 
 
@@ -1057,6 +1060,9 @@ func _process(delta: float) -> void:
 	for w in walkers:
 		if is_instance_valid(w):
 			w.step(delta)
+	for cy in cyclists:
+		if is_instance_valid(cy):
+			cy.step(delta)
 	_ambient_t -= delta
 	if _ambient_t <= 0.0:
 		_ambient_t = 2.0
@@ -1067,6 +1073,7 @@ func _process(delta: float) -> void:
 		_social()
 	cars = cars.filter(func(c): return is_instance_valid(c))
 	walkers = walkers.filter(func(w): return is_instance_valid(w) and not w.done)
+	cyclists = cyclists.filter(func(cy): return is_instance_valid(cy) and not cy.done)
 
 
 func _rebuild_bins() -> void:
@@ -1141,6 +1148,7 @@ func _ambient() -> void:
 			else:
 				spots[sp[0]] = c
 	_update_buses()
+	_update_cyclists()
 	# garbage truck round in the early morning
 	if int(_hour) == 6 and not cars.any(func(c): return c.kind == "garbage") and Game.roads.size() > 10:
 		var tiles: Array = Game.roads.keys()
@@ -1169,6 +1177,33 @@ func _update_buses() -> void:
 			c.role = "city_bus"
 			c.stop_idx = (k + 1) % stops.size()
 			c.start_route(path, null)
+
+
+## Cyclists ride where there are bike lanes and sports towers, by day and in dry weather.
+func _update_cyclists() -> void:
+	var bike: Array = []
+	for c in Game.roads:
+		if Game.roads[c] == "bike":
+			bike.append(c)
+	var sport := 0
+	for uid in Game.buildings:
+		if Game.buildings[uid].id == "sport_tower" and Game.works(uid):
+			sport += 1
+	var want := mini(16, bike.size() / 3 + sport * 3)
+	if Game.phase == "night" or Game.weather in ["rain", "storm", "snow"]:
+		want = 0
+	if cyclists.size() >= want or (bike.is_empty() and Game.roads.is_empty()):
+		return
+	var from_list: Array = bike if not bike.is_empty() else Game.roads.keys()
+	var a: Vector2i = from_list.pick_random()
+	var b: Vector2i = from_list.pick_random() if randf() < 0.6 else Game.roads.keys().pick_random()
+	var path := car_path(a, b)
+	if path.size() < 4:
+		return
+	var cy := Cyclist.new()
+	city.world.add_child(cy)
+	cy.start(path)
+	cyclists.append(cy)
 
 
 ## A city bus reached its stop: wait a little, then drive on to the next stop.
