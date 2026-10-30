@@ -148,7 +148,7 @@ const S := {
 	"zone_industry": ["Промзона", "Industrial"],
 	"zone_leisure": ["Отдых", "Leisure"],
 	"zone_desc_city": ["дома, магазины и городские службы", "homes, shops and city services"],
-	"zone_desc_farm": ["фермы, сады, теплицы и ранчо", "farms, orchards, greenhouses and ranches"],
+	"zone_desc_farm": ["фермы, сады, теплицы, ранчо, пасеки, бахчи и мельницы", "farms, orchards, greenhouses, ranches, apiaries, melon fields and windmills"],
 	"zone_desc_industry": ["лесопилки, мастерские и заводы — подальше от домов", "sawmills, workshops and factories — away from homes"],
 	"zone_desc_leisure": ["парки, кафе, зоопарк и аттракционы", "parks, cafes, the zoo and the funfair"],
 	"highway_yes": ["Город подключён к трассе: приезжают туристы, товары продаются на экспорт.", "The city is connected to the highway: tourists come and surplus goods are exported."],

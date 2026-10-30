@@ -398,6 +398,16 @@ func _ready() -> void:
 		check(food_b != 0 and Game.buildings.has(food_b), "%s can be placed" % fid)
 		if food_b != 0:
 			Game.demolish(food_b)
+	# new farm buildings: each one produces goods in the farm zone and has its own sprite
+	for fid in ["apiary", "chicken_farm", "melon_field", "vineyard", "windmill", "fish_farm", "dairy"]:
+		check(Data.B.has(fid) and Data.ORDER.has(fid) and Data.B[fid].cat == "ind" and Data.B[fid].out > 0 and Data.B[fid].zones == ["farm"], "%s is a farm building in the list" % fid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % fid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % fid), "%s has its own sprites" % fid)
+		check(Game.place_problem(fid, c - 4, c + 2) == "wrong_zone", "%s is not allowed in the city zone" % fid)
+		var farm_b := Game._add_building(fid, c + 10, c - 6, true)
+		check(farm_b != 0 and Game.buildings.has(farm_b), "%s can be placed in farmland" % fid)
+		if farm_b != 0:
+			Game.demolish(farm_b)
+	Game.recalc()
 	check(Data.PRIVATE_KINDS.all(func(k): return Data.B.has(k) and int(Data.B[k].size) == 1), "residents propose only small businesses")
 	check(Data.beach_seg(Vector2i(75, 100)) == 2 and Data.beach_seg(Vector2i(80, 100)) == -1 and Data.zone_at(Vector2i(75, 100)) == "beach", "beach tiles map to segments")
 	Game.beach = []
