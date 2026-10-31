@@ -930,7 +930,7 @@ func _ready() -> void:
 		blocker.queue_free()
 
 	# ------------------------------------------------ castle and historic sights
-	for hid in ["castle", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch"]:
+	for hid in ["castle", "khujand_fortress", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch"]:
 		check(Data.B.has(hid) and Data.ORDER.has(hid) and int(Data.B[hid].get("hist", 0)) > 0 and Data.B[hid].happy > 0, "%s is a historic sight in the list" % hid)
 		check(Data.B[hid].cat == ("decor" if hid in ["minaret", "triumph_arch"] else "fun"), "%s sits in its tab" % hid)
 		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % hid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % hid), "%s has its own sprites" % hid)
@@ -951,6 +951,25 @@ func _ready() -> void:
 		Game.buildings[cas].closed = false
 		Game.demolish(cas)
 	check(Game.hist_tourists(cas) == 0, "a pulled down castle brings no tourists")
+	# the Khujand fortress: a big 4x4 sight, only one per city
+	check(Data.B.khujand_fortress.size == 4 and Data.B.khujand_fortress.get("unique", false) and Data.B.khujand_fortress.hist > Data.B.castle.hist, "Khujand fortress is a unique 4x4 sight")
+	var kpos := Vector2i(-1, -1)
+	var kpos2 := Vector2i(-1, -1)
+	for yy in range(c - 20, c + 20):
+		for xx in range(c - 20, c + 20):
+			if Game.place_problem("khujand_fortress", xx, yy) == "" and Game._touches_road(xx, yy, 4):
+				if kpos.x < 0:
+					kpos = Vector2i(xx, yy)
+				elif kpos2.x < 0 and (absi(xx - kpos.x) >= 4 or absi(yy - kpos.y) >= 4):
+					kpos2 = Vector2i(xx, yy)
+	var kf := Game._add_building("khujand_fortress", kpos.x, kpos.y, true) if kpos.x >= 0 else 0
+	check(kf != 0, "Khujand fortress can be placed by a road")
+	if kf != 0:
+		check(kpos2.x < 0 or Game.place_problem("khujand_fortress", kpos2.x, kpos2.y) == "already_built", "a second Khujand fortress cannot be built")
+		Game.recalc()
+		check(Game.hist_tourists(kf) == int(Data.B.khujand_fortress.hist) * int(Game.buildings[kf].lvl), "a working Khujand fortress brings tourists")
+		Game.demolish(kf)
+		check(kpos2.x < 0 or Game.place_problem("khujand_fortress", kpos2.x, kpos2.y) == "", "after demolishing, the fortress can be built again")
 
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200

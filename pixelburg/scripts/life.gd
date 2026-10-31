@@ -37,7 +37,7 @@ const JOB_KINDS := {
 }
 const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]
 const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway"]
-const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum", "castle", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch",
+const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum", "castle", "khujand_fortress", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch",
 	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks"]
 
 var city: Node

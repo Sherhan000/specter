@@ -1,10 +1,11 @@
 """Historic sights, each with its own look: a stone castle with a moat, a brick minaret, a domed mausoleum
-with turquoise tiles, the ruins of an ancient temple, a five-tier pagoda and a triumphal arch."""
+with turquoise tiles, the ruins of an ancient temple, a five-tier pagoda, a triumphal arch
+and the Khujand fortress by the Kamoli Khujandi park."""
 import math
 
 import numpy as np
 
-from raster import C, Canvas, flat, glow_res, nores, hash2
+from raster import C, Canvas, flat, glow_res, nores, hash2, solid_res
 from arch import Orient, facade, Win, roof_mat
 import kit
 from bkit import ground, tree, bush, lamp, bench, box, slab, post, entry, door, flowerbed
@@ -571,6 +572,163 @@ def triumph_arch(L, o):
     entry(T, 80)
     return cv
 
+# --------------------------------------------------------------------------- Khujand fortress
+def _round_merlons(T, a0, a1, b, z, along="s", col="c89a64", th=8, w=7, gap=6):
+    """Central Asian battlements: short brick teeth with rounded tops."""
+    k = a0
+    while k + w <= a1 + 0.01:
+        c = k + w / 2
+        if along == "s":
+            T.box(k, b - th / 2, k + w, b + th / 2, z, z + 5, all=flat(col, 4), top=flat(col, 3))
+            _dome(T, c, b, w / 2, z + 5, 4, col)
+        else:
+            T.box(b - th / 2, k, b + th / 2, k + w, z, z + 5, all=flat(col, 4), top=flat(col, 3))
+            _dome(T, b, c, w / 2, z + 5, 4, col)
+        k += w + gap
+
+
+def _ring_round_merlons(T, s, f, r, z, col, n=12):
+    for i in range(n):
+        a = i / n * 2 * math.pi
+        ss, ff = s + (r - 3) * math.cos(a), f + (r - 3) * math.sin(a)
+        T.box(ss - 3, ff - 3, ss + 3, ff + 3, z, z + 5, all=flat(col, 4), top=flat(col, 3))
+        _dome(T, ss, ff, 3.2, z + 5, 4, col)
+
+
+def _poet(T, s, f, sc=1.0, col="7a5a32"):
+    """A bronze poet in a robe and turban sitting on a stone plinth with a book on his knee."""
+    stone = facade("stone", "c8c0b0", plinth=None, seed=2701)
+    T.box(s - 16, f - 16, s + 16, f + 16, 0, 4, all=flat("b0a898", 3), top=flat("d8d0c0", 3))
+    T.box(s - 11, f - 11, s + 11, f + 11, 4, 22, all=stone, top=flat("d8d0c0", 3))
+    z = 22
+    x, y = T.pt(s, f)
+    m = lambda wx, wy, wz, nx, ny, nz: ((C(col) * (0.8 + 0.4 * np.clip(nz, 0, 1))[..., None]), nores(wx.shape), None)
+    T.box(s - 6 * sc, f - 2 * sc, s + 6 * sc, f + 6 * sc, z, z + 6 * sc, all=flat(col, 3), top=flat(col, 3))
+    T.cv.ellipsoid(x, y, z + 6 * sc, 7 * sc, 6 * sc, 12 * sc, m)
+    T.box(s - 6 * sc, f - 7 * sc, s + 6 * sc, f - 1 * sc, z + 5 * sc, z + 9 * sc, all=flat(col, 3), top=flat(col, 3))
+    T.box(s - 4 * sc, f - 8 * sc, s + 4 * sc, f - 5 * sc, z + 9 * sc, z + 10.5 * sc, all=flat("a88a52", 2), top=flat("c8a868", 2))
+    T.cv.ellipsoid(x, y, z + 20 * sc, 3.2 * sc, 3.2 * sc, 3.6 * sc, m)
+    T.cv.ellipsoid(x, y, z + 23.5 * sc, 4.4 * sc, 4.4 * sc, 3.2 * sc, m)
+
+
+def _tajik_flag(T, s, f, h=110):
+    post(T, s, f, 0, h, "d8d8d8", 1.6)
+    for (z0, z1, col) in ((h - 6, h, "c8242a"), (h - 15, h - 6, "f4f4f0"), (h - 21, h - 15, "2a8a3a")):
+        T.box(s + 0.8, f - 0.6, s + 32, f + 0.6, z0, z1, all=flat(col, 2), top=flat(col, 2))
+    T.box(s + 14, f - 0.8, s + 18, f + 0.8, h - 12, h - 9, all=flat("e0b030", 1), top=flat("e0b030"))
+
+
+def khujand_fortress(L, o):
+    """The Khujand fortress beside the Kamoli Khujandi park: fired-brick walls with rounded battlements,
+    round towers, a tall gate portal with a pointed arch between two towers, a museum in the courtyard,
+    and in front the park with a fountain, chinar trees and a bronze statue of the poet."""
+    cv = Canvas(4, 230)
+    T = Orient(cv, o)
+    brick, dark, top, tile, deep = "c89a64", "9a7048", "b88a58", "2a9ab0", "1e5a8a"
+    ground(T, 0, 0, 640, 640, flat("6a9a48", 6, 2601))
+    # the park: an alley to the gate, a cross alley and a round square with a fountain
+    pav = kit.paving("d8ccb0", 9.0, 2602)
+    ground(T, 296, 0, 344, 250, pav, 0.4)
+    ground(T, 20, 98, 620, 132, pav, 0.4)
+    ground(T, 236, 64, 404, 168, pav, 0.45)
+    ground(T, 110, 70, 230, 160, pav, 0.45)
+    ground(T, 40, 226, 600, 250, kit.gravel("c8b490", 2603), 0.5)
+    x, y = T.pt(320, 116)
+    T.cv.cylinder(x, y, 36, 0, 6, lambda a, v, nx, ny: solid_res(C("e8e0cc"), a.shape),
+                  lambda a, b: (C("4aa8d8") + (np.sin(np.hypot(a, b) * 0.6) * 18)[..., None], nores(a.shape), None))
+    T.cv.cylinder(x, y, 5, 6, 22, lambda a, v, nx, ny: solid_res(C("e8e0cc"), a.shape))
+    T.cv.cylinder(x, y, 13, 22, 25, lambda a, v, nx, ny: solid_res(C("e8e0cc"), a.shape),
+                  lambda a, b: solid_res(C("6ac0e8"), a.shape))
+    cv.mark("fountain", x, y, 26)
+    _poet(T, 170, 115, 1.2)
+    for (s, f, sc) in ((50, 40, 0.9), (590, 40, 0.9), (60, 190, 0.8), (580, 190, 0.8)):
+        kit.chinar(cv, *T.pt(s, f), sc, 2604 + s + f)
+    for s in (230, 410):
+        for f in (20, 200):
+            _cypress(T, s, f, 0.7, 2610 + s + f)
+    for (s, f) in ((470, 70), (520, 160), (460, 180)):
+        tree(T, s, f, "oak", 0.65, 2620 + s + f)
+    # walls of fired brick
+    wall = facade("brick", brick, plinth=(dark, 8), seed=2630, bands=[(40, 42, dark)])
+    wh = 58
+    for (s0, s1) in ((40, 266), (374, 600)):
+        box(T, s0, 250, s1, 268, 0, wh, all=wall, top=flat(top, 3))
+        _round_merlons(T, s0 + 6, s1 - 6, 253, wh, "s", brick)
+    box(T, 40, 596, 600, 614, 0, wh, all=wall, top=flat(top, 3))
+    _round_merlons(T, 40, 600, 611, wh, "s", brick)
+    for s0 in (40, 582):
+        box(T, s0, 258, s0 + 18, 612, 0, wh, all=wall, top=flat(top, 3))
+        _round_merlons(T, 262, 606, s0 + 3, wh, "f", brick)
+    tower = facade("brick", brick, plinth=(dark, 8), seed=2631, bands=[(52, 55, dark), (68, 72, tile)])
+    for (s, f) in ((50, 260), (590, 260), (50, 604), (590, 604)):
+        _cyl(T, s, f, 26, 0, wh + 20, tower, top)
+        _ring_round_merlons(T, s, f, 26, wh + 20, brick, 12)
+    for s in (150, 490):
+        _cyl(T, s, 254, 17, 0, wh + 8, wall, top)
+        _ring_round_merlons(T, s, 254, 17, wh + 8, brick, 8)
+    # the gate portal: a pointed arch in a tiled frame between two big round towers
+    def portal(u, v, L_, H):
+        rgb, ns, em, rooms = facade("brick", brick, plinth=(dark, 8), seed=2632)(u, v, L_, H)
+        cx = u - L_ / 2
+        frame = (np.abs(cx) < 36) & (v < H - 14)
+        rgb[frame] = C(dark) * (0.9 + 0.12 * hash2(np.floor(u / 3), np.floor(v / 2), 11))[frame][..., None]
+        lancet = (v >= 52) & ((cx - 9) ** 2 + (v - 52) ** 2 < 31 ** 2) & ((cx + 9) ** 2 + (v - 52) ** 2 < 31 ** 2)
+        niche = (np.abs(cx) < 22) & ((v < 52) | lancet)
+        rgb[frame & ~niche & ((np.floor(u / 4) + np.floor(v / 4)) % 3 == 0)] = C(tile)
+        rgb[niche] = C("5a3e26")
+        gate = (np.abs(cx) < 15) & (v < 42)
+        rgb[gate] = C("6a4428") * (0.9 + 0.15 * ((np.floor(u / 5) % 2) == 0))[gate][..., None]
+        rgb[gate & (np.abs(cx) < 0.7)] = C("3a2414")
+        rgb[gate & ((np.floor(u / 5) % 2) == 0) & ((np.floor(v / 5) % 2) == 0) & ((u % 5) < 1) & ((v % 5) < 1)] = C("d8b040")
+        band = (v > H - 14) & (v < H - 6)
+        rgb[band] = C(tile) * (0.85 + 0.25 * (((np.floor(u / 3) + np.floor(v / 3)) % 2) == 0))[band][..., None]
+        rgb[band & (((np.abs(cx) % 12) < 1.2))] = C(deep)
+        return rgb, ns, em, rooms
+    ph = 98
+    box(T, 266, 238, 374, 274, 0, ph, front=portal, back=wall, left=wall, right=wall, top=flat(top, 3))
+    _round_merlons(T, 268, 372, 241, ph, "s", brick)
+    door(T, 305, 30, 238, 40)
+    for s in (250, 390):
+        _cyl(T, s, 248, 24, 0, ph - 8, tower, top)
+        _ring_round_merlons(T, s, 248, 24, ph - 8, brick, 12)
+    cv.mark("light", *T.pt(320, 236), 50)
+    # the courtyard and the museum hall
+    ground(T, 58, 268, 582, 596, kit.gravel("d8c49a", 2640), 0.6)
+    ground(T, 300, 268, 340, 430, kit.paving("c8b088", 8.0, 2641), 0.65)
+    hall = facade("brick", "d4b080", win=Win(w=10, h=18, sill=12, sp=34, fh=44, frame=deep, style="grid", arch=True),
+                  bands=[(34, 38, tile)], doors=[(56, 22, 26, "double", "5a3a24")], plinth=(dark, 6), seed=2642, lit=0.6)
+    box(T, 360, 440, 548, 560, 0, 44, all=hall, top=flat("b89a70", 3))
+    _round_merlons(T, 360, 548, 443, 44, "s", "d4b080", 6, 6, 8)
+    _tajik_flag(T, 180, 470, 112)
+    for (s, f) in ((100, 320), (100, 540), (240, 560)):
+        _cypress(T, s, f, 0.75, 2650 + s + f)
+    if L >= 2:
+        for (s, f) in ((380, 60), (380, 172), (520, 100)):
+            flowerbed(T, s - 18, f - 12, s + 18, f + 12, 2660 + s + f)
+        for (s, f) in ((260, 84), (260, 150), (380, 116)):
+            bench(T, s, f, "f")
+        bench(T, 150, 150, "s")
+        lamp(T, 286, 20, "lantern", 40, "light1")
+        lamp(T, 354, 20, "lantern", 40, "light2")
+        for s in (276, 346):
+            T.box(s, 237, s + 18, 238, 50, 86, all=flat(deep, 2), top=flat(deep))
+            T.box(s + 6, 236.6, s + 12, 237, 58, 78, all=flat("e0b030", 1), top=flat("e0b030"))
+    if L >= 3:
+        # an archaeological dig and craft stalls in the courtyard, flags on the towers
+        ground(T, 110, 360, 230, 440, flat("8a6a48", 4, 2670), 0.7)
+        for (s0, f0, s1, f1) in ((120, 370, 200, 376), (120, 370, 126, 430), (150, 400, 220, 406)):
+            T.box(s0, f0, s1, f1, 0, 8, all=facade("brick", "a88458", plinth=None, seed=2671), top=flat("a88458"))
+        for k, col in enumerate(("c8342e", "2a5aa8", "e8b830")):
+            s = 380 + k * 60
+            box(T, s, 300, s + 36, 330, 0, 14, all=flat("e8e0cc", 3), top=flat("e8e0cc"))
+            T.gable(s - 2, 298, s + 38, 332, 14, 10, roof_mat(col, "metal"), flat("e8e0cc", 3), "s")
+        for (s, f) in ((50, 260), (590, 260)):
+            _flag(T, s, f, wh + 29, "c8242a", "2a8a3a", 22)
+        lamp(T, 130, 60, "lantern", 36, "light3")
+        lamp(T, 510, 60, "lantern", 36, "light4")
+    entry(T, 320)
+    return cv
+
 
 BUILDERS = {"castle": castle, "minaret": minaret, "mausoleum": mausoleum, "ancient_temple": ancient_temple,
-            "pagoda": pagoda, "triumph_arch": triumph_arch}
+            "pagoda": pagoda, "triumph_arch": triumph_arch, "khujand_fortress": khujand_fortress}

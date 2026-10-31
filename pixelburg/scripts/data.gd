@@ -107,6 +107,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Крепость Худжанда — одна на город (4x4): кирпичные стены с круглыми зубцами, башни, высокий портал ворот со стрельчатой аркой, музей во дворе, а перед ней парк Камоли Худжанди с фонтаном, чинарами и памятником поэту. Привлекает больше всего туристов", "The Khujand Fortress, one per city (4x4): brick walls with rounded battlements, towers, a tall gate portal with a pointed arch, a museum in the courtyard and in front the Kamoli Khujandi park with a fountain, plane trees and the poet's statue. Draws the most tourists of all"],
 	["Замок и исторические объекты, у каждого свой вид: каменный замок со рвом, башнями и донжоном, мавзолей с бирюзовым куполом, пятиярусная пагода, руины античного храма (с уровнем его восстанавливают), кирпичный минарет и триумфальная арка. Они радуют жителей и привлекают туристов", "A castle and historic sights, each with its own look: a stone castle with a moat, towers and a keep, a mausoleum with a turquoise dome, a five-tier pagoda, ruins of an ancient temple (restored as it levels up), a brick minaret and a triumphal arch. They cheer residents up and draw tourists"],
 	["Плитка вместо травы: в режиме дорог выберите «Плитка» и проведите пальцем перед домами — серая, красная или узорная плитка и пешеходные дорожки. По ним гуляют пешеходы, иногда с собакой, а жителям рядом приятнее", "Paving instead of grass: in road mode pick «Paving» and drag in front of the houses - grey, terracotta or patterned tiles and footpaths. People stroll along them, sometimes with a dog, and the homes beside them are happier"],
 	["Фонарь над входом: в режиме фонаря нажмите на дом — над дверью появится фонарь (классика, модерн или два плафона по бокам), ночью он светит на крыльцо, а жителям уютнее", "A lamp over the door: in lamp mode tap a house and a lamp appears above its entrance (classic, modern or twin lights on both sides); at night it lights the porch and the residents feel cosier"],
@@ -387,6 +388,9 @@ const B := {
 		"jobs": 5, "income": 170, "cycle": 200, "upkeep": 55, "radius": 22, "happy": 10, "hist": 160},
 	"castle": {"name": ["Замок", "Castle"], "cat": "fun", "zones": ["city", "leisure"], "size": 3, "cost": 24000, "gems": 6, "lvl": 15, "time": 300,
 		"jobs": 10, "income": 260, "cycle": 240, "upkeep": 110, "radius": 30, "happy": 14, "hist": 300},
+	# Khujand's own landmark: the fortress by the Kamoli Khujandi park, one per city
+	"khujand_fortress": {"name": ["Крепость Худжанда", "Khujand Fortress"], "cat": "fun", "unique": true, "zones": ["city", "leisure"], "size": 4,
+		"cost": 32000, "gems": 8, "lvl": 17, "time": 320, "jobs": 12, "income": 300, "cycle": 240, "upkeep": 120, "radius": 32, "happy": 16, "hist": 380},
 	# ------------------------------------------------ decor (happiness in a radius)
 	"tree": {"name": ["Деревья", "Trees"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 30, "lvl": 1, "time": 2,
 		"happy": 2, "radius": 4, "upkeep": 0},
@@ -458,7 +462,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
-	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "zoo", "funfair", "stadium",
+	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.
