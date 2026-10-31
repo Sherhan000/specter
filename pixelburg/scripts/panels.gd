@@ -782,6 +782,7 @@ func settings() -> void:
 		settings()))
 	v.add_child(hud.button(Loc.t("profile"), "pop", "blue", profile))
 	v.add_child(hud.button(Loc.t("backup"), "backup", "green", backup))
+	v.add_child(hud.button(Loc.t("visit"), "pop", "green", friends))
 	v.add_child(hud.button(Loc.t("privacy"), "info", "blue", privacy))
 	v.add_child(hud.button(Loc.t("whats_new") % Data.NEWS_VERSION, "news", "blue", whats_new))
 	v.add_child(hud.button(Loc.t("credits"), "heart", "blue", func():
@@ -832,6 +833,42 @@ func backup() -> void:
 		else:
 			hud.toast(Loc.t("backup_bad"))))
 	hud.popup(Loc.t("backup"), "", [[Loc.t("close"), "blue", settings]], v)
+
+
+## Friend's city: my city as a QR code (and text code) to show, a field for a friend's code to visit.
+func friends() -> void:
+	var v := _vbox(5)
+	var code := Game.city_code()
+	hud.text(Loc.t("visit_text"), v, 11, Color("3a2a1e"), _w())
+	if code.length() <= Data.VISIT_QR_MAX:
+		var img := QR.image(code, 3)
+		if img:
+			var tr := TextureRect.new()
+			tr.texture = ImageTexture.create_from_image(img)
+			tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			var side := minf(_w(), 260.0)
+			tr.custom_minimum_size = Vector2(side, side)
+			v.add_child(tr)
+	else:
+		hud.text(Loc.t("visit_big"), v, 11, Color("a8302a"), _w())
+	v.add_child(hud.button(Loc.t("visit_copy"), "backup", "green", func():
+		DisplayServer.clipboard_set(code)
+		hud.toast(Loc.t("backup_copied"))))
+	var edit := TextEdit.new()
+	edit.placeholder_text = Loc.t("visit_paste")
+	edit.custom_minimum_size = Vector2(_w(), 54)
+	edit.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	v.add_child(edit)
+	v.add_child(hud.button(Loc.t("visit_go"), "pop", "orange", func():
+		var c := edit.text if edit.text.strip_edges() != "" else DisplayServer.clipboard_get()
+		if Game.visit_city(c):
+			hud.close_modal()
+			hud.get_tree().reload_current_scene()
+		else:
+			hud.toast(Loc.t("visit_bad"))))
+	hud.popup(Loc.t("visit"), "", [[Loc.t("close"), "blue", settings]], v)
 
 
 # ====================================================================== game over

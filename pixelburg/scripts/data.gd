@@ -132,6 +132,8 @@ static func rank_for(lvl: int, rep: float) -> int:
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Город друга: в настройках откройте «Город друга» — там QR-код вашего города. Друг сканирует его камерой телефона, копирует код и вставляет в своей игре — и гуляет по вашему городу. Код можно и просто отправить в мессенджере. В гостях ничего не сохраняется, кнопка «Домой» возвращает в свой город",
+	 "Friend's city: open \"Friend's city\" in the settings to see your city's QR code. A friend scans it with the phone camera, copies the code and pastes it in their game to walk around your city. You can also just send the code in a messenger. Nothing is saved while visiting; the Home button takes you back"],
 	["Соцсеть «Пиксельчат»: жители пишут посты о ваших делах — новая больница или башня, налоги, долги, ограбление банка, митинг, стихия, салют, рождение малыша. У постов растут лайки, а мэр может лайкнуть любой. Лента — в окне «Жители» (кнопка «Чат»): по ней видно, довольны ли люди.",
 	 "Social network «Pixelchat»: residents write posts about what you do — a new hospital or tower, taxes, debts, a bank robbery, a protest, a disaster, fireworks, a baby born. Posts collect likes and the mayor can like any of them. The feed is in the Residents window (the Chat button) and shows whether people are pleased."],
 	["15 новых башен, у каждой свой силуэт: ступенчатый небоскрёб, башни-близнецы, пирамида, золотая и королевская башни, эко-башня с садами, ар-деко, башня с ветряками, с обсерваторией, игла, крестовая, парус, башни-врата, солнечная и тройная. Они открываются с 24-го по 38-й уровень во вкладке «Бизнес» и приносят много монет.",
@@ -810,6 +812,9 @@ const DZ := {
 	"blizzard": {"cost": [700, 150, 0], "risk": [0.0, 0.4, 1.0], "frac": [0.0, 0.1, 0.2], "mood": [0, -3, -6], "rep": [2, 0, -2]},
 	"tourists": {"cost": [700, 120, 0], "gain": [2200, 1100, 300], "garbage": [0, 12, 25], "mood": [2, -1, -3], "rep": [3, 1, 0]},
 }
+
+## Friend's city (QR): longest city code still shown as a QR code (bigger ones are sent as text).
+const VISIT_QR_MAX := 1400
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]
