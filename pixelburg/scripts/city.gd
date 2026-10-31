@@ -24,6 +24,7 @@ var camera: Camera2D
 var hud: CanvasLayer
 var life: Life
 var weather: WeatherFx
+var disaster_fx: DisasterFx
 var metro: MetroView
 var water_life: WaterLife
 var street_props: StreetProps
@@ -97,6 +98,9 @@ func _ready() -> void:
 	weather = WeatherFx.new()
 	weather.city = self
 	add_child(weather)
+	disaster_fx = DisasterFx.new()
+	disaster_fx.city = self
+	add_child(disaster_fx)
 
 	hud = preload("res://scripts/hud.gd").new()
 	hud.city = self
