@@ -1580,6 +1580,29 @@ func _ready() -> void:
 	Game.soc.from_dict(sc_keep)
 	Game.pop = sc_pop
 
+	# ------------------------------------------------ night polish: real save/load of rank, residents and feed; whole days pass
+	Game.coins = 999999
+	Game.rank = 3
+	Game.cz.prices.power = 1.5
+	Game.cz.on_day()
+	var pl_n := Game.cz.list.size()
+	Game.soc.reset()
+	Game.soc.today_n = 0
+	Game.soc.post("happy")
+	Game.save_game(true)
+	Game.rank = 0
+	Game.cz.prices.power = 1.0
+	Game.soc.reset()
+	Game.cz.list = []
+	Game.load_game()
+	check(Game.rank == 3 and float(Game.cz.prices.power) == 1.5 and Game.cz.list.size() == pl_n and Game.soc.posts.size() == 1, "rank, residents and feed survive a real save and load")
+	var pl_coins := Game.coins
+	for pl_d in 12:
+		Game._end_of_day()
+	check(Game.coins != pl_coins and Game.cz.list.size() <= Citizens.CAP, "twelve days pass with residents, prices and the feed")
+	check(Game.cz.last_util >= 0 and Game.rank_bonus() >= 1.0, "utilities and rank bonus are sane")
+	Game.cz.prices = {"power": 1.0, "water": 1.0, "fare": 1.0}
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:
