@@ -62,6 +62,7 @@ var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"o
 var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
 var disaster := {}           ## natural event with a choice, see _empty_disaster()
 var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
+var hol := _empty_hol()        ## holiday tasks of the current holiday, see Holidays
 var ach := _empty_ach()      ## achievements and the daily login streak, see Ach
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
@@ -294,6 +295,7 @@ func new_game() -> void:
 	crime = _empty_crime()
 	protest = _empty_protest()
 	ach = _empty_ach()
+	hol = _empty_hol()
 	disaster = _empty_disaster()
 	claimed = []
 	laws = []
@@ -402,7 +404,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
-		"protest": protest.duplicate(true), "ach": ach.duplicate(true),
+		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true),
 		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
@@ -507,6 +509,7 @@ func from_dict(p: Dictionary) -> bool:
 			crime[k] = bool(cd[k]) if crime[k] is bool else int(cd[k])
 	protest = _empty_protest()
 	ach = _load_ach(p.get("ach", {}))
+	hol = _load_hol(p.get("hol", {}))
 	var pd: Dictionary = p.get("protest", {})
 	for k in protest:
 		if not pd.has(k):
@@ -789,6 +792,7 @@ func _end_of_day() -> void:
 		season_changed.emit(s)
 		_pick_weather()
 	check_ach()
+	_holiday_tick()
 	day_passed.emit(day)
 	Events.on_day(day)
 	changed.emit()
@@ -2189,6 +2193,7 @@ func place(id: String, x: int, y: int, rot := -1) -> int:
 		return 0
 	var uid := _add_building(id, x, y, false, 1, rot)
 	recalc()
+	hol_note_built()
 	building_added.emit(uid)
 	sfx("place")
 	sfx("construct", -8.0)
@@ -3612,3 +3617,77 @@ func check_ach() -> void:
 	toast.emit("\n".join(lines))
 	sfx("levelup")
 	changed.emit()
+
+
+# ====================================================================== seasonal holidays (ROADMAP 31)
+func _empty_hol() -> Dictionary:
+	## key: this year's holiday the progress belongs to; built/treats: tasks done during it; done: rewards taken (keys).
+	return {"key": "", "built": 0, "treats": 0, "done": []}
+
+
+static func _load_hol(d: Dictionary) -> Dictionary:
+	var h := {"key": str(d.get("key", "")), "built": int(d.get("built", 0)), "treats": int(d.get("treats", 0)), "done": []}
+	for k in d.get("done", []):
+		h.done.append(str(k))
+	return h
+
+
+func holiday() -> String:
+	return Holidays.at(day)
+
+
+## A new day: a holiday starts (fresh tasks, toast) and every holiday day lifts the mood.
+func _holiday_tick() -> void:
+	var k := Holidays.key(day)
+	if k == "":
+		return
+	if str(hol.key) != k:
+		hol.key = k
+		hol.built = 0
+		hol.treats = 0
+		toast.emit(Loc.t("hol_start") % Loc.pick(Holidays.LIST[holiday()].name))
+	add_mood(Holidays.MOOD, 24, "holiday")
+
+
+func hol_note_built() -> void:
+	if holiday() != "" and str(hol.key) == Holidays.key(day):
+		hol.built = int(hol.built) + 1
+
+
+func hol_treat_cost() -> int:
+	return Holidays.TREAT_COST * level
+
+
+## Treat the residents to a feast: a happiness boost and one of the holiday tasks.
+func hol_treat() -> bool:
+	if holiday() == "" or str(hol.key) != Holidays.key(day):
+		return false
+	if int(hol.treats) > 0 or not pay(hol_treat_cost(), 0, "holiday"):
+		return false
+	hol.treats = 1
+	add_mood(4, 24, "holiday")
+	sfx("levelup")
+	changed.emit()
+	return true
+
+
+func hol_tasks_done() -> bool:
+	return int(hol.built) >= Holidays.BUILD_GOAL and int(hol.treats) >= 1
+
+
+func hol_claimed() -> bool:
+	return (hol.done as Array).has(Holidays.key(day))
+
+
+func hol_claim() -> Dictionary:
+	var k := Holidays.key(day)
+	if k == "" or str(hol.key) != k or hol_claimed() or not hol_tasks_done():
+		return {}
+	var r := Holidays.reward()
+	hol.done.append(k)
+	coins += int(r.coins)
+	gems += int(r.gems)
+	stats.coins_total = int(stats.coins_total) + int(r.coins)
+	sfx("levelup")
+	changed.emit()
+	return r

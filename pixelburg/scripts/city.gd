@@ -28,6 +28,7 @@ var disaster_fx: DisasterFx
 var metro: MetroView
 var water_life: WaterLife
 var street_props: StreetProps
+var holiday_view: HolidayView
 
 var views := {}          ## uid -> BuildingView
 var lamp_nodes := {}     ## quarter Vector2i -> LampView
@@ -140,6 +141,9 @@ func _ready() -> void:
 	street_props.city = self
 	add_child(street_props)
 	street_props.refresh()
+	holiday_view = HolidayView.new()
+	holiday_view.city = self
+	add_child(holiday_view)
 	Game.water_changed.connect(_on_water_changed)
 	Game.paves_changed.connect(func(): ground.update_roads(Game.net))
 	Game.walls_changed.connect(street_props.refresh)
