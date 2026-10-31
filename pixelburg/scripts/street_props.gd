@@ -1,15 +1,25 @@
 class_name StreetProps
 extends Node
-## Walls the player builds (stone or brick, joining up with their neighbours) and the decoration
-## along improved streets (iron railings, flower pots, bollards). One small drawn node per tile.
+## Walls the player builds (stone, brick, plastered quarter walls and roofed arch passages, joining up with
+## their neighbours and running into the buildings beside them) and the decoration along improved streets
+## (iron railings, flower pots, bollards). One small drawn node per tile.
 
 const DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 
 var city: Node
 var pieces := {}    ## "w" / "d" + tile -> node
+var _queued := false
+
+
+## Buildings moved next to walls: rebuild once at the end of the frame.
+func refresh_soon(_uid := 0) -> void:
+	if not _queued and not Game.walls.is_empty():
+		_queued = true
+		refresh.call_deferred()
 
 
 func refresh() -> void:
+	_queued = false
 	for k in pieces:
 		if is_instance_valid(pieces[k]):
 			pieces[k].queue_free()
@@ -20,6 +30,9 @@ func refresh() -> void:
 		for k in 4:
 			if Game.walls.has(c + DIRS[k]):
 				w.arms |= 1 << k
+			elif Game.occ.has(c + DIRS[k]):
+				w.arms |= 1 << k   # runs on into the building's side
+				w.touch |= 1 << k
 		w.position = Iso.center(c)
 		city.world.add_child(w)
 		pieces["w%s" % c] = w
@@ -53,23 +66,37 @@ static func box(n: CanvasItem, x0: float, y0: float, x1: float, y1: float, h: fl
 
 
 class WallPiece extends Node2D:
+	const LOOK := {   ## wall colour, height, half thickness, cap colour, cap height
+		"stone": [Color("a8a294"), 22.0, 0.07, Color("d8d2c4"), 2.0],
+		"brick": [Color("b0583a"), 18.0, 0.07, Color("c8c0b0"), 2.0],
+		"plaster": [Color("e6d8bc"), 24.0, 0.08, Color("b4583a"), 3.5],
+		"arch": [Color("dcc8a0"), 34.0, 0.17, Color("a84e34"), 0.0],
+	}
 	var type := "stone"
 	var arms := 0
+	var touch := 0   ## arms that end at a building rather than at another wall
+	const INTO := 0.14
 
 	func _draw() -> void:
-		var stone := type == "stone"
-		var col := Color("a8a294") if stone else Color("b0583a")
-		var h := 22.0 if stone else 18.0
-		var t := 0.07
+		var look: Array = LOOK.get(type, LOOK.stone)
+		var col: Color = look[0]
+		var h: float = look[1]
+		var t: float = look[2]
+		if type == "arch" and (arms == 5 or arms == 10):
+			_arch(arms == 10, col, h, t)
+			return
+		if type == "arch":
+			h = 26.0   # corners and ends of an arch line are plain plastered walls
+			t = 0.09
 		var segs: Array = []
 		if arms & 1:
-			segs.append([-t, -0.5, t, 0.0])
+			segs.append([-t, -0.5 - _into(1), t, 0.0])
 		if arms & 8:
-			segs.append([-0.5, -t, 0.0, t])
+			segs.append([-0.5 - _into(8), -t, 0.0, t])
 		if arms & 2:
-			segs.append([0.0, -t, 0.5, t])
+			segs.append([0.0, -t, 0.5 + _into(2), t])
 		if arms & 4:
-			segs.append([-t, 0.0, t, 0.5])
+			segs.append([-t, 0.0, t, 0.5 + _into(4)])
 		if segs.is_empty():
 			segs.append([-0.35, -t, 0.35, t])
 		# segments behind the post first, then the post where the wall turns or ends, then the ones in front
@@ -78,11 +105,25 @@ class WallPiece extends Node2D:
 				if (s[2] > 0.01 or s[3] > 0.01) == pass_front:
 					StreetProps.box(self, s[0], s[1], s[2], s[3], h, col)
 					_joints(s, h)
-					StreetProps.box(self, s[0] - 0.01, s[1] - 0.01, s[2] + 0.01, s[3] + 0.01, 2.0, Color("d8d2c4") if stone else Color("c8c0b0"), h)
-			if not pass_front:
+					_cap(s, h, look)
+			if not pass_front and (type in ["stone", "brick"] or arms not in [5, 10]):
 				StreetProps.box(self, -t * 1.5, -t * 1.5, t * 1.5, t * 1.5, h + 5.0, col.lightened(0.05))
 
+	## How far an arm reaches on into the plot of the building it meets, so it joins the house itself.
+	func _into(bit: int) -> float:
+		return INTO if touch & bit else 0.0
+
+	func _cap(s: Array, h: float, look: Array) -> void:
+		if type in ["stone", "brick"]:
+			StreetProps.box(self, s[0] - 0.01, s[1] - 0.01, s[2] + 0.01, s[3] + 0.01, look[4], look[3], h)
+			return
+		# plinth at the foot and a tiled top a little wider than the wall
+		StreetProps.box(self, s[0] - 0.005, s[1] - 0.005, s[2] + 0.005, s[3] + 0.005, 4.0, Color("9a8a70"))
+		StreetProps.box(self, s[0] - 0.03, s[1] - 0.03, s[2] + 0.03, s[3] + 0.03, 3.5, look[3] if type == "plaster" else Color("b4583a"), h)
+
 	func _joints(s: Array, h: float) -> void:
+		if type not in ["stone", "brick"]:
+			return
 		var line := Color(0, 0, 0, 0.18) if type == "stone" else Color(0.92, 0.88, 0.8, 0.5)
 		var step := 6.0 if type == "stone" else 4.0
 		var z := step
@@ -91,6 +132,64 @@ class WallPiece extends Node2D:
 			var b := Iso.grid(Vector2(s[2], s[3])) - Vector2(0, z)
 			draw_line(a, b, line, 1.0)
 			z += step
+
+	## A roofed passage through the wall, its archway facing the viewer, on a straight run.
+	func _arch(axis_x: bool, col: Color, h: float, t: float) -> void:
+		# u runs along the wall, v across it (front face at v = +t)
+		var p := func(u: float, v: float, z: float) -> Vector2:
+			return Iso.grid(Vector2(u, v) if axis_x else Vector2(v, u)) - Vector2(0, z)
+		var lo := -0.5 - _into(8 if axis_x else 1)
+		var hi := 0.5 + _into(2 if axis_x else 4)
+		if axis_x:
+			StreetProps.box(self, lo, -t, hi, t, h, col)
+		else:
+			StreetProps.box(self, -t, lo, t, hi, h, col)
+		# archway: straight sides then a round top, dark inside with the far opening and the floor lit
+		var r := 0.2
+		var zs := 14.0
+		var hole := PackedVector2Array([p.call(-r, t, 0.0)])
+		var far := PackedVector2Array([p.call(-r * 0.7, -t, 0.0)])
+		for i in 13:
+			var a := PI - PI * i / 12.0
+			hole.append(p.call(r * cos(a), t, zs + 10.0 * sin(a)))
+			far.append(p.call(r * 0.7 * cos(a), -t, zs * 0.8 + 7.0 * sin(a)))
+		hole.append(p.call(r, t, 0.0))
+		far.append(p.call(r * 0.7, -t, 0.0))
+		draw_colored_polygon(hole, Color("3a2e26"))
+		var lit := Geometry2D.intersect_polygons(far, hole)
+		for q in lit:
+			draw_colored_polygon(q, Color("cfc6a8"))
+		draw_colored_polygon(PackedVector2Array([p.call(-r, t, 0.0), p.call(r, t, 0.0), p.call(r * 0.7, -t, 0.0), p.call(-r * 0.7, -t, 0.0)]),
+			Color("8a7a62"))
+		# stone frame and keystone
+		for i in 12:
+			var a0 := PI - PI * i / 12.0
+			var a1 := PI - PI * (i + 1) / 12.0
+			draw_line(p.call(r * cos(a0), t, zs + 10.0 * sin(a0)), p.call(r * cos(a1), t, zs + 10.0 * sin(a1)), Color("f2ead6"), 2.0)
+		draw_line(p.call(-r, t, 0.0), p.call(-r, t, zs), Color("f2ead6"), 2.0)
+		draw_line(p.call(r, t, 0.0), p.call(r, t, zs), Color("f2ead6"), 2.0)
+		draw_colored_polygon(PackedVector2Array([p.call(-0.035, t, zs + 8.0), p.call(0.035, t, zs + 8.0), p.call(0.025, t, zs + 13.0), p.call(-0.025, t, zs + 13.0)]),
+			Color("bfb08e"))
+		# little windows above, one either side of the arch
+		for u in [-0.36, 0.36]:
+			draw_colored_polygon(PackedVector2Array([p.call(u - 0.05, t, 18.0), p.call(u + 0.05, t, 18.0), p.call(u + 0.05, t, 27.0), p.call(u - 0.05, t, 27.0)]),
+				Color("4a6a86"))
+			draw_line(p.call(u - 0.06, t, 17.5), p.call(u + 0.06, t, 17.5), Color("f2ead6"), 1.5)
+		# pitched tiled roof along the wall: back slope, front slope, then the gable end in view
+		var e := t + 0.05
+		var ridge := h + 9.0
+		var tile := Color("b4583a")
+		var r0 := lo - 0.02
+		var r1 := hi + 0.02
+		draw_colored_polygon(PackedVector2Array([p.call(r0, -e, h - 1.0), p.call(r1, -e, h - 1.0), p.call(r1, 0.0, ridge), p.call(r0, 0.0, ridge)]),
+			tile.darkened(0.2))
+		draw_colored_polygon(PackedVector2Array([p.call(r0, e, h - 1.0), p.call(r1, e, h - 1.0), p.call(r1, 0.0, ridge), p.call(r0, 0.0, ridge)]),
+			tile)
+		for i in 6:
+			var u := r0 + (r1 - r0) * (i + 0.5) / 6.0
+			draw_line(p.call(u, e, h - 1.0), p.call(u, 0.0, ridge), tile.darkened(0.15), 1.0)
+		draw_colored_polygon(PackedVector2Array([p.call(r1, -t, h), p.call(r1, t, h), p.call(r1, 0.0, ridge - 1.0)]), col.darkened(0.2))
+		draw_line(p.call(r0, 0.0, ridge), p.call(r1, 0.0, ridge), tile.darkened(0.35), 1.5)
 
 
 class DecoPiece extends Node2D:

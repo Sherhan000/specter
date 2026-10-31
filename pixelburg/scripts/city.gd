@@ -130,6 +130,8 @@ func _ready() -> void:
 	street_props.refresh()
 	Game.water_changed.connect(_on_water_changed)
 	Game.walls_changed.connect(street_props.refresh)
+	for sig in [Game.building_added, Game.building_removed, Game.building_moved]:
+		sig.connect(street_props.refresh_soon)
 	for sig in [Game.building_updated, Game.building_removed, Game.building_moved]:
 		sig.connect(func(_uid): _on_metro_check.call_deferred())
 	_update_daylight()

@@ -67,11 +67,17 @@ const ROADS := {
 const WATER_COST := 12
 const WATER_SEA := 30
 const WATER_OCEAN := 120
+## Walls touch the buildings next to them; homes joined by one wall line make a quarter (Game.quarters).
+## block: extra mood a quarter gets for having a wall of that kind (the quarter walls made for it).
 const WALLS := {
-	"stone": {"name": ["Каменная стена", "Stone wall"], "cost": 14},
-	"brick": {"name": ["Кирпичная стена", "Brick wall"], "cost": 18},
+	"stone": {"name": ["Каменная стена", "Stone wall"], "cost": 14, "block": 0},
+	"brick": {"name": ["Кирпичная стена", "Brick wall"], "cost": 18, "block": 0},
+	"plaster": {"name": ["Стена квартала", "Quarter wall"], "cost": 24, "block": 1},
+	"arch": {"name": ["Арка-переход", "Arch passage"], "cost": 45, "block": 2},
 }
-const WALL_ORDER := ["stone", "brick"]
+const WALL_ORDER := ["stone", "brick", "plaster", "arch"]
+## Quarter mood: +1 per home in it (from 2 homes), up to QUARTER_HAPPY_MAX, plus the best wall's "block".
+const QUARTER_HAPPY_MAX := 6
 ## Street improvements along the sidewalks.
 const ROAD_DECO := {
 	"railing": {"name": ["Кованая решётка", "Iron railing"], "cost": 10, "happy": 1},
@@ -84,6 +90,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Дома можно связать в единый квартал: проведите стену от дома к дому — стена примыкает к домам. Новые стены: штукатурная стена квартала с черепицей и арка-переход с крышей. Дома одного квартала счастливее", "Join homes into one quarter: draw a wall from house to house and it joins onto them. New walls: a plastered quarter wall with a tiled top and a roofed arch passage. Homes of one quarter are happier"],
 	["Многоэтажные парковки, у каждой свой вид: бетонная с открытыми этажами, автоматическая башня со стеллажами, зелёная с растениями и солнечной крышей и круглая со спиральным пандусом — машины жителей заезжают внутрь и паркуются, в карточке видно, сколько мест занято", "Multi-storey car parks, each with its own look: an open concrete deck garage, an automated tower with car racks, a green garage with plants and a solar roof and a round one with a spiral ramp - residents' cars drive in and park there, and the card shows how many places are taken"],
 	["Кольцо на перекрёстке: нажмите на перекрёсток и выберите «Кольцо» — машины объезжают островок с фонтаном по кругу и уступают тем, кто уже на кольце, светофор и электричество не нужны", "Roundabouts: tap a crossing and choose Roundabout - cars circle an island with a fountain and give way to those already on the ring, no traffic light or power needed"],
 	["В настройках можно увеличить или уменьшить кнопки и иконки (от 80% до 150%) — подстройте интерфейс под свой телефон, выбор сохраняется", "In the settings you can make the buttons and icons bigger or smaller (80% to 150%) - fit the interface to your phone, the choice is saved"],

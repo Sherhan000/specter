@@ -52,6 +52,7 @@ var cleared_trees := {}
 var water := {}              ## Vector2i -> true: water the player dug (rivers grow into seas and oceans)
 var water_body := {}         ## Vector2i -> 1 river, 2 sea, 3 ocean (by the size of the connected water)
 var walls := {}              ## Vector2i -> wall type (Data.WALLS)
+var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes joined by walls into one quarter
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -955,6 +956,7 @@ func recalc() -> void:
 	staff = 1.0 if jobs == 0 else clampf(float(workers) / jobs, 0.15, 1.0)
 	unemployment = 0.0 if workforce == 0 else maxf(0.0, float(workforce - jobs) / workforce)
 	_check_rules()
+	_recalc_quarters()
 	home_happy.clear()
 	home_reasons.clear()
 	var global := 45 - garbage_mood() + mood_total() + int(law_sum("happy")) + weather_mood() - int(round((tax - Data.TAX_DEFAULT) * 2.2)) - int(unemployment * 22.0)
@@ -1057,6 +1059,9 @@ func recalc() -> void:
 		if b.link > 0 and buildings.has(b.link):
 			h += 3
 			reasons.append(["r_link", 3])
+		if quarter_of.has(uid):
+			h += int(quarter_of[uid].happy)
+			reasons.append(["r_quarter", int(quarter_of[uid].happy)])
 		var sd := _street_deco_near(b.x, b.y, n)
 		if sd > 0:
 			h += sd
@@ -1974,10 +1979,54 @@ func remove_walls(tiles: Array[Vector2i]) -> bool:
 		if walls.erase(t):
 			any = true
 	if any:
+		recalc()
 		walls_changed.emit()
 		sfx("demolish")
 		save_game()
 	return any
+
+
+## Homes joined by walls make one quarter: a wall line touching a home's side links it, and a home
+## carries the line on to the walls on its other sides. Quarters of two or more built homes count.
+func _recalc_quarters() -> void:
+	quarter_of.clear()
+	var seen := {}
+	var dirs := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+	for start in walls:
+		if seen.has(start):
+			continue
+		seen[start] = true
+		var homes := {}
+		var best := 0
+		var todo: Array[Vector2i] = [start]
+		while not todo.is_empty():
+			var t: Vector2i = todo.pop_back()
+			best = maxi(best, int(Data.WALLS.get(walls[t], {}).get("block", 0)))
+			for dv in dirs:
+				var nt: Vector2i = t + dv
+				if walls.has(nt):
+					if not seen.has(nt):
+						seen[nt] = true
+						todo.append(nt)
+					continue
+				var uid: int = occ.get(nt, 0)
+				if uid == 0 or homes.has(uid) or not buildings.has(uid):
+					continue
+				var hb: Dictionary = buildings[uid]
+				if not hb.built or Data.B[hb.id].cat != "home":
+					continue
+				homes[uid] = true
+				var n: int = Data.B[hb.id].size
+				for i in n:
+					for e in [Vector2i(hb.x + i, hb.y - 1), Vector2i(hb.x + i, hb.y + n), Vector2i(hb.x - 1, hb.y + i), Vector2i(hb.x + n, hb.y + i)]:
+						if walls.has(e) and not seen.has(e):
+							seen[e] = true
+							todo.append(e)
+		if homes.size() < 2:
+			continue
+		var q := {"homes": homes.size(), "happy": mini(homes.size(), Data.QUARTER_HAPPY_MAX) + best, "tile": start}
+		for uid in homes:
+			quarter_of[uid] = q
 
 
 ## Street improvement: railings, flower pots or bollards along the sidewalks of player roads.

@@ -355,6 +355,47 @@ func _ready() -> void:
 	check(Game.build_walls(wall_line, "stone") and Game.walls.size() == 2, "stone wall built")
 	check(Game.place_problem("bakery", free_land[0].x, free_land[0].y) != "", "no building on a wall")
 	check(Game.remove_walls(wall_line) and Game.walls.is_empty(), "wall removed")
+	# homes joined by walls make one quarter
+	check(Data.WALL_ORDER.has("plaster") and Data.WALL_ORDER.has("arch") and int(Data.WALLS.arch.block) > 0, "quarter wall and arch passage in the wall list")
+	var qx := Vector2i(-1, -1)
+	for t in free_land:
+		var ok := true
+		for i in 5:
+			if not free_land.has(t + Vector2i(i, 0)):
+				ok = false
+		if ok and Game.place_problem("house_small", t.x, t.y) == "" and Game.place_problem("house_small", t.x + 2, t.y) == "" \
+				and Game.place_problem("house_small", t.x + 4, t.y) == "":
+			qx = t
+			break
+	check(qx.x >= 0, "room for three little houses in a row")
+	if qx.x >= 0:
+		var qh: Array[int] = []
+		for i in 3:
+			qh.append(Game.place("house_small", qx.x + i * 2, qx.y))
+		Game.simulate(11.0)
+		check(qh.all(func(u): return u > 0 and Game.buildings[u].built), "three houses built for a quarter")
+		check(not Game.quarter_of.has(qh[0]), "houses apart are not a quarter")
+		var arch_line: Array[Vector2i] = [qx + Vector2i(1, 0)]
+		check(Game.build_walls(arch_line, "arch"), "arch passage built between two houses")
+		check(Game.quarter_of.has(qh[0]) and Game.quarter_of.has(qh[1]) and int(Game.quarter_of[qh[0]].homes) == 2, "the wall joins two houses into one quarter")
+		check(int(Game.quarter_of[qh[0]].happy) == 2 + int(Data.WALLS.arch.block), "a quarter with an arch is happier (%d)" % int(Game.quarter_of[qh[0]].happy))
+		check(not Game.quarter_of.has(qh[2]), "the third house is not in it yet")
+		if Game.home_reasons.has(qh[0]):
+			check(Game.home_reasons[qh[0]].any(func(r): return r[0] == "r_quarter"), "mood shows the quarter")
+		var plaster_line: Array[Vector2i] = [qx + Vector2i(3, 0)]
+		check(Game.build_walls(plaster_line, "plaster"), "quarter wall built")
+		check(int(Game.quarter_of.get(qh[2], {}).get("homes", 0)) == 3 and int(Game.quarter_of[qh[0]].homes) == 3, "the middle house carries the quarter on to the third")
+		city.street_props.refresh()
+		var wp = city.street_props.pieces.get("w%s" % (qx + Vector2i(1, 0)))
+		check(wp != null and wp.touch == 10 and wp.arms == 10, "the arch runs into the houses on both sides")
+		Game.save_game()
+		Game.load_game()
+		check(int(Game.quarter_of.get(qh[1], {}).get("homes", 0)) == 3, "quarter kept after loading")
+		check(Game.remove_walls(arch_line) and not Game.quarter_of.has(qh[0]) and int(Game.quarter_of[qh[1]].homes) == 2, "removing the arch splits the quarter")
+		Game.remove_walls(plaster_line)
+		check(Game.quarter_of.is_empty(), "no walls, no quarter")
+		for u in qh:
+			Game.demolish(u)
 	var deco_line: Array[Vector2i] = [road_tile]
 	check(Game.decorate_roads(deco_line, "planters") and Game.road_deco.has(road_tile), "street decorated with flower pots")
 	check(Game.decorate_roads(deco_line, "none") and Game.road_deco.is_empty(), "street decoration removed")

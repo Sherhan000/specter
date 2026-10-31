@@ -489,6 +489,8 @@ func building_details(uid: int) -> void:
 		_row(v, "info", Loc.t("radius"), str(d.radius))
 	if d.has("park") and hud.city.life:
 		_row(v, "info", Loc.t("park_places"), "%d / %d" % [hud.city.life.garage_used(uid), Life.garage_capacity(uid)])
+	if Game.quarter_of.has(uid):
+		_row(v, "wall", Loc.t("quarter"), Loc.t("quarter_homes") % int(Game.quarter_of[uid].homes))
 	if d.cat == "home" and Game.home_reasons.has(uid):
 		hud.title(Loc.t("why_happy"), v, 12)
 		for r in Game.home_reasons[uid]:
