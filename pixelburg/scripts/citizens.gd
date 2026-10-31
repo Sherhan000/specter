@@ -401,6 +401,8 @@ func _birth(parent: Dictionary) -> void:
 	if int(hb.occ) < Data.stat(hb.id, "pop", hb.lvl):
 		hb.occ = int(hb.occ) + 1
 	stats.births = int(stats.births) + 1
+	if randf() < 0.3:
+		Game.soc.post("born")
 	_log(["Родился " + c.name[0], "Born: " + c.name[1]])
 
 

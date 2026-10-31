@@ -17,20 +17,23 @@ func _ready() -> void:
 	Events.chapter = 9
 	Events.flags = {"zoo_arc": true, "hall_arc": true, "election_done": true}
 	Game.day_time = 0.4
-	var ids := ["tower_twin", "tower_gold", "tower_sail", "tower_ring", "tower_wind", "tower_crown"]
-	for i in ids.size():
-		Game._add_building(ids[i], c - 8 + (i % 3) * 4, c + 2 + (i / 3) * 4, true, 2)
+	for i in 12:
+		var uid := Game._add_building(["house_small", "house_brick", "cottage"][i % 3], c - 8 + i * 2, c - 3, true, 2)
+		Game.buildings[uid].occ = 10
 	Game.recalc()
+	Game.cz.on_day()
+	for t in ["rob", "protest", "tax_high", "happy", "disaster_ok", "debt"]:
+		Game.soc.today_n = 0
+		Game.soc.post(t)
+	Game.soc.today_n = 0
+	Game.soc.post("built_good", ["Больница", "Hospital"])
+	Game.soc.like(Game.soc.posts[2].id)
 	city = load("res://scenes/main.tscn").instantiate()
 	add_child(city)
 	await _wait(2.0)
-	city.camera.position = Iso.center(Vector2i(c - 2, c + 4))
-	city.camera.zoom = Vector2(0.45, 0.45)
-	await _wait(1.0)
-	await _shot("n6_towers")
-	Game.day_time = 0.88
-	await _wait(1.0)
-	await _shot("n6_towers_night")
+	city.hud.panels.cit.feed()
+	await _wait(0.6)
+	await _shot("n7_feed")
 	get_tree().quit()
 
 

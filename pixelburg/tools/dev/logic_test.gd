@@ -1557,6 +1557,29 @@ func _ready() -> void:
 			check(Data.ORDER.has(tw_id) and Assets.tex("buildings/%s_1_0" % tw_id) != null and Assets.tex("buildings/%s_3_3" % tw_id) != null, "tower %s listed and has art" % tw_id)
 	check(tw_n == 15, "15 new towers exist")
 
+	# ------------------------------------------------ social network feed
+	var sc_keep := Game.soc.to_dict().duplicate(true)
+	var sc_pop := Game.pop
+	Game.soc.reset()
+	Game.soc.today_n = 0
+	if Game.pop < 5:
+		Game.pop = 50
+	Game.soc.post("rob")
+	Game.soc.post("built_good", ["Больница", "Hospital"])
+	check(Game.soc.posts.size() == 2 and str(Game.soc.posts[0].en).contains("hospital"), "posts are written about events")
+	var sc_id: int = Game.soc.posts[0].id
+	var sc_l: int = Game.soc.posts[0].likes
+	Game.soc.like(sc_id)
+	Game.soc.like(sc_id)
+	check(Game.soc.posts[0].likes == sc_l + 1 and Game.soc.sentiment() == 0.5, "a post can be liked once; feed sentiment")
+	for sc_t in Social.TOPICS:
+		check(Social.TOPICS[sc_t][1].size() > 0, "social topic %s has texts" % sc_t)
+	var sc_d := Game.soc.to_dict().duplicate(true)
+	Game.soc.from_dict(sc_d)
+	check(Game.soc.posts.size() == 2, "feed saves and loads")
+	Game.soc.from_dict(sc_keep)
+	Game.pop = sc_pop
+
 	# ------------------------------------------------ friend's city by QR code
 	var qr_img: Image = QR.image("HELLO", 1)
 	check(qr_img != null and qr_img.get_width() == 21 + 8, "a short text makes a version 1 QR code")

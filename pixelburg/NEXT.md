@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–28, 30–33, 42–48 и отдельная задача «30 новых объектов» (вне ROADMAP).
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–28, 30–33, 29, 42–49 и отдельная задача «30 новых объектов» (вне ROADMAP).
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы; b_houses3 — дешёвые стартовые дома; b_city30 — 20 зданий из набора «30 объектов»).
@@ -14,7 +14,7 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано (пункт 48 — город друга по QR-коду)
+## Сделано (пункт 49 — город друга по QR-коду)
 - scripts/qr.gd (class_name QR): свой кодировщик QR (байтовый режим, уровень L, версии 1–40), QR.image(text, scale) → Image; сверен бит в бит с python-библиотекой qrcode на версиях 6–40, со скриншота окна игры декодируется OpenCV.
 - game.gd: city_code() — короткий код «PXV1:» только того, как выглядит город (здания столбцами, тайлы дельтами, deflate+base64; стартовый город ~350 символов, ~300 зданий ~1–1.5 тыс., демо-город 1558 зданий ~5 тыс.);
   parse_city_code, visit_city(code) (сначала сохраняет свой город, строит гостевой через from_dict на копии своего сохранения), go_home() (load_game). Game.visiting: пока не "" — save_game ничего не пишет,
@@ -34,6 +34,7 @@
 - 43 Ночная жизнь: tools/art/b_night.py (nightclub, night_market, karaoke; поле "night" в data.gd → открыты 19–5 ч в life.gd, building_view.neon — цвет свечения плывёт), scripts/fireworks_fx.gd (FireworksFx, city.fireworks; выходные = день %7 in 6,0; 20–23 ч над plaza/fountain/town_hall).
 - 44–46 Жители: scripts/citizens.gd (Citizens, Game.cz, в сохранении "cz"): выборка до 240 жителей (возраст, образование, профессия, ступень, кошелёк, болезнь), масштаб = pop/выборка. on_day() из _end_of_day: найм по профессиям зданий, обучение (школа→edu1, it_run→edu2), зарплата/расходы, коммуналка в казну (ledger "utilities"), болезни (заразность, больница лечит, загрязнение), смерти по причинам (age/illness/poverty/no_hospital/pollution), рождения (роддом ×2). Цены cz.prices (свет/вода/проезд, проезд множит transit_fares). UI: scripts/citizen_panels.gd (Panels.cit): кнопка «Жители» в окне города → analytics/prices/list/card; второй тап по пешеходу — карточка. Баланс-прогон: tools/dev/cz_sim.tscn.
 - 47 Башни: tools/art/b_towers2.py (15 tower_*, size 3, cat shop, уровни 24–38; в MODULES). Перерисовка: gen_assets.py buildings only=<id> (~20 с на башню). Не перерисовывать все без нужды (5 минут).
+- 48 Соцсеть: scripts/social.gd (Social, Game.soc, "soc" в сохранении): посты по событиям (сигналы Game, ежедневные условия), лайки растут 3 дня, лайк мэра. UI: CitizenPanels.feed() (кнопка «Чат» в окне «Жители»).
 - Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
 
 ## Пункт 30 (ежедневные награды и достижения)
