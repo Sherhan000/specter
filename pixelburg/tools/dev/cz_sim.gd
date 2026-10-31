@@ -17,6 +17,10 @@ func _ready() -> void:
 	Game.recalc()
 	print("pop ", Game.pop, " jobs ", Game.jobs)
 	var cz: Citizens = Game.cz
+	Game.coins = 100000
+	for d in 5:
+		Game._end_of_day()
+	print("LEDGER ", Game.ledger[-1])
 	for d in 160:
 		Game.day += 1
 		Game._move_population()
