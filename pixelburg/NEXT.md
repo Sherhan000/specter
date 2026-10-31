@@ -21,6 +21,9 @@
 - scripts/holiday_view.gd (HolidayView в city): временные спрайты assets/holidays/*.png на свободных клетках у дорог, гирлянды/флажки на зданиях, фейерверки вечером в День города (рисуются кодом).
   Графика — tools/art/holidays.py (pycairo, только новое). Панель panels.holiday(), кнопка-календарь в боковом ряду видна только в праздник. fix_imports: assets/holidays в mipmaps.
 - logic_test: проверки праздников; ui_test делает скриншоты h_*.
+## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
+- 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
+- Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
 
 ## Пункт 30 (ежедневные награды и достижения)
 - scripts/ach.gd (class Ach): LIST ~50 достижений [id, счётчик, имя, текст с %s, пороги уровней, вес награды], value(key) считает прогресс из Game, check() выдаёт награды за достигнутые уровни.

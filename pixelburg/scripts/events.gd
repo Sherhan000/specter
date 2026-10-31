@@ -500,6 +500,14 @@ func protest_started(cause: String, site: int) -> void:
 	m.expires = Game.abs_hour() + Data.PROTEST_HOURS
 
 
+func rank_up(r: int) -> void:
+	var k: Array = Data.RANKS[r]
+	post("rank", "alina", ["Новое звание: %s" % k[2], "New rank: %s" % k[3]],
+		["{Title}, город вас ценит! Теперь вы — «%s». Награда: %d монет и %d изумрудов; доходы города выросли на %d%%." % [k[2], 500 * r, r, k[4]],
+		 "{Title}, the city values you! You are now «%s». Reward: %d coins and %d emeralds; the city's income grows by %d%%." % [k[3], 500 * r, r, k[4]]],
+		[[["Спасибо!", "Thank you!"], "ok"]])
+
+
 func protest_over() -> void:
 	post("protest", "alina", ["Митинг закончился", "The protest is over"],
 		["Люди разошлись, так ничего и не добившись. Злость осталась — если ничего не менять, они выйдут снова.",

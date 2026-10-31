@@ -107,11 +107,35 @@ const ROAD_DECO := {
 const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
 const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
+## Mayor ranks: [min level, min reputation, ru, en, income bonus %]. Rank only goes up (the best one reached is kept).
+const RANKS := [
+	[1, 0, "Староста деревни", "Village Elder", 0],
+	[3, 30, "Глава посёлка", "Town Head", 2],
+	[6, 40, "Городской голова", "City Head", 4],
+	[10, 45, "Градоначальник", "Governor", 6],
+	[15, 50, "Мэр города", "City Mayor", 8],
+	[20, 55, "Мэр большого города", "Big City Mayor", 10],
+	[28, 60, "Мэр-реформатор", "Reform Mayor", 12],
+	[36, 65, "Мэр столицы", "Capital Mayor", 15],
+	[45, 70, "Мэр мегаполиса", "Metropolis Mayor", 20],
+]
+
+
+static func rank_for(lvl: int, rep: float) -> int:
+	var r := 0
+	for i in RANKS.size():
+		if lvl >= RANKS[i][0] and rep >= RANKS[i][1]:
+			r = i
+	return r
+
+
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
 	["Сезонные праздники на несколько игровых дней: Новый год (ёлка на площади, гирлянды на домах, снеговики), Навруз (котёл с сумалаком, качели, клумбы с цветами), Хэллоуин (тыквы, оранжевые фонари, добрые привидения) и День города (флажки, флаги и вечерние фейерверки). Украшения временные, жители веселее, а в окне праздника (кнопка с календарём справа) — особые задания с наградой: построить новые здания и угостить жителей",
 	 "Seasonal holidays lasting a few game days: New Year (a fir tree on the square, garlands on homes, snowmen), Navruz (a sumalak cauldron, swings, flower beds), Halloween (pumpkins, orange lanterns, friendly ghosts) and City Day (bunting, flags and evening fireworks). The decorations are temporary, residents are happier, and the holiday window (calendar button on the right) has special tasks with a reward: build new buildings and treat the residents"],
+	["Звания мэра: от «Старосты деревни» до «Мэра мегаполиса» — звание растёт с уровнем и репутацией и никогда не пропадает. За каждое новое звание — награда и прибавка к доходу города (до +20%), приходит письмо. Звание видно в панели сверху, в профиле и в сведениях о городе.",
+	 "Mayor ranks: from «Village Elder» to «Metropolis Mayor» — the rank grows with your level and reputation and is never lost. Every new rank brings a reward and a bonus to the city's income (up to +20%), plus a letter. The rank is shown in the top bar, in the profile and in the city info."],
 	["Награда за вход: заходите в игру каждый день подряд — на каждый день цикла из 7 дней своя награда, на 7-й день изумруды; пропустите день, и серия начнётся заново. Достижения: 50 целей на все стороны города (стройка, население, деньги, дороги, вода, аэропорт, преступность, митинги, бренды, исторические места и другие), у большинства несколько уровней с наградой. Кнопка с кубком справа показывает прогресс, а при получении появляется уведомление",
 	 "Daily reward: visit the game every day in a row — each day of the 7-day cycle has its own reward, day 7 gives emeralds; miss a day and the streak starts over. Achievements: 50 goals across the whole city (building, population, money, roads, water, the airport, crime, protests, brands, historic sights and more), most with several tiers and rewards. The trophy button on the right shows your progress, and a notice pops up when you earn one"],
 	["Режим фото: кнопка с фотоаппаратом справа убирает весь интерфейс — остаётся только город. Камеру можно двигать и приближать пальцами, а фильтры «День», «Закат», «Ночь» и «Ч/б» меняют настроение кадра. Кнопка-затвор сохраняет снимок в галерею телефона (папка Pictures/Pixelburg), на компьютере — в папку user://photos. Крестик слева сверху возвращает в игру",
