@@ -1371,6 +1371,18 @@ func _ready() -> void:
 	Game.level = dz_keep[2]
 	Game.recalc()
 
+	# ------------------------------------------------ photo mode
+	check(FileAccess.file_exists("res://scripts/photo_mode.gd") and Assets.tex("ui/icons/camera") != null, "photo mode and its camera icon exist")
+	check(Loc.S.has("photo_saved") and Loc.S.has("photo_failed"), "photo mode texts exist")
+	var ph_img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	ph_img.fill(Color(0.2, 0.5, 0.8))
+	var ph_path := PhotoMode.save_image(ph_img)
+	check(ph_path != "" and FileAccess.file_exists(ph_path), "a photo is saved as a PNG file")
+	if ph_path != "":
+		DirAccess.remove_absolute(ph_path)
+	for ph_f in PhotoMode.FILTERS:
+		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

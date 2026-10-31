@@ -14,6 +14,12 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
+## Сделано (пункт 39 в ROADMAP = «п.33» пользователя — режим фото)
+- Кнопка-фотоаппарат (новая иконка assets/ui/icons/camera.png) в правой колонке HUD → scripts/photo_mode.gd (PhotoMode, создаётся в city.gd как city.photo): HUD скрыт, city.photo_mode блокирует тапы по зданиям,
+  камера свободная как обычно (палец/щипок/колесо). Фильтры (шейдер по экрану): как есть, день, закат, ночь, ч/б. Затвор: прячет кнопки, снимает viewport, PNG → Pictures/Pixelburg на Android
+  (в export_presets добавлен permissions/write_external_storage; на Android 11+ запись в свою папку Pictures идёт напрямую, на 10 может понадобиться разрешение) либо user://photos на ПК. Крестик — выход.
+- Не проверено на телефоне: появится ли снимок в галерее сразу (нет явного media scan). logic_test — блок «photo mode». Скриншот-тест: tools/dev/event_shot.tscn (SHOT_DIR=..., xvfb, без --headless).
+
 ## Сделано (пункт 38 в ROADMAP = «п.32» пользователя — стихийные события)
 - Номера 32 и 33 в ROADMAP уже были заняты другими идеями, поэтому новые пункты записаны как 38 и 39.
 - Data: DZ_* и таблица DZ (цены × (1+ур/10), риск, доля повреждений, настроение, репутация; у туристов — доход и мусор). Game: disaster (в сохранении; SAVE_VERSION не менялся),

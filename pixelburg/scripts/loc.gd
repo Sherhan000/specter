@@ -349,6 +349,8 @@ const S := {
 	"dz_tourist_say2": ["Сфоткай меня здесь!", "Take my photo here!"],
 	"dz_tourist_say3": ["А где тут музей?", "Where is the museum?"],
 	"dz_tourist_say4": ["Вот это вид!", "What a view!"],
+	"photo_saved": ["Фото сохранено в галерею", "Photo saved to the gallery"],
+	"photo_failed": ["Не удалось сохранить фото", "Could not save the photo"],
 	"pr_talk_done": ["Вы выслушали жителей — митинг закончился", "You heard the people: the protest is over"],
 	"pr_no_police": ["Нет полиции — разгонять некому", "No police to break it up"],
 	"pr_anger": ["Недовольство жителей", "Residents' anger"],

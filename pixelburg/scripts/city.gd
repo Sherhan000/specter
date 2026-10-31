@@ -36,6 +36,8 @@ var light_nodes := {}    ## Vector2i -> [TrafficLight, TrafficLight]
 var ring_nodes := {}     ## Vector2i -> [RingView base, RingView top]
 var forest_animals: Array[ForestAnimal] = []
 var zoo_animals: Array[ForestAnimal] = []
+var photo_mode := false   ## photo mode: no HUD, taps do nothing, the camera is free
+var photo: PhotoMode
 var xray := false        ## tall buildings are drawn see-through
 var input_lock := ""     ## while the tutorial runs: "" = free, otherwise only this action is allowed
 
@@ -105,6 +107,10 @@ func _ready() -> void:
 	hud = preload("res://scripts/hud.gd").new()
 	hud.city = self
 	add_child(hud)
+	photo = PhotoMode.new()
+	photo.city = self
+	photo.hud = hud
+	add_child(photo)
 
 	camera.position = Iso.center(Vector2i(Data.CENTER + 1, Data.CENTER))
 	camera.zoom = Vector2(ZOOM_START, ZOOM_START)
@@ -749,6 +755,8 @@ func set_tool(t: String) -> void:
 
 
 func _tap(screen_p: Vector2) -> void:
+	if photo_mode:
+		return
 	var wp := screen_to_world(screen_p)
 	var tile := Iso.to_tile(wp)
 	match mode:
