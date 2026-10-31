@@ -112,6 +112,10 @@ const NEWS_VERSION := "1.4.0"
 const NEWS := [
 	["Награда за вход: заходите в игру каждый день подряд — на каждый день цикла из 7 дней своя награда, на 7-й день изумруды; пропустите день, и серия начнётся заново. Достижения: 50 целей на все стороны города (стройка, население, деньги, дороги, вода, аэропорт, преступность, митинги, бренды, исторические места и другие), у большинства несколько уровней с наградой. Кнопка с кубком справа показывает прогресс, а при получении появляется уведомление",
 	 "Daily reward: visit the game every day in a row — each day of the 7-day cycle has its own reward, day 7 gives emeralds; miss a day and the streak starts over. Achievements: 50 goals across the whole city (building, population, money, roads, water, the airport, crime, protests, brands, historic sights and more), most with several tiers and rewards. The trophy button on the right shows your progress, and a notice pops up when you earn one"],
+	["Режим фото: кнопка с фотоаппаратом справа убирает весь интерфейс — остаётся только город. Камеру можно двигать и приближать пальцами, а фильтры «День», «Закат», «Ночь» и «Ч/б» меняют настроение кадра. Кнопка-затвор сохраняет снимок в галерею телефона (папка Pictures/Pixelburg), на компьютере — в папку user://photos. Крестик слева сверху возвращает в игру",
+	 "Photo mode: the camera button on the right hides the whole interface so only the city is left. Move and zoom the camera with your fingers, and the Day, Sunset, Night and B&W filters set the mood of the shot. The shutter button saves the picture to the phone's gallery (Pictures/Pixelburg folder), on a computer to user://photos. The cross at the top left takes you back to the game"],
+	["Стихийные события с выбором: иногда на город обрушивается наводнение (у реки и моря), землетрясение, снежная буря зимой или нашествие туристов. Приходит письмо с тремя вариантами: дорого и надёжно, дёшево и рискованно или ничего не делать. Пожарные и больница снижают ущерб. Вода заливает берег, по земле идут трещины и трясётся экран, снег заметает улицы, а у достопримечательностей собираются толпы туристов. Повреждённые дома чинятся в их карточке",
+	 "Natural events with a choice: now and then the city is hit by a flood (by a river or sea), an earthquake, a winter blizzard or a tourist rush. A letter offers three answers: costly and safe, cheap and risky, or do nothing. Fire stations and a hospital reduce the damage. Water floods the shore, cracks run across the ground and the screen shakes, snow buries the streets, and crowds of tourists gather at the sights. Damaged homes are repaired from their card"],
 	["Митинги: если мэр поступает нечестно — грабит банк, держит высокие налоги, сносит дома с жильцами, нарушает правила города — жители злятся. Когда терпение кончается, люди выходят к ратуше с плакатами и требуют своих прав. Можно выслушать их (это стоит денег, налоги вернутся к честным), разогнать полицией (быстро, но доверие упадёт, а злость вырастет) или ждать, пока разойдутся. Недовольство видно в карточке ратуши",
 	 "Protests: when the mayor is unfair — robs a bank, keeps taxes high, tears down homes with people inside, breaks the city's rules — residents get angry. When they've had enough, they gather at the town hall with placards and demand their rights. You can hear them (it costs coins, taxes go back to fair), send the police (quick, but trust falls and anger grows) or wait until they go home. The town hall card shows how angry people are"],
 	["Офис «it-run» — IT-школа (2x2): тёмный кампус с фиолетовой подсветкой, стеклянным атриумом, светящимся значком </> и спутниковой тарелкой на крыше. Студенты ходят сюда на занятия, как в обычную школу, а город получает пользу: образование, радость жителей и рабочие места для преподавателей.",
@@ -718,6 +722,24 @@ const PROTEST_FORCE_MOOD := -6
 const PROTEST_FORCE_ANGER := 25.0  ## anger left after dispersing (it only grows)
 const PROTEST_IGNORE_REP := 4.0    ## the protest ended on its own
 const PROTEST_IGNORE_LEFT := 0.5   ## share of the anger left after an ignored protest
+
+## Natural events with a choice (ROADMAP 32 in the user's list): flood, earthquake, blizzard, tourist rush.
+## Each has 3 answers: 0 = expensive and safe, 1 = cheap and risky, 2 = do nothing. Costs are coins × (1 + level / 10).
+const DZ_KINDS := ["flood", "quake", "blizzard", "tourists"]
+const DZ_MIN_POP := 60
+const DZ_CHANCE := 0.012           ## per hour while nothing is going on (about one event every 3–4 days)
+const DZ_COOLDOWN := 120           ## hours of peace after an event
+const DZ_FIRST := 96               ## no events during the first 4 days
+const DZ_HOURS := 10               ## hours the mayor has to answer (the danger is visible meanwhile)
+const DZ_AFTER := 8                ## hours the consequences stay visible
+const DZ_FIRE_SAVE := 0.15         ## a working fire station lowers the risk of damage by this
+const DZ_HEALTH_SAVE := 0.10       ## a working hospital lowers it by this and halves the bad mood
+const DZ := {
+	"flood": {"cost": [900, 200, 0], "risk": [0.0, 0.45, 1.0], "frac": [0.0, 0.15, 0.3], "mood": [0, -2, -5], "rep": [2, 0, -3]},
+	"quake": {"cost": [1200, 250, 0], "risk": [0.1, 0.5, 1.0], "frac": [0.05, 0.15, 0.3], "mood": [0, -3, -6], "rep": [2, 0, -3]},
+	"blizzard": {"cost": [700, 150, 0], "risk": [0.0, 0.4, 1.0], "frac": [0.0, 0.1, 0.2], "mood": [0, -3, -6], "rep": [2, 0, -2]},
+	"tourists": {"cost": [700, 120, 0], "gain": [2200, 1100, 300], "garbage": [0, 12, 25], "mood": [2, -1, -3], "rep": [3, 1, 0]},
+}
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]

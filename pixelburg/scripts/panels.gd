@@ -181,7 +181,7 @@ func inbox() -> void:
 		var h := _hbox(8)
 		c.add_child(h)
 		var pic := TextureRect.new()
-		pic.texture = Assets.face(m.get("from", "alina"), "worried" if m.kind in ["violation", "fire", "crime", "illness", "complaint", "protest"] else "smile")
+		pic.texture = Assets.face(m.get("from", "alina"), "worried" if m.kind in ["violation", "fire", "crime", "illness", "complaint", "protest", "disaster"] else "smile")
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		pic.custom_minimum_size = Vector2(44, 44)

@@ -134,6 +134,10 @@ func _expire() -> void:
 
 func _apply(act: String, m: Dictionary) -> void:
 	var uid := int(m.get("uid", 0))
+	if act.begins_with("dz:"):
+		var parts := act.split(":")
+		Game.disaster_choose(parts[1], int(parts[2]))
+		return
 	match act:
 		"ok":
 			pass
@@ -501,6 +505,56 @@ func protest_over() -> void:
 		["Люди разошлись, так ничего и не добившись. Злость осталась — если ничего не менять, они выйдут снова.",
 		 "People went home with nothing. The anger is still there: if nothing changes, they will be back."],
 		[[["Понятно", "Understood"], "ok"]])
+
+
+# ---------------------------------------------------------------- natural events with a choice
+const DZ_TEXT := {
+	"flood": [["Наводнение!", "Flood!"],
+		["{Title}, вода в реке поднимается и подступает к домам у берега. Дамбы и насосы стоят дорого, но город не пострадает; мешки с песком дешевле, но вода может прорваться; если ничего не делать — дома у воды зальёт.",
+		 "{Title}, the water is rising and creeps up to the homes by the shore. Dikes and pumps cost a lot, but the city stays safe; sandbags are cheaper, but the water may break through; do nothing and the homes by the water will be flooded."],
+		["Дамбы и насосы (%d)", "Dikes and pumps (%d)"], ["Мешки с песком (%d)", "Sandbags (%d)"], ["Ничего не делать", "Do nothing"]],
+	"quake": [["Землетрясение!", "Earthquake!"],
+		["{Title}, под городом дрожит земля, по улицам идут трещины. Можно вызвать инженеров и укрепить здания (дорого и надёжно), только подпереть самые опасные (дёшево, но риск обрушений) или надеяться на лучшее.",
+		 "{Title}, the ground shakes under the city and cracks run across the streets. Call engineers and reinforce the buildings (costly and safe), prop up only the worst ones (cheap, but some may collapse) or hope for the best."],
+		["Инженеры и укрепление (%d)", "Engineers and reinforcing (%d)"], ["Подпереть опасные дома (%d)", "Prop up the worst homes (%d)"], ["Надеяться на лучшее", "Hope for the best"]],
+	"blizzard": [["Снежная буря!", "Blizzard!"],
+		["{Title}, на город обрушилась снежная буря: дороги заметает, крыши трещат под снегом. Снегоуборочная техника справится надёжно (дорого); дворники с лопатами дешевле, но не везде успеют; без помощи город встанет, а крыши могут обрушиться.",
+		 "{Title}, a blizzard hit the city: roads are buried and roofs creak under the snow. Snow ploughs are reliable (costly); janitors with shovels are cheaper but won't get everywhere; with no help the city grinds to a halt and roofs may fall in."],
+		["Снегоуборочная техника (%d)", "Snow ploughs (%d)"], ["Дворники с лопатами (%d)", "Janitors with shovels (%d)"], ["Само растает", "It will melt"]],
+	"tourists": [["Нашествие туристов!", "Tourist rush!"],
+		["{Title}, в город хлынули туристы — толпы с фотоаппаратами у достопримечательностей. Можно нанять гидов и охрану (дорого, зато много дохода и порядок), просто открыть город (дёшево, будет мусор и шум) или не обращать внимания.",
+		 "{Title}, tourists flood the city: crowds with cameras at the sights. Hire guides and guards (costly, but big income and order), simply open up the city (cheap, with litter and noise) or ignore it."],
+		["Гиды и охрана (%d)", "Guides and guards (%d)"], ["Открыть город (%d)", "Open the city (%d)"], ["Не обращать внимания", "Ignore it"]],
+}
+
+
+func disaster_started(kind: String) -> void:
+	var t: Array = DZ_TEXT[kind]
+	var opts: Array = []
+	for i in 3:
+		var lab: Array = t[2 + i]
+		if i < 2:
+			var c := Game.disaster_cost(kind, i)
+			lab = [str(lab[0]) % c, str(lab[1]) % c]
+		opts.append([lab, "dz:%s:%d" % [kind, i]])
+	var who := "marina" if kind == "tourists" else "oleg"
+	var m := post("disaster", who, t[0], t[1], opts, {"dz": kind})
+	m.expires = Game.abs_hour() + Data.DZ_HOURS
+
+
+func disaster_result(kind: String, opt: int, hit: bool, n: int) -> void:
+	var ru: String
+	var en: String
+	if kind == "tourists":
+		ru = ["Гости довольны, казна пополнилась, в городе порядок.", "Туристы принесли доход, но оставили мусор и шум.", "Туристы побродили и уехали, оставив немного денег и мусора."][opt]
+		en = ["The guests are happy, the treasury grew, the city is orderly.", "Tourists brought income but left litter and noise.", "Tourists wandered about and left, leaving a little money and litter."][opt]
+	elif hit:
+		ru = "Стихия нанесла ущерб: повреждено зданий — %d. Починить их можно в карточке здания." % n
+		en = "The disaster did damage: %d buildings were damaged. Repair them from the building card." % n
+	else:
+		ru = ["Всё обошлось — меры сработали, город цел.", "Повезло: стихия прошла мимо, потерь нет.", "Повезло: стихия прошла мимо, потерь нет."][opt]
+		en = ["All is well - the measures worked and the city is intact.", "Lucky: the disaster passed with no losses.", "Lucky: the disaster passed with no losses."][opt]
+	Game.toast.emit(Loc.pick([ru, en]))
 
 
 func start_fire(uid := 0) -> void:
