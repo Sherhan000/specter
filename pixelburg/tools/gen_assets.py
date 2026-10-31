@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(HERE, "art"))
 ROOT = os.path.dirname(HERE)
 A = os.path.join(ROOT, "assets")
 
-MODULES = ["b_homes", "b_shops", "b_work", "b_civic", "b_towers", "b_houses2", "b_market", "b_beach", "b_airport", "b_food", "b_farm", "b_trees", "b_fuel", "b_parking", "b_history"]
+MODULES = ["b_homes", "b_shops", "b_work", "b_civic", "b_towers", "b_houses2", "b_market", "b_beach", "b_airport", "b_food", "b_farm", "b_trees", "b_fuel", "b_parking", "b_history", "b_houses3"]
 
 
 def d(*p):

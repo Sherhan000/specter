@@ -971,6 +971,30 @@ func _ready() -> void:
 		Game.demolish(kf)
 		check(kpos2.x < 0 or Game.place_problem("khujand_fortress", kpos2.x, kpos2.y) == "", "after demolishing, the fortress can be built again")
 
+	# ------------------------------------------------ cheap starter homes
+	var starters := ["house_adobe", "house_log", "house_brick", "house_aframe", "house_container", "house_med", "house_duplex"]
+	for hid in starters:
+		check(Data.B.has(hid) and Data.B[hid].cat == "home" and Data.B[hid].size == 1, "%s is a small home" % hid)
+		check(int(Data.B[hid].lvl) <= 3 and int(Data.B[hid].cost) < int(Data.B.cottage.cost) and int(Data.B[hid].get("gems", 0)) == 0, "%s is cheap and opens early" % hid)
+		check(Data.ORDER.find(hid) < Data.ORDER.find("cottage") or hid == "house_duplex", "%s is listed among the first homes" % hid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % hid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % hid), "%s has its own sprites" % hid)
+		check(not Assets.meta(Assets.building_sprite(hid, 1, 0)).is_empty(), "%s sprite has a door and an entrance" % hid)
+		var spos := Vector2i(-1, -1)
+		for yy in range(c - 16, c + 16):
+			for xx in range(c - 16, c + 16):
+				if spos.x < 0 and Game.place_problem(hid, xx, yy) == "" and Game._touches_road(xx, yy, 1):
+					spos = Vector2i(xx, yy)
+		var su := Game._add_building(hid, spos.x, spos.y, true) if spos.x >= 0 else 0
+		check(su != 0, "%s can be built by a road" % hid)
+		if su != 0:
+			Game.recalc()
+			check(Game.buildings.has(su) and Game.buildings[su].id == hid, "%s stands in the city" % hid)
+			Game.demolish(su)
+	check(Data.ORDER.find("house_adobe") < Data.ORDER.find("house_american"), "the cheapest homes come first in the list")
+	check(Game.place_problem("house_adobe", c + 10, c - 6) != "wrong_zone" and Game.place_problem("house_log", c + 10, c - 6) != "wrong_zone",
+		"adobe house and log cabin may be built on farmland")
+	check(Game.place_problem("house_brick", c + 10, c - 6) == "wrong_zone", "a brick house stays in the city")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

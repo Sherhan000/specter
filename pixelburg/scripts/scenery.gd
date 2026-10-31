@@ -36,7 +36,7 @@ func _gen_villages() -> void:
 	lines.append([Vector2i(Data.LAND1, Data.CENTER), Vector2i(1, 0), Data.MAP - Data.LAND1])
 	lines.append([Vector2i(Data.LAND1 + 30, Data.HIGHWAY_Y - 1), Vector2i(1, 0), 60])
 	lines.append([Vector2i(Data.LAND0 - 30, Data.HIGHWAY_Y - 1), Vector2i(-1, 0), 50])
-	var kinds := ["house_small", "cottage", "house_small", "bungalow", "cottage", "house_small"]
+	var kinds := ["house_small", "house_log", "cottage", "house_brick", "bungalow", "house_adobe", "cottage", "house_med", "house_small"]
 	for li in lines.size():
 		var start: Vector2i = lines[li][0]
 		var step: Vector2i = lines[li][1]
