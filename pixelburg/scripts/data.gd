@@ -110,6 +110,8 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Митинги: если мэр поступает нечестно — грабит банк, держит высокие налоги, сносит дома с жильцами, нарушает правила города — жители злятся. Когда терпение кончается, люди выходят к ратуше с плакатами и требуют своих прав. Можно выслушать их (это стоит денег, налоги вернутся к честным), разогнать полицией (быстро, но доверие упадёт, а злость вырастет) или ждать, пока разойдутся. Недовольство видно в карточке ратуши",
+	 "Protests: when the mayor is unfair — robs a bank, keeps taxes high, tears down homes with people inside, breaks the city's rules — residents get angry. When they've had enough, they gather at the town hall with placards and demand their rights. You can hear them (it costs coins, taxes go back to fair), send the police (quick, but trust falls and anger grows) or wait until they go home. The town hall card shows how angry people are"],
 	["Офис «it-run» — IT-школа (2x2): тёмный кампус с фиолетовой подсветкой, стеклянным атриумом, светящимся значком </> и спутниковой тарелкой на крыше. Студенты ходят сюда на занятия, как в обычную школу, а город получает пользу: образование, радость жителей и рабочие места для преподавателей.",
 	 "The «it-run» office — an IT school (2x2): a dark campus with violet lighting, a glass atrium, a glowing </> logo and a satellite dish on the roof. Students attend classes here just like at a regular school, and the city benefits: education, happier residents and jobs for teachers."],
 	["Три супермаркета: «Амид» (сине-белый стеклянный зал с круглым логотипом), «Анис» (кирпичный рынок-зал с полосатыми тентами и звездой-анисом) и «Ёвар» (жёлто-бирюзовый склад-дискаунтер с пилообразной крышей и шестигранным логотипом). Жители ходят туда за покупками, а магазины дают доход и рабочие места.",
@@ -682,6 +684,38 @@ const JAIL_REP := 25.0
 const JAIL_MOOD := -8
 const JAIL_BAIL_GEMS := 5          ## get out early on bail
 const JAIL_TAX_MULT := 0.5         ## daily business tax and tourism while the mayor is in prison
+
+## Protests (ROADMAP 28). Unfair acts of the mayor build up the residents' anger (0..100). When it gets high,
+## people gather in front of the town hall (or the main square) with placards and demand their rights.
+const PROTEST_CAUSES := ["rob", "tax", "demolish", "mood", "rules"]
+const PROTEST_MIN_POP := 80
+const PROTEST_AT := 60.0           ## anger at which a protest starts
+const PROTEST_MAX := 100.0
+const PROTEST_DECAY := 1.0         ## anger fades by this per hour
+const PROTEST_HOURS := 8           ## how long a protest goes on if nobody talks to the people
+const PROTEST_COOLDOWN := 36       ## hours after a protest before the next one
+const PROTEST_MOOD := -5           ## city mood while people protest
+const PROTEST_REP := 3.0           ## reputation lost when a protest starts
+const PROTEST_CROWD := 14          ## most protesters shown
+## Anger for each kind of unfairness (cause ids are the keys of Loc "pr_cause_*").
+const ANGER_ROB := 35.0            ## the mayor robbed a bank
+const ANGER_JAIL := 25.0           ## the mayor was caught and jailed
+const ANGER_DEMOLISH := 10.0       ## a home with residents was demolished
+const ANGER_EVICT := 8.0           ## tenants evicted
+const ANGER_TAX_FAIR := 15         ## tax above this angers people…
+const ANGER_TAX := 0.5             ## …by this per hour per point above it
+const ANGER_UNHAPPY_AT := 35.0     ## happiness below this angers people…
+const ANGER_UNHAPPY := 1.5         ## …by this per hour
+const ANGER_RULES := 0.3           ## per broken city rule per hour
+## Answers to a protest.
+const PROTEST_TALK_COST := 400     ## meet the people: coins × (1 + city level / 10)
+const PROTEST_TALK_REP := 5.0
+const PROTEST_TALK_MOOD := 4
+const PROTEST_FORCE_REP := 8.0     ## disperse with the police
+const PROTEST_FORCE_MOOD := -6
+const PROTEST_FORCE_ANGER := 25.0  ## anger left after dispersing (it only grows)
+const PROTEST_IGNORE_REP := 4.0    ## the protest ended on its own
+const PROTEST_IGNORE_LEFT := 0.5   ## share of the anger left after an ignored protest
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]

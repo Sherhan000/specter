@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Generates Pixelburg's art into assets/.
 
-Run from the project root:  python3 tools/gen_assets.py [buildings] [nature] [units] [ground] [sky] [only=id,id]
+Run from the project root:  python3 tools/gen_assets.py [buildings] [nature] [units] [ground] [sky] [protest] [only=id,id]
                       python3 tools/gen_assets.py cars only=kind,kind   (render only these vehicles into units)
 Without arguments everything is generated. Needs Pillow, numpy, scipy and pycairo.
 """
@@ -107,6 +107,10 @@ if __name__ == "__main__":
         import units4
         units4.gen(d("units"))
         print("units", round(time.time() - t, 1))
+    if every or "protest" in args:
+        import protest
+        protest.gen(d("units"))
+        print("protest", round(time.time() - t, 1))
     if every or "ui" in args:
         import ui4
         ui4.gen(d("ui"))

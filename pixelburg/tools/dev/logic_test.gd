@@ -1228,8 +1228,89 @@ func _ready() -> void:
 		for cr_u in [cr_bank, cr_post, cr_guard, cr_prison]:
 			if cr_u != 0 and Game.buildings.has(cr_u):
 				Game.demolish(cr_u)
+	check(float(Game.protest.why.get("rob", 0.0)) >= Data.ANGER_ROB, "robbing a bank angers the residents")
 	Game.crime = Game._empty_crime()
 	Game.level = cr_lvl_keep
+
+	# ------------------------------------------------ protests (ROADMAP 28)
+	check(FileAccess.file_exists("res://assets/units/placards.png") and Assets.tex("units/placards") != null, "protest placards have their own sprites")
+	check(Assets.tex("units/placards").get_width() == 32 * Protester.PLACARD_FRAMES, "every placard design is in the sheet")
+	for pr_c in Data.PROTEST_CAUSES:
+		check(Loc.S.has("pr_cause_" + pr_c) and Events.PROTEST_DEMANDS.has(pr_c), "protest cause %s has a slogan and a demand" % pr_c)
+	var pr_keep := [Game.tax, Game.pop, Game.tutorial, Game.coins, Game.level]
+	Game.protest = Game._empty_protest()
+	Game.tutorial = 99
+	Game.level = 20
+	var pr_hall := 0
+	var pr_sp := Events.find_business_spot(3)
+	if pr_sp.x >= 0:
+		pr_hall = Game._add_building("town_hall", pr_sp.x, pr_sp.y, true)
+	Game.recalc()
+	Game.pop = 300
+	check(pr_hall != 0 and Game.protest_site() == pr_hall, "people gather at the town hall")
+	Game.tax = Data.TAX_MAX
+	for pr_i in 3:
+		Game._update_protest()
+	check(Game.anger() > 0.0 and Game.protest_cause() == "tax" and not Game.protest_active(), "high taxes slowly anger people")
+	Game.add_anger("tax", Data.PROTEST_AT)
+	var pr_rep := Game.rep
+	Game._update_protest()
+	check(Game.protest_active() and str(Game.protest.cause) == "tax" and int(Game.protest.site) == pr_hall, "too much anger starts a protest")
+	check(Game.rep < pr_rep and Game.mood.any(func(m): return str(m.why) == "protest"), "a protest costs reputation and mood")
+	check(Events.inbox[0].kind == "protest" and str(Events.inbox[0].opts[0][1]) == "pr_talk", "a letter asks how to answer the protest")
+	check("n_protest" in Game.paper_headlines(), "the newspaper writes about the protest")
+	check(Game.protest_crowd() >= 4 and Game.protest_crowd() <= Data.PROTEST_CROWD, "a crowd comes out")
+	# hear the people: taxes go back to fair, anger is gone
+	Game.coins = 100000
+	check(Game.protest_talk() and not Game.protest_active() and Game.anger() == 0.0 and Game.tax == Data.TAX_DEFAULT, "hearing the people ends the protest and lowers taxes")
+	check(Game.coins == 100000 - Game.protest_talk_cost() and int(Game.protest.talks) == 1, "hearing them costs coins")
+	check(not Game.mood.any(func(m): return str(m.why) == "protest"), "the protest mood is gone")
+	Game.pop = 300
+	Game.add_anger("rob", Data.PROTEST_MAX)
+	Game._update_protest()
+	check(not Game.protest_active(), "no new protest right after the last one")
+	# the police break it up
+	Game.protest.cd = 0
+	Game._update_protest()
+	check(Game.protest_active() and Game.protest_cause() == "rob", "a robbing mayor brings people out")
+	var pr_police: Array[int] = []
+	for pr_u in Game.buildings.keys():
+		if Data.B[Game.buildings[pr_u].id].get("svc", "") == "police" and not Game.buildings[pr_u].closed:
+			pr_police.append(pr_u)
+			Game.buildings[pr_u].closed = true
+	check(not Game.protest_force() and Game.protest_active(), "no police: nobody can break it up")
+	for pr_u in pr_police:
+		Game.buildings[pr_u].closed = false
+	var pr_pp := Events.find_business_spot(1)
+	var pr_post := Game._add_building("police_post", pr_pp.x, pr_pp.y, true) if Game.police_count() == 0 and pr_pp.x >= 0 else 0
+	Game.recalc()
+	Game.pop = 300
+	pr_rep = Game.rep
+	check(Game.protest_force() and not Game.protest_active() and Game.rep < pr_rep, "the police break up the protest, trust falls")
+	check(Game.anger() >= Data.PROTEST_FORCE_ANGER and int(Game.protest.forced) == 1, "breaking it up leaves people angrier")
+	# nobody answers: it ends on its own and the anger stays
+	Game.protest.cd = 0
+	Game.protest.anger = Data.PROTEST_MAX
+	Game.pop = 300
+	Game._update_protest()
+	check(Game.protest_active(), "people come out again")
+	var pr_a := Game.anger()
+	Game.protest.until = Game.abs_hour()
+	Game._update_protest()
+	check(not Game.protest_active() and Game.anger() < pr_a and Game.anger() > 0.0 and Events.inbox[0].kind == "protest", "an ignored protest ends, some anger stays")
+	var pr_saved: Dictionary = Game.to_dict().protest
+	check(is_equal_approx(float(pr_saved.anger), Game.anger()) and int(pr_saved.count) == 3, "the protest record is saved")
+	var pr_src := FileAccess.get_file_as_string("res://scripts/life.gd")
+	check(pr_src.contains("Game.protest_changed.connect(protest_changed)") and pr_src.contains("Protester.new()"), "protesters show up in the city")
+	for pr_u in [pr_hall, pr_post]:
+		if pr_u != 0 and Game.buildings.has(pr_u):
+			Game.demolish(pr_u)
+	Game.protest = Game._empty_protest()
+	Game.tax = pr_keep[0]
+	Game.tutorial = pr_keep[2]
+	Game.coins = pr_keep[3]
+	Game.level = pr_keep[4]
+	Game.recalc()
 
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
