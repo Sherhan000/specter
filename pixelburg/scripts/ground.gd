@@ -5,6 +5,8 @@ extends Node2D
 
 const ROAD_IDS := {"dirt": 1, "asphalt": 2, "stone": 3, "highway": 4, "country": 5, "town": 6, "boulevard": 7,
 	"avenue": 8, "brick": 9, "bus_lane": 10, "bike": 11}
+## paving on the grass (Game.paves), drawn by the same shader after the roads
+const PAVE_IDS := {"slabs": 12, "terracotta": 13, "mosaic": 14, "path": 15}
 const STREETS := ["asphalt", "stone", "town", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 ## arm bits: north (-y) 1, east (+x) 2, south (+y) 4, west (-x) 8
 const ARM_DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
@@ -144,6 +146,18 @@ func update_roads(net: Dictionary) -> void:
 		if Game.lights.has(c):
 			b |= 16
 		road_img.set_pixel(c.x, c.y, Color8(ROAD_IDS[t], g, b, 128 + Game.water_kind(c) if Game.water.has(c) else 255))
+	# paving: arms join a tile to the same paving next to it; a footpath also runs onto roads, other paving and buildings
+	for c in Game.paves:
+		if all.has(c) or Game.water.has(c):
+			continue
+		var t: String = Game.paves[c]
+		var bits := 0
+		for k in 4:
+			var o: Vector2i = c + ARM_DIRS[k]
+			var ot: String = Game.paves.get(o, "")
+			if ot == t or (t == "path" and (ot != "" or all.has(o) or Game.occ.has(o))) or (t != "path" and all.has(o)):
+				bits |= 1 << k
+		road_img.set_pixel(c.x, c.y, Color8(PAVE_IDS[t], bits, 0, 255))
 	# water dug by the player: alpha 129 river, 130 sea, 131 ocean
 	for c in Game.water:
 		if not all.has(c):

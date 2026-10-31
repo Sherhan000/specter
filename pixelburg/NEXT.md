@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–19.
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–20.
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы).
@@ -10,9 +10,21 @@
 - Дороги 8 видов (шейдер ground.gdshader, типы 1–11), велосипедисты (cyclist.gd), прозрачные высокие здания (кнопка-глаз).
 - Вода: река → море (30) → океан (120), мосты, острова, жизнь на воде (water_life.gd). Стены и украшения улиц (street_props.gd), кварталы из домов, связанных стенами.
 - Аэропорт (4x4, один, нужна дорога к трассе), рейсы в 16 стран, аналитика прилётов (panels.airport).
+- Плитка на траве (инструмент «Плитка» в режиме дорог): Game.paves, гуляющие пешеходы (stroller.gd).
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (пункт 19)
+## Сделано в последней сессии (пункт 20)
+- Плитка вместо травы перед домами: в режиме дорог новая вкладка «Плитка» (кисть, как вода — красит каждую клетку под пальцем).
+  Data.PAVES / PAVE_ORDER: slabs (серая, 8), terracotta (красная, 12), mosaic (узорный кафель с синими ромбами, 20, happy 2), path (пешеходная дорожка из тёплой брусчатки, 5) + «Убрать плитку».
+  Data.PAVE_UPKEEP 0.05/клетка в daily_upkeep, PAVE_HAPPY_MAX 2 — дом со плиткой рядом (по бокам участка) счастливее (причина r_pave).
+- game.gd: Game.paves (Vector2i → вид, ключ "paves" в сохранении, SAVE_VERSION не менялся), сигнал paves_changed; pave_tiles/build_paves/remove_paves, _pave_near.
+  Плитка только на своей траве без зданий/дорог/воды/стен; деревья на ней не растут (tree_at); дорога или здание поверх убирает плитку (_occupy, build_roads); воду/стены на плитку не ставят.
+- Рисует ground.gdshader (pave(), типы 12–15 в road_tex, Ground.PAVE_IDS): бордюр по краям, где сосед не той же плитки и не дорога; дорожка соединяется с плиткой, дорогами и зданиями. Без новой графики.
+- Пешеходы: scripts/stroller.gd (Stroller) — гуляют от клетки к клетке по плитке, останавливаются, бегуны, иногда с собакой (рисуется полигонами). Life._update_strollers(): 1 на 4 клетки, до 24, днём без дождя/снега.
+- city.gd: BRUSHES ["water", "pave"]; заодно исправлен _brush (первая клетка кисти падала с ошибкой типов массива). Иконка вкладки "tile" — пока alias на land (assets.gd).
+- Проверки в logic_test, Data.NEWS дополнен. Проверено скриншотами (xvfb, день). На телефоне глазами не смотрели.
+
+## Пункт 19 (ранее)
 - Фонарь над входом дома: в режиме «Фонарь» нажатие на жилой дом (cat home, построен) ставит фонарь текущего стиля (classic/modern/lantern);
   нажатие тем же стилем — вопрос «Убрать?», другим — замена. Иначе как раньше — уличный фонарь на тротуар. Подсказка hint_lamp с ценой.
 - Данные: Data.HOUSE_LAMP_COST 30, HOUSE_LAMP_HAPPY 2 (причина r_house_lamp), HOUSE_LAMP_UPKEEP 0.25/день, POWER_HOUSE_LAMP 0.1 кВт.
@@ -151,5 +163,5 @@
 ## Перед выпуском 1.4.0
 - export_presets.cfg: version/code=6, version/name="1.4.0"; project.godot config/version. Собрать AAB, проверить на телефоне выход.
 - Иконки от пользователя (Gemini): лист 4x4 на маджента-фоне → `python3 tools/art/cut_icons.py 5=лист.png` (имена — 5-я строка
-  tools/art/icon_sheet_names.json: eye news river wall street exit bus metro hotel bike sport power water tv newspaper plane),
+  tools/art/icon_sheet_names.json: eye news river wall street exit bus metro hotel bike sport power water tv newspaper plane; нужна ещё "tile" — плитка),
   затем import + fix_imports. Пока файлов нет, assets.gd ui_icon подставляет старые иконки (alias).

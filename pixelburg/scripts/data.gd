@@ -84,6 +84,17 @@ const WALLS := {
 const WALL_ORDER := ["stone", "brick", "plaster", "arch"]
 ## Quarter mood: +1 per home in it (from 2 homes), up to QUARTER_HAPPY_MAX, plus the best wall's "block".
 const QUARTER_HAPPY_MAX := 6
+## Paving on the grass in front of the houses (Game.paves): whole tiles of tiles or a narrow footpath.
+## happy: mood of a home with such paving next to it; strollers walk along the paved tiles.
+const PAVES := {
+	"slabs": {"name": ["Серая плитка", "Grey paving"], "cost": 8, "happy": 1},
+	"terracotta": {"name": ["Красная плитка", "Terracotta tiles"], "cost": 12, "happy": 1},
+	"mosaic": {"name": ["Узорный кафель", "Patterned tiles"], "cost": 20, "happy": 2},
+	"path": {"name": ["Пешеходная дорожка", "Footpath"], "cost": 5, "happy": 1},
+}
+const PAVE_ORDER := ["slabs", "terracotta", "mosaic", "path"]
+const PAVE_UPKEEP := 0.05
+const PAVE_HAPPY_MAX := 2
 ## Street improvements along the sidewalks.
 const ROAD_DECO := {
 	"railing": {"name": ["Кованая решётка", "Iron railing"], "cost": 10, "happy": 1},
@@ -96,6 +107,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Плитка вместо травы: в режиме дорог выберите «Плитка» и проведите пальцем перед домами — серая, красная или узорная плитка и пешеходные дорожки. По ним гуляют пешеходы, иногда с собакой, а жителям рядом приятнее", "Paving instead of grass: in road mode pick «Paving» and drag in front of the houses - grey, terracotta or patterned tiles and footpaths. People stroll along them, sometimes with a dog, and the homes beside them are happier"],
 	["Фонарь над входом: в режиме фонаря нажмите на дом — над дверью появится фонарь (классика, модерн или два плафона по бокам), ночью он светит на крыльцо, а жителям уютнее", "A lamp over the door: in lamp mode tap a house and a lamp appears above its entrance (classic, modern or twin lights on both sides); at night it lights the porch and the residents feel cosier"],
 	["Дома можно связать в единый квартал: проведите стену от дома к дому — стена примыкает к домам. Новые стены: штукатурная стена квартала с черепицей и арка-переход с крышей. Дома одного квартала счастливее", "Join homes into one quarter: draw a wall from house to house and it joins onto them. New walls: a plastered quarter wall with a tiled top and a roofed arch passage. Homes of one quarter are happier"],
 	["Многоэтажные парковки, у каждой свой вид: бетонная с открытыми этажами, автоматическая башня со стеллажами, зелёная с растениями и солнечной крышей и круглая со спиральным пандусом — машины жителей заезжают внутрь и паркуются, в карточке видно, сколько мест занято", "Multi-storey car parks, each with its own look: an open concrete deck garage, an automated tower with car racks, a green garage with plants and a solar roof and a round one with a spiral ramp - residents' cars drive in and park there, and the card shows how many places are taken"],

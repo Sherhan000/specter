@@ -423,6 +423,73 @@ func _ready() -> void:
 		if city.views.has(lh):
 			city.views[lh].refresh()
 			check(city.views[lh].house_lamp == null, "door lamp gone from the house")
+		# paving on the grass in front of a house, strollers on it
+		check(Data.PAVE_ORDER.all(func(t): return Data.PAVES.has(t) and Ground.PAVE_IDS.has(t)), "every paving has data and a shader id")
+		var lb: Dictionary = Game.buildings[lh]
+		var ln: int = Data.B[lb.id].size
+		var pv_free: Array[Vector2i] = []
+		for i in range(-1, ln + 1):
+			for t in [Vector2i(lb.x + i, lb.y - 1), Vector2i(lb.x + i, lb.y + ln), Vector2i(lb.x - 1, lb.y + i), Vector2i(lb.x + ln, lb.y + i)]:
+				if Game.pave_tiles([t] as Array[Vector2i], "slabs").size() == 1 and not pv_free.has(t):
+					pv_free.append(t)
+		var pv_pair: Array[Vector2i] = []
+		for t in pv_free:
+			for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0), Vector2i(0, -1)]:
+				if pv_pair.is_empty() and pv_free.has(t + d) and (t.x == lb.x - 1 or t.x == lb.x + ln or t.y == lb.y - 1 or t.y == lb.y + ln):
+					pv_pair = [t, t + d]
+		check(pv_pair.size() == 2, "two free grass tiles by the house to pave")
+		var lt: Array[Vector2i] = [Vector2i(lb.x, lb.y), road_tile]
+		check(Game.pave_tiles(lt, "slabs").is_empty(), "no paving on buildings or roads")
+		if pv_pair.size() == 2:
+			Game.coins += 1000
+			var pc0 := Game.coins
+			var pu0 := Game.daily_upkeep()
+			check(Game.build_paves(pv_pair, "mosaic") and Game.paves.get(pv_pair[0], "") == "mosaic", "patterned tiles laid on the grass")
+			check(Game.coins == pc0 - 2 * int(Data.PAVES.mosaic.cost), "paving costs %d a tile" % Data.PAVES.mosaic.cost)
+			check(Game.tree_at(pv_pair[0]) == "" and Game.tree_at(pv_pair[1]) == "", "no trees on paving")
+			check(Game.daily_upkeep() >= pu0, "paving upkeep counted")
+			check(Game._pave_near(lb.x, lb.y, ln) == Data.PAVE_HAPPY_MAX, "a house with patterned tiles in front is happier")
+			if Game.home_reasons.has(lh) and Game.works(lh):
+				check(Game.home_reasons[lh].any(func(r): return r[0] == "r_pave"), "mood shows the paving")
+			check(city.ground.road_img.get_pixelv(pv_pair[0]).r8 == Ground.PAVE_IDS.mosaic, "the ground draws the paving")
+			check(not Game.build_paves(pv_pair, "mosaic"), "the same paving twice is refused")
+			check(Game.build_paves([pv_pair[1]] as Array[Vector2i], "path") and Game.paves[pv_pair[1]] == "path", "a footpath replaces the tiles")
+			var pd: Color = city.ground.road_img.get_pixelv(pv_pair[1])
+			check(pd.r8 == Ground.PAVE_IDS.path and pd.g8 != 0, "the footpath joins the paving next to it")
+			Game.save_game()
+			Game.load_game()
+			check(Game.paves.get(pv_pair[0], "") == "mosaic" and Game.paves.get(pv_pair[1], "") == "path", "paving kept after loading")
+			Game.phase = "day"
+			Game.weather = "clear"
+			for k in 3:
+				city.life._update_strollers()
+			check(city.life.strollers.size() > 0, "people come out to stroll on the paving (%d)" % city.life.strollers.size())
+			if city.life.strollers.size() > 0:
+				var st: Stroller = city.life.strollers[0]
+				var sg := st.g
+				for k in 40:
+					st.step(0.1)
+				check(st.g != sg or st.pause > 0.0, "a stroller walks along the paving")
+				check(Game.paves.has(Vector2i(floori(st.g.x), floori(st.g.y))) or st.done, "strollers stay on the paving")
+			city.set_tool("pave")
+			check(city.road_type == "slabs", "paving tool starts with grey slabs")
+			city._brush(pv_free[0] if not pv_pair.has(pv_free[0]) else pv_pair[0])
+			check(city.road_tiles.size() == 1, "the paving brush marks the tile under the finger")
+			city.set_road_type("remove")
+			city.stroke.clear()
+			city._stroke_last = Vector2i(-1, -1)
+			city._brush(pv_pair[0])
+			check(city.road_tiles == ([pv_pair[0]] as Array[Vector2i]), "the remove brush marks paved tiles")
+			city.set_road_type("slabs")
+			city.set_tool("road")
+			var on_road: Array[Vector2i] = [pv_pair[0]]
+			check(Game.build_roads(on_road, "asphalt") and not Game.paves.has(pv_pair[0]), "a road over paving takes its place")
+			Game.remove_roads(on_road)
+			check(Game.remove_paves(pv_pair) and Game.paves.is_empty(), "paving removed")
+			for k in 30:
+				for st in city.life.strollers:
+					st.step(0.1)
+			check(city.life.strollers.all(func(st2): return st2.done), "strollers leave when the paving is gone")
 		for u in qh:
 			Game.demolish(u)
 	var deco_line: Array[Vector2i] = [road_tile]

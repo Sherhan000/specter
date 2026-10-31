@@ -105,7 +105,7 @@ static func ui_icon(name: String) -> Texture2D:
 			var alias := {"home": "pop", "factory": "jobs", "hospital": "heart", "school": "mission", "remove": "demolish",
 				"news": "star", "exit": "door", "river": "rain", "wall": "build", "street": "road", "bus": "road", "metro": "road",
 				"hotel": "home", "bike": "speed", "sport": "trophy", "power": "storm", "water": "rain", "tv": "info",
-				"newspaper": "mail", "plane": "globe", "eye": "info"}
+				"newspaper": "mail", "plane": "globe", "eye": "info", "tile": "land"}
 			var nm: String = alias.get(name, name)
 			var i := maxi(0, (_atlas.names as Array).find(nm))
 			var cell: int = _atlas.cell

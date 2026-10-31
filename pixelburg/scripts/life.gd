@@ -47,6 +47,7 @@ var crossings := {}      ## "a:b" sidewalk edge -> [tile, arm (0..3) or 4 for mi
 var persons: Array = []
 var walkers: Array = []  ## Walker nodes outside
 var cyclists: Array = [] ## Cyclist nodes riding around
+var strollers: Array = [] ## Stroller nodes out for a walk on the paving
 var cars: Array = []     ## every Car node (parked or driving)
 var spots := {}          ## parking spot key -> Car (or a reservation)
 var reserve := {}        ## intersection tile -> Array of [car, din, dout]
@@ -1260,6 +1261,9 @@ func _process(delta: float) -> void:
 	for cy in cyclists:
 		if is_instance_valid(cy):
 			cy.step(delta)
+	for st in strollers:
+		if is_instance_valid(st):
+			st.step(delta)
 	_ambient_t -= delta
 	if _ambient_t <= 0.0:
 		_ambient_t = 2.0
@@ -1271,6 +1275,7 @@ func _process(delta: float) -> void:
 	cars = cars.filter(func(c): return is_instance_valid(c))
 	walkers = walkers.filter(func(w): return is_instance_valid(w) and not w.done)
 	cyclists = cyclists.filter(func(cy): return is_instance_valid(cy) and not cy.done)
+	strollers = strollers.filter(func(st): return is_instance_valid(st) and not st.done)
 
 
 func _rebuild_bins() -> void:
@@ -1346,6 +1351,7 @@ func _ambient() -> void:
 				spots[sp[0]] = c
 	_update_buses()
 	_update_cyclists()
+	_update_strollers()
 	_update_garbage_trucks()
 
 
@@ -1428,6 +1434,22 @@ func _update_cyclists() -> void:
 	city.world.add_child(cy)
 	cy.start(path)
 	cyclists.append(cy)
+
+
+## People stroll on the paving and footpaths in the daytime: one for every four paved tiles, up to 24.
+func _update_strollers() -> void:
+	var want := mini(24, Game.paves.size() / 4 + 1) if Game.paves.size() >= 2 else 0
+	if Game.phase == "night" or Game.weather in ["rain", "storm", "snow"]:
+		want = 0
+	if strollers.size() >= want:
+		return
+	var from: Vector2i = Game.paves.keys().pick_random()
+	if not ARM_DIRS.any(func(d): return Game.paves.has(from + d)):
+		return
+	var st := Stroller.new()
+	city.world.add_child(st)
+	st.start(from)
+	strollers.append(st)
 
 
 ## A city bus reached its stop: wait a little, then drive on to the next stop.

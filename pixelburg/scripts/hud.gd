@@ -644,8 +644,8 @@ func _build_mode_bar() -> void:
 	tool_tabs = HBoxContainer.new()
 	tool_tabs.add_theme_constant_override("separation", 4)
 	v.add_child(tool_tabs)
-	for tl in ["road", "water", "wall", "deco"]:
-		var tb := button(Loc.t("tool_" + tl), {"road": "road", "water": "river", "wall": "wall", "deco": "street"}[tl], "orange",
+	for tl in ["road", "water", "wall", "deco", "pave"]:
+		var tb := button(Loc.t("tool_" + tl), {"road": "road", "water": "river", "wall": "wall", "deco": "street", "pave": "tile"}[tl], "orange",
 			func(): city.set_tool(tl))
 		tb.set_meta("tool", tl)
 		tb.add_theme_font_size_override("font_size", 11)
@@ -779,6 +779,8 @@ func _tool_options(tl: String) -> Array:
 			return Data.WALL_ORDER + ["remove"]
 		"deco":
 			return Data.ROAD_DECO_ORDER + ["none"]
+		"pave":
+			return Data.PAVE_ORDER + ["remove"]
 	return Data.ROAD_ORDER + ["remove"]
 
 
@@ -790,6 +792,8 @@ func _tool_label(tl: String, t: String) -> String:
 			return "%s %d" % [Loc.pick(Data.WALLS[t].name), Data.WALLS[t].cost] if t != "remove" else Loc.t("wall_remove")
 		"deco":
 			return "%s %d" % [Loc.pick(Data.ROAD_DECO[t].name), Data.ROAD_DECO[t].cost] if t != "none" else Loc.t("deco_remove")
+		"pave":
+			return "%s %d" % [Loc.pick(Data.PAVES[t].name), Data.PAVES[t].cost] if t != "remove" else Loc.t("pave_remove")
 	return "%s %d" % [Loc.pick(Data.ROADS[t].name), Data.ROADS[t].cost] if t != "remove" else Loc.t("road_remove")
 
 

@@ -166,11 +166,75 @@ vec3 bricks(vec2 g) {
 	return mix(c, vec3(0.7, 0.66, 0.6), joint * 0.7);
 }
 
+// ------------------------------------------------------------------ paving on the grass
+float joints(vec2 fr, float w) {
+	return 1.0 - smoothstep(0.0, w, min(min(fr.x, 1.0 - fr.x), min(fr.y, 1.0 - fr.y)));
+}
+
+// type: 12 grey slabs, 13 terracotta tiles, 14 patterned tiles, 15 footpath. arms: sides joined to the same paving.
+vec4 pave(vec2 g, vec2 f, int type, int arms, vec3 ground) {
+	if (type == 15) {
+		// footpath: small pale pavers between edging stones, a round patch when nothing joins it
+		vec3 m;
+		float dc = carriage(f, arms, 0.065, m);
+		if (dc > 0.012) return vec4(0.0);
+		// warm pavers in running bond, half a metre
+		vec2 pb = g * vec2(14.0, 28.0);
+		pb.x += mod(floor(pb.y), 2.0) * 0.5;
+		vec3 c = mix(vec3(0.8, 0.72, 0.6), vec3(0.88, 0.8, 0.66), hash(floor(pb) + 5.0));
+		c = mix(c, vec3(0.72, 0.6, 0.5), step(0.85, hash(floor(pb) + 9.0)) * 0.6);
+		c = mix(c, vec3(0.6, 0.56, 0.5), joints(fract(pb), 0.1) * 0.6);
+		c = mix(c, CURB * 0.8, smoothstep(-0.02, -0.012, dc));
+		// a soft worn shadow on the grass along the edge
+		vec3 sh = mix(ground * 0.82, c, 1.0 - smoothstep(0.0, 0.004, dc));
+		return vec4(sh, 1.0 - smoothstep(0.004, 0.012, dc));
+	}
+	vec3 c;
+	if (type == 12) {
+		vec2 sl = g * 6.0;
+		c = tex_g(5.0, g, 0.5) * vec3(0.93, 0.94, 0.96);
+		c *= 0.93 + hash(floor(sl) + 3.0) * 0.1;
+		c *= 1.0 - joints(fract(sl), 0.05) * 0.2;
+	} else if (type == 13) {
+		vec2 sl = g * 8.0;
+		vec2 cell = floor(sl);
+		float h = hash(cell + 11.0);
+		c = mix(vec3(0.66, 0.36, 0.26), vec3(0.78, 0.47, 0.32), h);
+		c = mix(c, c * 0.86, mod(cell.x + cell.y, 2.0) * 0.4);
+		c = mix(c, vec3(0.8, 0.74, 0.66), joints(fract(sl), 0.07) * 0.8);
+	} else {
+		// glazed tiles: cream squares with a blue diamond and a red dot in the middle
+		vec2 sl = g * 4.0;
+		vec2 q = fract(sl) - 0.5;
+		c = vec3(0.9, 0.86, 0.76) * (0.96 + hash(floor(sl)) * 0.06);
+		float dia = abs(q.x) + abs(q.y);
+		c = mix(c, vec3(0.24, 0.44, 0.7), 1.0 - smoothstep(0.36, 0.39, dia));
+		c = mix(c, vec3(0.9, 0.86, 0.76), 1.0 - smoothstep(0.22, 0.25, dia));
+		c = mix(c, vec3(0.74, 0.3, 0.24), 1.0 - smoothstep(0.08, 0.1, dia));
+		c = mix(c, vec3(0.96, 0.94, 0.9), joints(fract(sl), 0.04) * 0.7);
+	}
+	// a curb on the sides that do not join the same paving, a little shade just inside it
+	float e = 1.0;
+	if ((arms & 1) == 0) e = min(e, f.y);
+	if ((arms & 2) == 0) e = min(e, 1.0 - f.x);
+	if ((arms & 4) == 0) e = min(e, 1.0 - f.y);
+	if ((arms & 8) == 0) e = min(e, f.x);
+	if (type == 14) {
+		// a blue band along the border of a tiled area
+		float band = step(0.05, e) * (1.0 - step(0.09, e));
+		c = mix(c, vec3(0.2, 0.36, 0.6), band * 0.9);
+	}
+	c *= 1.0 - (1.0 - smoothstep(0.03, 0.06, e)) * 0.12;
+	c = mix(c, CURB, 1.0 - smoothstep(0.024, 0.03, e));
+	return vec4(c, 1.0);
+}
+
 // returns colour + coverage. type: 1 dirt, 2 asphalt, 3 stone, 4 highway, 5 country, 6 town street, 7 boulevard,
-// 8 avenue (wide, four lanes), 9 brick street, 10 street with bus lanes, 11 street with bike lanes
+// 8 avenue (wide, four lanes), 9 brick street, 10 street with bus lanes, 11 street with bike lanes, 12..15 paving (pave())
 vec4 road(vec2 g, vec2 f, ivec4 d, vec3 ground) {
 	int type = d.r;
 	int arms = d.g & 15;
+	if (type >= 12) return pave(g, f, type, arms, ground);
 	bool park = (d.g & 16) != 0;
 	bool cut0 = (d.g & 32) != 0;
 	bool cut1 = (d.g & 64) != 0;

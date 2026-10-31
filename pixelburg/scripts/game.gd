@@ -12,6 +12,7 @@ signal lights_changed
 signal lamps_changed
 signal water_changed
 signal walls_changed
+signal paves_changed
 signal land_changed
 signal trees_changed
 signal level_up(level: int)
@@ -54,6 +55,7 @@ var water_body := {}         ## Vector2i -> 1 river, 2 sea, 3 ocean (by the size
 var walls := {}              ## Vector2i -> wall type (Data.WALLS)
 var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes joined by walls into one quarter
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
+var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
 var settings := {"sound": true, "music": true, "lang": "", "ui_scale": 1.0}
@@ -195,7 +197,7 @@ func is_owned(c: Vector2i) -> bool:
 
 
 func tree_at(c: Vector2i) -> String:
-	if cleared_trees.has(c) or occ.has(c) or roads.has(c) or water.has(c) or walls.has(c):
+	if cleared_trees.has(c) or occ.has(c) or roads.has(c) or water.has(c) or walls.has(c) or paves.has(c):
 		return ""
 	return natural_trees.get(c, "")
 
@@ -279,6 +281,7 @@ func new_game() -> void:
 	water_body = {}
 	walls = {}
 	road_deco = {}
+	paves = {}
 	claimed = []
 	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -347,9 +350,14 @@ func _add_building(id: String, x: int, y: int, built: bool, lvl := 1, rot := -1)
 func _occupy(uid: int) -> void:
 	var b: Dictionary = buildings[uid]
 	var n: int = Data.B[b.id].size
+	var paved := false
 	for dy in n:
 		for dx in n:
 			occ[Vector2i(b.x + dx, b.y + dy)] = uid
+			if paves.erase(Vector2i(b.x + dx, b.y + dy)):
+				paved = true
+	if paved:
+		paves_changed.emit()
 
 
 func _vacate(uid: int) -> void:
@@ -378,6 +386,7 @@ func to_dict() -> Dictionary:
 		"cleared": cleared_trees.keys().map(func(v): return [v.x, v.y]),
 		"water": water.keys().map(func(v): return [v.x, v.y]),
 		"walls": walls.keys().map(func(v): return [v.x, v.y, walls[v]]),
+		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
@@ -469,6 +478,10 @@ func from_dict(p: Dictionary) -> bool:
 	for v in p.get("walls", []):
 		if Data.WALLS.has(str(v[2])):
 			walls[_v2(v)] = str(v[2])
+	paves = {}
+	for v in p.get("paves", []):
+		if Data.PAVES.has(str(v[2])):
+			paves[_v2(v)] = str(v[2])
 	road_deco = {}
 	for v in p.get("road_deco", []):
 		if Data.ROAD_DECO.has(str(v[2])):
@@ -729,6 +742,7 @@ func daily_upkeep() -> int:
 		total += Data.stat(b.id, "upkeep", b.lvl) * (0.3 if b.closed else 1.0)
 	total += lamps.size() * 0.5 + lights.size() * 2.0 + rings.size() * Data.RING_UPKEEP
 	total += house_lamp_count() * Data.HOUSE_LAMP_UPKEEP
+	total += paves.size() * Data.PAVE_UPKEEP
 	return int(round(total))
 
 
@@ -1068,6 +1082,10 @@ func recalc() -> void:
 		if sd > 0:
 			h += sd
 			reasons.append(["r_street_deco", sd])
+		var pv := _pave_near(b.x, b.y, n)
+		if pv > 0:
+			h += pv
+			reasons.append(["r_pave", pv])
 		var wv := _water_view(b.x, b.y, n)
 		if wv > 0:
 			h += wv
@@ -1259,6 +1277,16 @@ func _street_deco_near(x: int, y: int, n: int) -> int:
 			if road_deco.has(c):
 				best = maxi(best, int(Data.ROAD_DECO[road_deco[c]].happy))
 	return best
+
+
+## Paving right next to a building: the best "happy" of it, up to PAVE_HAPPY_MAX.
+func _pave_near(x: int, y: int, n: int) -> int:
+	var best := 0
+	for i in n:
+		for c in [Vector2i(x + i, y - 1), Vector2i(x + i, y + n), Vector2i(x - 1, y + i), Vector2i(x + n, y + i)]:
+			if paves.has(c):
+				best = maxi(best, int(Data.PAVES[paves[c]].happy))
+	return mini(best, Data.PAVE_HAPPY_MAX)
 
 
 ## Homes by the water are happier: +3 by a river, +5 by a sea, +7 by an ocean (within 2 tiles).
@@ -1843,8 +1871,13 @@ func build_roads(tiles: Array[Vector2i], type: String) -> bool:
 		return false
 	if not pay(road_cost(tiles, type), 0, "roads"):
 		return false
+	var paved := false
 	for t in tiles:
 		roads[t] = type
+		if paves.erase(t):
+			paved = true
+	if paved:
+		paves_changed.emit()
 	add_xp(tiles.size())
 	_rebuild_net()
 	recalc()
@@ -1892,7 +1925,7 @@ func remove_road(c: Vector2i) -> void:
 func water_tiles(tiles: Array[Vector2i]) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	for t in tiles:
-		if is_owned(t) and not occ.has(t) and not walls.has(t) and not water.has(t) and not out.has(t):
+		if is_owned(t) and not occ.has(t) and not walls.has(t) and not water.has(t) and not paves.has(t) and not out.has(t):
 			out.append(t)
 	return out
 
@@ -1958,7 +1991,7 @@ func water_kind(c: Vector2i) -> int:
 func wall_tiles(tiles: Array[Vector2i], type: String) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
 	for t in tiles:
-		if is_owned(t) and not occ.has(t) and not roads.has(t) and not water.has(t) and walls.get(t, "") != type:
+		if is_owned(t) and not occ.has(t) and not roads.has(t) and not water.has(t) and not paves.has(t) and walls.get(t, "") != type:
 			out.append(t)
 	return out
 
@@ -2064,6 +2097,45 @@ func decorate_roads(tiles: Array[Vector2i], type: String) -> bool:
 	sfx("place")
 	save_game()
 	return true
+
+
+## Tiles a stroke of the paving brush can pave: owned grass without buildings, roads, water or walls.
+func pave_tiles(tiles: Array[Vector2i], type: String) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for t in tiles:
+		if is_owned(t) and not occ.has(t) and not roads.has(t) and not water.has(t) and not walls.has(t) \
+				and paves.get(t, "") != type and not out.has(t):
+			out.append(t)
+	return out
+
+
+func build_paves(tiles: Array[Vector2i], type: String) -> bool:
+	var ok := pave_tiles(tiles, type)
+	if ok.is_empty() or not pay(ok.size() * int(Data.PAVES[type].cost), 0, "roads"):
+		return false
+	for t in ok:
+		paves[t] = type
+	add_xp(ok.size())
+	recalc()
+	paves_changed.emit()
+	trees_changed.emit()
+	sfx("road")
+	save_game()
+	return true
+
+
+func remove_paves(tiles: Array[Vector2i]) -> bool:
+	var any := false
+	for t in tiles:
+		if paves.erase(t):
+			any = true
+	if any:
+		recalc()
+		paves_changed.emit()
+		trees_changed.emit()
+		sfx("demolish")
+		save_game()
+	return any
 
 
 ## Player roads along the same L-shaped path the road tool uses.

@@ -43,8 +43,9 @@ var place_id := ""
 var place_rot := 0
 var rot_auto := true
 var road_type := "asphalt"
-var tool := "road"           ## what the road mode paints: road | water | wall | deco
-var tool_types := {"road": "asphalt", "water": "dig", "wall": "stone", "deco": "railing"}
+var tool := "road"           ## what the road mode paints: road | water | wall | deco | pave
+var tool_types := {"road": "asphalt", "water": "dig", "wall": "stone", "deco": "railing", "pave": "slabs"}
+const BRUSHES := ["water", "pave"]   ## tools that paint every tile the finger passes over
 var stroke: Array[Vector2i] = []   ## tiles under the finger while digging water
 var _stroke_last := Vector2i(-1, -1)
 var lamp_style := "classic"
@@ -129,6 +130,7 @@ func _ready() -> void:
 	add_child(street_props)
 	street_props.refresh()
 	Game.water_changed.connect(_on_water_changed)
+	Game.paves_changed.connect(func(): ground.update_roads(Game.net))
 	Game.walls_changed.connect(street_props.refresh)
 	for sig in [Game.building_added, Game.building_removed, Game.building_moved]:
 		sig.connect(street_props.refresh_soon)
@@ -646,7 +648,7 @@ func _drag(p: Vector2, rel: Vector2) -> void:
 	if _drag_ghost:
 		_set_ghost_tile(_tile_for_size(tile, _ghost_size()))
 		return
-	if _drawing_road and tool == "water":
+	if _drawing_road and tool in BRUSHES:
 		_brush(Iso.to_tile(screen_to_world(_press_pos)))
 		_brush(tile)
 		hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
@@ -705,14 +707,21 @@ func _road_path(a: Vector2i, b: Vector2i) -> Array[Vector2i]:
 	return Game.road_path(a, b, road_type)
 
 
-## Water brush: every tile the finger passes over joins the stroke.
+## Water and paving brush: every tile the finger passes over joins the stroke.
 func _brush(tile: Vector2i) -> void:
-	var line: Array[Vector2i] = [tile] if _stroke_last == Vector2i(-1, -1) else Game._straight_path(_stroke_last, tile)
+	var line: Array[Vector2i] = [tile]
+	if _stroke_last != Vector2i(-1, -1):
+		line = Game._straight_path(_stroke_last, tile)
 	_stroke_last = tile
 	for t in line:
 		if not stroke.has(t):
 			stroke.append(t)
-	if road_type == "fill":
+	if tool == "pave":
+		if road_type == "remove":
+			_set_road_preview(_tiles(stroke.filter(func(t): return Game.paves.has(t))))
+		else:
+			_set_road_preview(Game.pave_tiles(stroke, road_type))
+	elif road_type == "fill":
 		_set_road_preview(_tiles(stroke.filter(func(t): return Game.water.has(t))))
 	else:
 		_set_road_preview(Game.water_tiles(stroke))
@@ -782,7 +791,7 @@ func _tap(screen_p: Vector2) -> void:
 				confirm_mode()
 			else:
 				_set_ghost_tile(_tile_for_size(tile, _ghost_size()))
-		Mode.ROAD when tool == "water":
+		Mode.ROAD when tool in BRUSHES:
 			_stroke_last = Vector2i(-1, -1)
 			_brush(tile)
 			hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
@@ -1053,7 +1062,7 @@ func start_link(uid: int) -> void:
 
 func set_road_type(t: String) -> void:
 	road_type = t
-	if tool == "water":
+	if tool in BRUSHES:
 		_stroke_last = Vector2i(-1, -1)
 		var keep := stroke.duplicate()
 		stroke.clear()
@@ -1117,6 +1126,10 @@ func confirm_mode() -> void:
 					_stroke_last = Vector2i(-1, -1)
 				"wall":
 					ok = Game.remove_walls(road_tiles) if road_type == "remove" else Game.build_walls(road_tiles, road_type)
+				"pave":
+					ok = Game.remove_paves(road_tiles) if road_type == "remove" else Game.build_paves(road_tiles, road_type)
+					stroke.clear()
+					_stroke_last = Vector2i(-1, -1)
 				"deco":
 					ok = Game.decorate_roads(road_tiles, road_type)
 				_:
@@ -1218,10 +1231,10 @@ func _set_road_preview(tiles: Array[Vector2i]) -> void:
 func _road_cost_text() -> String:
 	if tool != "road":
 		if road_tiles.is_empty():
-			return Loc.t({"water": "hint_water", "wall": "hint_wall", "deco": "hint_deco"}[tool])
+			return Loc.t({"water": "hint_water", "wall": "hint_wall", "deco": "hint_deco", "pave": "hint_pave"}[tool])
 		if _removing():
 			return "%d" % road_tiles.size()
-		var each := Data.WATER_COST if tool == "water" else int((Data.WALLS if tool == "wall" else Data.ROAD_DECO)[road_type].cost)
+		var each := Data.WATER_COST if tool == "water" else int({"wall": Data.WALLS, "pave": Data.PAVES}.get(tool, Data.ROAD_DECO)[road_type].cost)
 		return Loc.t("paint_cost") % [road_tiles.size(), Loc.num(each * road_tiles.size())]
 	if road_tiles.is_empty():
 		if road_type == "remove":
