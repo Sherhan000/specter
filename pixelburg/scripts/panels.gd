@@ -4,10 +4,12 @@ extends RefCounted
 ## building details, game over.
 
 var hud
+var cit: CitizenPanels
 
 
 func _init(p_hud) -> void:
 	hud = p_hud
+	cit = CitizenPanels.new(p_hud)
 
 
 func _vbox(sep := 6) -> VBoxContainer:
@@ -300,7 +302,7 @@ func city_info() -> void:
 		for m in Game.mood:
 			_row(v, "", Loc.t("mood_" + str(m.why)), ("+" if int(m.v) > 0 else "") + str(int(m.v)),
 				Color("2a7a2a") if int(m.v) > 0 else Color("b83a2a"))
-	hud.popup(Loc.t("city"), "", [[Loc.t("laws"), "purple", laws], [Loc.t("close"), "blue", Callable()]], v)
+	hud.popup(Loc.t("city"), "", [[Loc.t("laws"), "purple", laws], [Loc.pick(["Жители", "Residents"]), "green", cit.analytics], [Loc.t("close"), "blue", Callable()]], v)
 
 
 ## Laws: pass one from the ready list or repeal a passed one.

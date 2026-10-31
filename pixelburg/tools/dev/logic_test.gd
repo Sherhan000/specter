@@ -1510,6 +1510,45 @@ func _ready() -> void:
 		check(Assets.tex("buildings/%s_1_0" % nl_id) != null, "night building %s has art" % nl_id)
 	check(FireworksFx.active(6, 21) and FireworksFx.active(7, 22) and not FireworksFx.active(3, 21) and not FireworksFx.active(6, 12), "fireworks only on weekend evenings")
 
+	# ------------------------------------------------ citizens: careers, economy, health
+	var cz_keep := [Game.cz.to_dict().duplicate(true), Game.coins, Game.day, Game.pop]
+	var cz: Citizens = Game.cz
+	cz.reset()
+	check(Citizens.prof_for_building("it_run") == "it" and Citizens.prof_for_building("hospital") == "doctor" and Citizens.prof_for_building("farm") == "farmer", "professions by building")
+	cz.list = [cz._make(30, 1), cz._make(70, 1), cz._make(10, 1)]
+	check(cz.age_group(cz.list[0]) == "adult" and cz.age_group(cz.list[1]) == "retired" and cz.age_group(cz.list[2]) == "student", "age groups")
+	var cz_a: Dictionary = cz.list[0]
+	cz_a.job = "teacher"
+	cz_a.edu = 1
+	var w0 := cz.wage_of(cz_a)
+	cz_a.rank = 2
+	check(w0 > 0 and cz.wage_of(cz_a) > w0, "wage grows with career rank")
+	cz_a.edu = 2
+	check(cz.wage_of(cz_a) > w0, "education raises the wage")
+	cz.set_price("power", 1)
+	check(float(cz.prices.power) == 1.25, "price step up")
+	var cz_d := cz.to_dict().duplicate(true)
+	var cz2 := Citizens.new()
+	cz2.from_dict(cz_d)
+	check(cz2.list.size() == 3 and float(cz2.prices.power) == 1.25, "citizens save and load")
+	cz.reset()
+	# a sample follows the population, and a day passes without errors
+	Game.day = 20
+	cz.on_day()
+	check(cz.list.size() == mini(Game.pop, Citizens.CAP), "sample follows population")
+	var cz_s := cz.summary()
+	check(cz_s.n == cz.list.size(), "summary counts the sample")
+	cz.list[0].age = 90
+	var occ_before := Game.pop
+	cz._die(cz.list[0], "age")
+	check(int(cz.stats.deaths) == 1 and int(cz.stats.causes.age) == 1, "death is counted by cause")
+	Game.recalc()
+	check(Game.pop <= occ_before, "a death does not raise population")
+	cz.from_dict(cz_keep[0])
+	Game.coins = cz_keep[1]
+	Game.day = cz_keep[2]
+	Game.recalc()
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

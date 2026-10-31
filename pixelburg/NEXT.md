@@ -24,6 +24,7 @@
 ## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
 - 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
 - 43 Ночная жизнь: tools/art/b_night.py (nightclub, night_market, karaoke; поле "night" в data.gd → открыты 19–5 ч в life.gd, building_view.neon — цвет свечения плывёт), scripts/fireworks_fx.gd (FireworksFx, city.fireworks; выходные = день %7 in 6,0; 20–23 ч над plaza/fountain/town_hall).
+- 44–46 Жители: scripts/citizens.gd (Citizens, Game.cz, в сохранении "cz"): выборка до 240 жителей (возраст, образование, профессия, ступень, кошелёк, болезнь), масштаб = pop/выборка. on_day() из _end_of_day: найм по профессиям зданий, обучение (школа→edu1, it_run→edu2), зарплата/расходы, коммуналка в казну (ledger "utilities"), болезни (заразность, больница лечит, загрязнение), смерти по причинам (age/illness/poverty/no_hospital/pollution), рождения (роддом ×2). Цены cz.prices (свет/вода/проезд, проезд множит transit_fares). UI: scripts/citizen_panels.gd (Panels.cit): кнопка «Жители» в окне города → analytics/prices/list/card; второй тап по пешеходу — карточка. Баланс-прогон: tools/dev/cz_sim.tscn.
 - Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
 
 ## Пункт 30 (ежедневные награды и достижения)

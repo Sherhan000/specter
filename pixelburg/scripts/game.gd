@@ -41,6 +41,7 @@ var gems := 0
 var goods := 0
 var xp := 0
 var level := 1
+var cz := Citizens.new()   ## sample of residents: careers, wallets, health (citizens.gd)
 var rank := 0   ## best mayor rank reached (index in Data.RANKS)
 var beach: Array = []        ## owned beach segments (0..7, one per plot row)
 var flights: Array = []      ## bought airport routes (Data.COUNTRIES ids)
@@ -297,6 +298,7 @@ func new_game() -> void:
 	protest = _empty_protest()
 	ach = _empty_ach()
 	hol = _empty_hol()
+	cz.reset()
 	disaster = _empty_disaster()
 	claimed = []
 	laws = []
@@ -406,7 +408,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
-		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true),
+		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true), "cz": cz.to_dict(),
 		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
@@ -512,6 +514,7 @@ func from_dict(p: Dictionary) -> bool:
 	protest = _empty_protest()
 	ach = _load_ach(p.get("ach", {}))
 	hol = _load_hol(p.get("hol", {}))
+	cz.from_dict(p.get("cz", {}))
 	var pd: Dictionary = p.get("protest", {})
 	for k in protest:
 		if not pd.has(k):
@@ -752,13 +755,14 @@ func _end_of_day() -> void:
 			var sold := (goods - 400) / 4
 			goods -= sold
 			_earn("export", sold / 2)
-	var fares := transit_fares()
+	var fares := int(transit_fares() * float(cz.prices.fare))
 	if fares > 0:
 		_earn("transit", fares)
 	if deposit > 0:
 		var interest := maxi(1, int(deposit * 0.015))
 		deposit += interest
 		_add_ledger("in", "interest", interest)
+	cz.on_day()
 	# ---- expenses
 	_spend("upkeep", daily_upkeep())
 	_spend("roads", daily_roads())

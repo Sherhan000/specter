@@ -1812,6 +1812,7 @@ class Person extends RefCounted:
 	var driving := false
 	var gone := false
 	var fresh := false
+	var cid := 0             ## linked resident of the sample (Game.cz), set when tapped
 
 
 class Walker extends Node2D:
@@ -1862,6 +1863,9 @@ class Walker extends Node2D:
 
 	func tapped() -> void:
 		Game.sfx("tap")
+		if busy > 0.0 and person != null:
+			life.city.hud.panels.cit.card_for_person(person)   ## a second tap shows the resident's card
+			return
 		busy = 2.4
 		sprite.frame = row * 12 + 8
 		life.speech(self, life.phrase_for(self))

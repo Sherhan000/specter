@@ -225,6 +225,8 @@ const S := {
 	"led_shops": ["Магазины и отдых", "Shops and leisure"],
 	"led_taxes": ["Налог с частного бизнеса", "Private business tax"],
 	"led_tourism": ["Туристы", "Tourism"],
+	"led_utilities": ["Свет, вода и проезд жителей", "Residents' power, water and fares"],
+	"mood_prices": ["Цены на свет, воду и проезд", "Power, water and fare prices"],
 	"led_transit": ["Автобусы и метро", "Buses and metro"],
 	"led_export": ["Экспорт товаров", "Goods export"],
 	"led_interest": ["Проценты по вкладу", "Deposit interest"],
