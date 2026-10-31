@@ -14,10 +14,19 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Ночная серия (пункты 40+ в ROADMAP, делались подряд)
-- 40 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
+## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
+- 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
 - Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
 
+## Пункт 30 (ежедневные награды и достижения)
+- scripts/ach.gd (class Ach): LIST ~50 достижений [id, счётчик, имя, текст с %s, пороги уровней, вес награды], value(key) считает прогресс из Game, check() выдаёт награды за достигнутые уровни.
+  Награда уровня: монеты 250·вес·(t+1)², изумруды = номер уровня (одноуровневые — 1).
+- Game.ach (в сохранении, ключ "ach", SAVE_VERSION не менялся): got, last, streak, best, logins, pending, cycle. daily_roll() — новый реальный день (серия +1, пропуск сбрасывает),
+  daily_claim() — награда дня (7-й день: 5 изумрудов + монеты). check_ach() вызывается каждый час и в конце дня, тост с наградой.
+- UI: panels.daily() (окно 7 дней, открывается при входе, затем «Что нового»), panels.achievements() (кнопка-кубок в боковом ряду). Иконки старые (trophy, calendar).
+- В ROADMAP новые 30 и 31 (праздники); прежние 30–37 сдвинуты на 34–41 (32–33 — другой чат). logic_test: проверки достижений и серии входа.
+
+## Пункт 28 (ранее — митинги)
 ## Сделано (пункт 39 в ROADMAP = «п.33» пользователя — режим фото)
 - Кнопка-фотоаппарат (новая иконка assets/ui/icons/camera.png) в правой колонке HUD → scripts/photo_mode.gd (PhotoMode, создаётся в city.gd как city.photo): HUD скрыт, city.photo_mode блокирует тапы по зданиям,
   камера свободная как обычно (палец/щипок/колесо). Фильтры (шейдер по экрану): как есть, день, закат, ночь, ч/б. Затвор: прячет кнопки, снимает viewport, PNG → Pictures/Pixelburg на Android

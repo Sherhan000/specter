@@ -1312,6 +1312,63 @@ func _ready() -> void:
 	Game.level = pr_keep[4]
 	Game.recalc()
 
+	# ------------------------------------------------ achievements + daily reward (ROADMAP 30)
+	check(Ach.LIST.size() >= 50, "at least 50 achievements")
+	var ach_ids := {}
+	var ach_ok := true
+	for a in Ach.LIST:
+		ach_ids[a[0]] = true
+		var tg: Array = a[4]
+		for i in tg.size():
+			if i > 0 and int(tg[i]) <= int(tg[i - 1]):
+				ach_ok = false
+		if Ach.value(a[1]) < 0 or Loc.pick(a[2]) == "" or Ach.target_text(a, 0) == "":
+			ach_ok = false
+	check(ach_ok and ach_ids.size() == Ach.LIST.size(), "achievement ids are unique and tiers rise")
+	var ach_keep: Dictionary = Game.ach.duplicate(true)
+	var ach_coins := Game.coins
+	var ach_save_lost := Game.lost
+	Game.lost = false
+	Game.ach = Game._empty_ach()
+	Game.day = 12
+	Game.level = 11
+	var ach_got := Ach.check()
+	check(ach_got.size() >= 3 and Ach.tier_of("days") == 1 and Ach.tier_of("level") == 2, "reached tiers are awarded at once")
+	var ach_first := {}
+	for g in ach_got:
+		ach_first["%s:%d" % [g[0][0], g[1]]] = true
+	var ach_again := true
+	for g in Ach.check():
+		if ach_first.has("%s:%d" % [g[0][0], g[1]]):
+			ach_again = false
+	check(Game.coins > ach_coins and ach_again, "the reward is paid once")
+	check(Ach.earned() >= 3 and Ach.earned() <= Ach.total(), "earned count")
+	# daily reward: 7-day cycle, a missed day resets the streak
+	Game.ach = Game._empty_ach()
+	var d0 := 20000
+	check(Game.daily_roll(d0) and int(Game.ach.streak) == 1 and int(Game.ach.cycle) == 0, "first login starts the streak")
+	var ach_c0 := Game.coins
+	var ach_dr := Game.daily_claim()
+	check(int(ach_dr.coins) > 0 and Game.coins == ach_c0 + int(ach_dr.coins) and Game.daily_claim().is_empty(), "day 1 reward, taken once")
+	Game.daily_roll(d0)
+	check(not bool(Game.ach.pending), "same day: no new reward")
+	for k in range(1, 7):
+		Game.daily_roll(d0 + k)
+		Game.daily_claim()
+	check(int(Game.ach.streak) == 7 and int(Game.ach.cycle) == 6, "seven days in a row")
+	check(Ach.daily_reward(6).gems == Ach.DAILY_GEMS and Ach.daily_reward(2).gems == 0, "gems on the 7th day only")
+	var ach_g0 := Game.gems
+	Game.daily_roll(d0 + 7)
+	check(int(Game.ach.cycle) == 0 and int(Game.ach.streak) == 8, "the cycle wraps after day 7")
+	Game.daily_claim()
+	Game.daily_roll(d0 + 10)
+	check(int(Game.ach.streak) == 1 and int(Game.ach.best) == 8 and bool(Game.ach.pending), "a missed day resets the streak")
+	var ach_saved: Dictionary = Game.to_dict().ach
+	check(int(ach_saved.streak) == 1 and Game._load_ach(ach_saved).got.size() == Game.ach.got.size(), "achievements are saved")
+	Game.ach = ach_keep
+	Game.lost = ach_save_lost
+	Game.coins = ach_coins
+	Game.gems = ach_g0
 	# ------------------------------------------------ natural events with a choice
 	var dz_keep := [Game.coins, Game.tutorial, Game.level, Game.pop]
 	Game.coins = 1000000
