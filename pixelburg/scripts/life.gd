@@ -59,6 +59,7 @@ var persons: Array = []
 var walkers: Array = []  ## Walker nodes outside
 var cyclists: Array = [] ## Cyclist nodes riding around
 var strollers: Array = [] ## Stroller nodes out for a walk on the paving
+var protesters: Array = [] ## Protester nodes at a protest (ROADMAP 28)
 var cars: Array = []     ## every Car node (parked or driving)
 var spots := {}          ## parking spot key -> Car (or a reservation)
 var reserve := {}        ## intersection tile -> Array of [car, din, dout]
@@ -84,6 +85,7 @@ func _ready() -> void:
 	roads_changed()
 	Game.hour_passed.connect(func(_h): _dirty = true)
 	Game.plane_landed.connect(_on_plane_landed)
+	Game.protest_changed.connect(protest_changed)
 
 
 # ====================================================================== networks
@@ -1275,10 +1277,14 @@ func _process(delta: float) -> void:
 	for st in strollers:
 		if is_instance_valid(st):
 			st.step(delta)
+	for pr in protesters:
+		if is_instance_valid(pr):
+			pr.step(delta)
 	_ambient_t -= delta
 	if _ambient_t <= 0.0:
 		_ambient_t = 2.0
 		_ambient()
+		_update_protest()
 	_social_t -= delta
 	if _social_t <= 0.0:
 		_social_t = 0.9
@@ -1287,6 +1293,7 @@ func _process(delta: float) -> void:
 	walkers = walkers.filter(func(w): return is_instance_valid(w) and not w.done)
 	cyclists = cyclists.filter(func(cy): return is_instance_valid(cy) and not cy.done)
 	strollers = strollers.filter(func(st): return is_instance_valid(st) and not st.done)
+	protesters = protesters.filter(func(pr): return is_instance_valid(pr) and not pr.done)
 
 
 func _rebuild_bins() -> void:
@@ -1578,6 +1585,82 @@ func heist(uid: int, caught: bool, by_mayor: bool) -> void:
 		cop.vanish()
 
 
+# ====================================================================== protests (ROADMAP 28)
+## Where the crowd stands: in front of the entrance of the protest site. Returns [centre, across, outwards, door].
+func protest_place() -> Array:
+	var site := int(Game.protest.get("site", 0))
+	if not Game.buildings.has(site):
+		return []
+	var door := Game.entry_point(site)
+	var out := Vector2(Game.SIDES[int(Game.buildings[site].get("rot", 0))])
+	return [door + out * 1.1, Vector2(-out.y, out.x), out, door]
+
+
+## People come one by one while the protest goes on (also after loading a game).
+func _update_protest() -> void:
+	if city == null or not Game.protest_active():
+		return
+	var standing := protesters.filter(func(pr): return is_instance_valid(pr) and pr.state in ["come", "stand"])
+	if standing.size() >= Game.protest_crowd():
+		return
+	var pl := protest_place()
+	if pl.is_empty():
+		return
+	var centre: Vector2 = pl[0]
+	var at: Vector2 = centre + pl[1] * randf_range(-1.3, 1.3) + pl[2] * randf_range(-0.2, 0.9)
+	var pr := Protester.new()
+	pr.life = self
+	city.world.add_child(pr)
+	pr.start(_protest_origin(centre), at, pl[3], str(Game.protest.get("cause", "mood")))
+	protesters.append(pr)
+
+
+## A street a few tiles away where a protester comes from (and goes back to).
+func _protest_origin(centre: Vector2) -> Vector2:
+	var near: Array = []
+	for c in Game.net:
+		var dd := Vector2(c).distance_to(centre)
+		if dd >= 3.5 and dd <= 9.0:
+			near.append(c)
+	if near.is_empty():
+		var a := randf() * TAU
+		return centre + Vector2(cos(a), sin(a)) * 6.0
+	var t: Vector2i = near.pick_random()
+	return Vector2(t) + Vector2(randf_range(0.2, 0.8), randf_range(0.2, 0.8))
+
+
+## The protest started, ended (people go home) or was broken up by the police (they run, a patrol arrives).
+func protest_changed(state: String) -> void:
+	if city == null:
+		return
+	if state == "start":
+		for i in 3:
+			_update_protest()
+		return
+	for pr in protesters:
+		if not is_instance_valid(pr):
+			continue
+		var to := _protest_origin(pr.g)
+		if state == "force":
+			pr.run_away(to)
+		else:
+			pr.leave(to)
+	if state == "force":
+		var pl := protest_place()
+		var st := Game.service_building("police")
+		if pl.is_empty() or st == 0:
+			return
+		var site := int(Game.protest.get("site", 0))
+		var path := car_path(Game.entrance_tile(st), Game.entrance_tile(site))
+		if path.size() >= 2:
+			var cop := _make_car("police")
+			cop.siren = true
+			cop.role = "service"
+			cop.station = st
+			cop.vmax_k = 1.5
+			cop.start_route(path, null)
+
+
 # ====================================================================== interactions
 func _social() -> void:
 	var view: Rect2 = city.view_rect()
@@ -1601,7 +1684,7 @@ func _social() -> void:
 func pick(wp: Vector2) -> Variant:
 	var best: Variant = null
 	var best_d := 26.0
-	for list in [walkers, cars]:
+	for list in [walkers, cars, protesters]:
 		for m in list:
 			if not is_instance_valid(m) or not m.visible:
 				continue

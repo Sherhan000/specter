@@ -139,6 +139,12 @@ func _apply(act: String, m: Dictionary) -> void:
 			pass
 		"bail":
 			Game.pay_bail()
+		"pr_talk":
+			Game.protest_talk()
+		"pr_force":
+			Game.protest_force()
+		"pr_wait":
+			Game.add_rep(-1)
 		# ---------------- violations
 		"fine":
 			Game.earn_event("fines", int(m.fine))
@@ -453,6 +459,48 @@ func mayor_jailed(fine: int) -> void:
 		 "{Title}, the cameras and witnesses show it was you who robbed the bank. Court: %d h of prison and a %d coin fine. While you're inside you can't build, taxes and tourism are halved and the city is outraged." % [Data.JAIL_HOURS, fine]],
 		[[["Отсидеть", "Serve the time"], "ok"], [["Залог (%d гемов)" % Data.JAIL_BAIL_GEMS, "Bail (%d gems)" % Data.JAIL_BAIL_GEMS], "bail"]])
 	m.expires = Game.abs_hour() + Data.JAIL_HOURS
+
+
+## Residents protest in front of the town hall: what they want and how the mayor can answer.
+const PROTEST_DEMANDS := {
+	"rob": ["«Мэр-вор — в отставку!» Люди требуют честности: мэр грабил банк, а платит город.",
+		"\"Thief mayor, resign!\" People demand honesty: the mayor robbed a bank and the city pays for it."],
+	"tax": ["«Налоги грабят семьи!» Жители требуют снизить налог до честного (сейчас %d%%).",
+		"\"Taxes rob our families!\" Residents demand a fair tax (it's %d%% now)."],
+	"demolish": ["«Не трогайте наши дома!» Людей выселяют и сносят их дома без спроса.",
+		"\"Hands off our homes!\" People are evicted and their homes torn down without asking."],
+	"mood": ["«Нам плохо живётся!» Жители недовольны жизнью в городе и хотят, чтобы их услышали.",
+		"\"Life here is hard!\" Residents are unhappy with the city and want to be heard."],
+	"rules": ["«Мэр нарушает правила города!» Нет нужных служб, мусор, дым — люди требуют порядка.",
+		"\"The mayor breaks the city's rules!\" Missing services, garbage, smoke: people demand order."],
+}
+
+
+func protest_started(cause: String, site: int) -> void:
+	var dem: Array = PROTEST_DEMANDS.get(cause, PROTEST_DEMANDS.mood)
+	var ru := str(dem[0])
+	var en := str(dem[1])
+	if cause == "tax":
+		ru = ru % Game.tax
+		en = en % Game.tax
+	var cost := Game.protest_talk_cost()
+	var place: Array = Data.B[Game.buildings[site].id].name if Game.buildings.has(site) else ["ратуша", "town hall"]
+	var opts := [[["Выслушать (%d)" % cost, "Hear them (%d)" % cost], "pr_talk"]]
+	if Game.police_count() > 0:
+		opts.append([["Разогнать полицией", "Send the police"], "pr_force"])
+	opts.append([["Пусть стоят", "Let them be"], "pr_wait"])
+	var m := post("protest", "alina", ["Митинг!", "Protest!"],
+		["{Title}, у здания «%s» собрались жители с плакатами. %s Выслушать людей — дорого, но они успокоятся. Разогнать — быстро, но доверие упадёт и злость вырастет." % [place[0], ru],
+		 "{Title}, residents with placards have gathered at the %s. %s Hearing them costs money but calms them down. Breaking it up is quick, but trust falls and anger grows." % [place[1], en]],
+		opts, {"uid": site})
+	m.expires = Game.abs_hour() + Data.PROTEST_HOURS
+
+
+func protest_over() -> void:
+	post("protest", "alina", ["Митинг закончился", "The protest is over"],
+		["Люди разошлись, так ничего и не добившись. Злость осталась — если ничего не менять, они выйдут снова.",
+		 "People went home with nothing. The anger is still there: if nothing changes, they will be back."],
+		[[["Понятно", "Understood"], "ok"]])
 
 
 func start_fire(uid := 0) -> void:

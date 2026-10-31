@@ -27,6 +27,7 @@ signal animals_changed
 signal game_over
 signal plane_landed(country: String, pax: int)
 signal heist(uid: int, caught: bool, by_mayor: bool)   ## a bank was robbed (life: people run, police chase)
+signal protest_changed(state: String)   ## "start", "end" (people go home) or "force" (the police disperse them)
 
 const SAVE_PATH := "user://city.json"
 const SAVE_VERSION := 4
@@ -58,6 +59,7 @@ var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes jo
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
 var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"owner": name, "day": founded}
 var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
+var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -287,6 +289,7 @@ func new_game() -> void:
 	paves = {}
 	brands = {}
 	crime = _empty_crime()
+	protest = _empty_protest()
 	claimed = []
 	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -394,6 +397,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
+		"protest": protest.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
@@ -495,6 +499,21 @@ func from_dict(p: Dictionary) -> bool:
 	for k in crime:
 		if cd.has(k):
 			crime[k] = bool(cd[k]) if crime[k] is bool else int(cd[k])
+	protest = _empty_protest()
+	var pd: Dictionary = p.get("protest", {})
+	for k in protest:
+		if not pd.has(k):
+			continue
+		if protest[k] is Dictionary:
+			for c in pd[k]:
+				if str(c) in Data.PROTEST_CAUSES:
+					protest[k][str(c)] = float(pd[k][c])
+		elif protest[k] is float:
+			protest[k] = float(pd[k])
+		elif protest[k] is String:
+			protest[k] = str(pd[k])
+		else:
+			protest[k] = int(pd[k])
 	paves = {}
 	for v in p.get("paves", []):
 		if Data.PAVES.has(str(v[2])):
@@ -663,6 +682,7 @@ func _on_hour() -> void:
 	_update_garbage()
 	_update_airport()
 	_update_probe()
+	_update_protest()
 	if now >= weather_until:
 		_pick_weather()
 	recalc()
@@ -1646,6 +1666,7 @@ func mayor_rob(uid: int, roll := -1.0) -> int:
 	crime.cd = abs_hour() + Data.MAYOR_ROB_COOLDOWN
 	_earn("heist", loot)
 	add_mood(-3, 24, "crime")
+	add_anger("rob", Data.ANGER_ROB)
 	heist.emit(uid, false, true)
 	sfx("coin")
 	changed.emit()
@@ -1672,6 +1693,7 @@ func go_to_jail() -> void:
 	_spend("fines", fine)
 	add_rep(-Data.JAIL_REP)
 	add_mood(Data.JAIL_MOOD, Data.JAIL_HOURS, "mayor_jail")
+	add_anger("rob", Data.ANGER_JAIL)
 	Events.mayor_jailed(fine)
 	changed.emit()
 	save_game()
@@ -1688,6 +1710,166 @@ func pay_bail() -> bool:
 	changed.emit()
 	save_game()
 	return true
+
+
+# ====================================================================== protests (ROADMAP 28)
+func _empty_protest() -> Dictionary:
+	## anger: 0..PROTEST_MAX; why: cause -> share of the anger; until: hour the protest ends (0 = none);
+	## cause: what people protest about; site: the building they gather at; cd: no new protest before this hour;
+	## count: protests so far; talks/forced: how many were answered by talking / dispersed by the police.
+	var why := {}
+	for c in Data.PROTEST_CAUSES:
+		why[c] = 0.0
+	return {"anger": 0.0, "why": why, "until": 0, "cause": "", "site": 0, "cd": 0, "count": 0, "talks": 0, "forced": 0}
+
+
+## Something unfair happened: the residents get angrier (cause: Data.PROTEST_CAUSES).
+func add_anger(cause: String, v: float) -> void:
+	if protest.is_empty():
+		protest = _empty_protest()
+	protest.anger = clampf(float(protest.anger) + v, 0.0, Data.PROTEST_MAX)
+	protest.why[cause] = float(protest.why.get(cause, 0.0)) + v
+
+
+func anger() -> float:
+	return float(protest.get("anger", 0.0))
+
+
+func protest_active() -> bool:
+	return int(protest.get("until", 0)) > abs_hour()
+
+
+## The main grievance: the cause behind most of the anger.
+func protest_cause() -> String:
+	var best := "mood"
+	var top := 0.0
+	for c in protest.why:
+		if float(protest.why[c]) > top:
+			top = float(protest.why[c])
+			best = str(c)
+	return best
+
+
+## Where people gather: the town hall, else a square or park, else the busiest public building.
+func protest_site() -> int:
+	for kinds in [["town_hall"], ["plaza", "park", "fountain", "statue"], ["court", "school", "police", "post_office"]]:
+		for uid in buildings:
+			if buildings[uid].id in kinds and buildings[uid].built:
+				return uid
+	for uid in buildings:
+		if buildings[uid].built and Data.B[buildings[uid].id].cat == "service":
+			return uid
+	return 0
+
+
+func protest_talk_cost() -> int:
+	return int(Data.PROTEST_TALK_COST * (1.0 + level / 10.0))
+
+
+## Hourly: unfair taxes, low happiness and broken rules add anger, time softens it; high anger starts a protest.
+func _update_protest() -> void:
+	if protest.is_empty():
+		protest = _empty_protest()
+	var now := abs_hour()
+	if tax > Data.ANGER_TAX_FAIR:
+		add_anger("tax", (tax - Data.ANGER_TAX_FAIR) * Data.ANGER_TAX)
+	if pop > 0 and happy < Data.ANGER_UNHAPPY_AT:
+		add_anger("mood", Data.ANGER_UNHAPPY)
+	var br := broken_rules()
+	if br > 0:
+		add_anger("rules", br * Data.ANGER_RULES)
+	if int(protest.until) > 0 and now >= int(protest.until):
+		_end_protest(false)
+		return
+	if protest_active():
+		return
+	protest.anger = maxf(0.0, float(protest.anger) - Data.PROTEST_DECAY)
+	var total := 0.0
+	for c in protest.why:
+		total += float(protest.why[c])
+	if total > 0.0:
+		var k := float(protest.anger) / total
+		for c in protest.why:
+			protest.why[c] = float(protest.why[c]) * k
+	if float(protest.anger) >= Data.PROTEST_AT and pop >= Data.PROTEST_MIN_POP and now >= int(protest.cd) and not lost and tutorial >= 99:
+		start_protest()
+
+
+## People take to the streets.
+func start_protest() -> bool:
+	var site := protest_site()
+	if site == 0 or protest_active():
+		return false
+	protest.site = site
+	protest.cause = protest_cause()
+	protest.until = abs_hour() + Data.PROTEST_HOURS
+	protest.count = int(protest.count) + 1
+	add_rep(-Data.PROTEST_REP)
+	add_mood(Data.PROTEST_MOOD, Data.PROTEST_HOURS, "protest")
+	Events.protest_started(str(protest.cause), site)
+	protest_changed.emit("start")
+	changed.emit()
+	return true
+
+
+## How many people come out: grows with anger and the city.
+func protest_crowd() -> int:
+	return clampi(int(4 + anger() / 10.0 + pop / 120), 4, Data.PROTEST_CROWD)
+
+
+## The mayor meets the people: pays for their demand (taxes go back to normal), the anger goes away.
+func protest_talk() -> bool:
+	if not protest_active():
+		return false
+	if not pay(protest_talk_cost(), 0, "events"):
+		return false
+	if str(protest.cause) == "tax" and tax > Data.ANGER_TAX_FAIR:
+		set_tax(Data.TAX_DEFAULT)
+	protest.talks = int(protest.talks) + 1
+	add_rep(Data.PROTEST_TALK_REP)
+	mood = mood.filter(func(m): return str(m.why) != "protest")
+	add_mood(Data.PROTEST_TALK_MOOD, 24, "protest_heard")
+	protest.anger = 0.0
+	for c in protest.why:
+		protest.why[c] = 0.0
+	_end_protest(true)
+	toast.emit(Loc.t("pr_talk_done"))
+	return true
+
+
+## The police break up the protest: it ends now, but people get angrier and trust the mayor less.
+func protest_force() -> bool:
+	if not protest_active():
+		return false
+	if police_count() == 0:
+		toast.emit(Loc.t("pr_no_police"))
+		return false
+	protest.forced = int(protest.forced) + 1
+	add_rep(-Data.PROTEST_FORCE_REP)
+	add_mood(Data.PROTEST_FORCE_MOOD, 48, "protest_force")
+	protest.until = 0
+	protest.cd = abs_hour() + Data.PROTEST_COOLDOWN
+	mood = mood.filter(func(m): return str(m.why) != "protest")
+	add_anger(str(protest.cause), Data.PROTEST_FORCE_ANGER)
+	protest_changed.emit("force")
+	changed.emit()
+	save_game()
+	return true
+
+
+func _end_protest(heard: bool) -> void:
+	protest.until = 0
+	protest.cd = abs_hour() + Data.PROTEST_COOLDOWN
+	mood = mood.filter(func(m): return str(m.why) != "protest")
+	if not heard:
+		add_rep(-Data.PROTEST_IGNORE_REP)
+		protest.anger = float(protest.anger) * Data.PROTEST_IGNORE_LEFT
+		for c in protest.why:
+			protest.why[c] = float(protest.why[c]) * Data.PROTEST_IGNORE_LEFT
+		Events.protest_over()
+	protest_changed.emit("end")
+	changed.emit()
+	save_game()
 
 
 func broken_rules() -> int:
@@ -2031,6 +2213,7 @@ func evict(uid: int) -> void:
 	b.prog = 0.0
 	add_rep(-3)
 	add_mood(-4, 24, "evicted")
+	add_anger("demolish", Data.ANGER_EVICT)
 	building_updated.emit(uid)
 	sfx("door")
 	save_game()
@@ -2168,6 +2351,7 @@ func demolish(uid: int) -> void:
 	if Data.B[b.id].cat == "home" and b.occ > 0:
 		add_rep(-2)
 		add_mood(-2, 12, "demolished")
+		add_anger("demolish", Data.ANGER_DEMOLISH)
 	if b.priv != "":
 		add_rep(-4)
 	_vacate(uid)
@@ -3136,6 +3320,8 @@ func paper_headlines() -> Array:
 		if str(m.why) == "crime":
 			h.append("n_crime")
 			break
+	if protest_active():
+		h.append("n_protest")
 	if in_jail():
 		h.append("n_jail")
 	elif int(crime.get("caught", 0)) > 0 and int(crime.get("heists", 0)) > 0:

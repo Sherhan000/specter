@@ -181,7 +181,7 @@ func inbox() -> void:
 		var h := _hbox(8)
 		c.add_child(h)
 		var pic := TextureRect.new()
-		pic.texture = Assets.face(m.get("from", "alina"), "worried" if m.kind in ["violation", "fire", "crime", "illness", "complaint"] else "smile")
+		pic.texture = Assets.face(m.get("from", "alina"), "worried" if m.kind in ["violation", "fire", "crime", "illness", "complaint", "protest"] else "smile")
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		pic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		pic.custom_minimum_size = Vector2(44, 44)
@@ -495,6 +495,10 @@ func building_details(uid: int) -> void:
 		hud.text(Loc.t("crime_stats") % [int(Game.crime.heists), int(Game.crime.caught)], v, 11, Color("3a2a1e"), _w())
 		if Game.bank_guarded(uid):
 			hud.text(Loc.t("bank_guarded"), v, 11, Color("2a6a3a"), _w())
+	if Game.buildings[uid].id == "town_hall" or uid == int(Game.protest.get("site", 0)) and Game.protest_active():
+		_row(v, "unhappy", Loc.t("pr_anger"), "%d%%" % int(Game.anger()))
+		if Game.protest_active():
+			hud.text(Loc.t("pr_now") % Loc.t("pr_cause_" + str(Game.protest.cause)), v, 11, Color("a8302a"), _w())
 	if Game.quarter_of.has(uid):
 		_row(v, "wall", Loc.t("quarter"), Loc.t("quarter_homes") % int(Game.quarter_of[uid].homes))
 	if str(Game.buildings[uid].get("hlamp", "")) != "":
