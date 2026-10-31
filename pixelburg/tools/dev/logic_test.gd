@@ -1440,6 +1440,56 @@ func _ready() -> void:
 	for ph_f in PhotoMode.FILTERS:
 		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
 
+	# ------------------------------------------------ seasonal holidays (ROADMAP 31)
+	var hl_keep := [Game.day, Game.hol.duplicate(true), Game.coins, Game.gems, Game.level, Game.mood.duplicate(true), Game.lost]
+	Game.lost = false
+	Game.level = 3
+	var hl_seen := {}
+	for d in range(1, 17):
+		var hid := Holidays.at(d)
+		if hid != "":
+			hl_seen[hid] = int(hl_seen.get(hid, 0)) + 1
+	check(hl_seen.size() == 4 and hl_seen.values().all(func(n): return n >= 2), "four holidays, each lasts several days of the year")
+	check(Holidays.at(1) == "navruz" and Holidays.at(7) == "cityday" and Holidays.at(11) == "halloween" and Holidays.at(15) == "newyear" and Holidays.at(5) == "", "holidays fall in their seasons")
+	check(Holidays.key(1) != Holidays.key(17) and Holidays.key(1) == Holidays.key(2), "holiday key is per year")
+	var hl_ok := true
+	for id in Holidays.ORDER:
+		for d in Holidays.LIST[id].deco:
+			if Assets.tex("holidays/" + d[0]) == null:
+				hl_ok = false
+	check(hl_ok, "every holiday decoration has a sprite")
+	Game.hol = Game._empty_hol()
+	Game.mood = []
+	Game.day = 14
+	Game._holiday_tick()
+	check(Game.holiday() == "" and Game.mood.is_empty(), "no mood bonus outside a holiday")
+	Game.day = 15
+	Game._holiday_tick()
+	check(Game.holiday() == "newyear" and Game.mood_total() >= Holidays.MOOD and str(Game.hol.key) == "newyear:0", "a holiday day lifts the mood")
+	check(Game.hol_claim().is_empty(), "no reward before the tasks")
+	Game.coins = 100000
+	Game.hol_note_built()
+	Game.hol_note_built()
+	check(not Game.hol_tasks_done() and Game.hol_treat() and Game.coins < 100000 and not Game.hol_treat(), "treat once")
+	var hl_c := Game.coins
+	var hl_r := Game.hol_claim()
+	check(int(hl_r.coins) > 0 and Game.coins == hl_c + int(hl_r.coins) and Game.hol_claim().is_empty(), "task reward, taken once a year")
+	Game.day = 16
+	Game._holiday_tick()
+	check(Game.hol_claimed(), "the second day keeps the taken reward")
+	Game.day = 15 + 16
+	Game._holiday_tick()
+	check(not Game.hol_claimed() and int(Game.hol.built) == 0 and int(Game.hol.treats) == 0, "next year's holiday has fresh tasks")
+	var hl_saved: Dictionary = Game.to_dict().hol
+	check(Game._load_hol(hl_saved).key == Game.hol.key, "holiday progress is saved")
+	Game.day = hl_keep[0]
+	Game.hol = hl_keep[1]
+	Game.coins = hl_keep[2]
+	Game.gems = hl_keep[3]
+	Game.level = hl_keep[4]
+	Game.mood = hl_keep[5]
+	Game.lost = hl_keep[6]
+	Game.recalc()
 	# ------------------------------------------------ mayor ranks
 	var rk_keep := [Game.level, Game.rep, Game.rank, Game.coins, Game.gems]
 	check(Data.rank_for(1, 100.0) == 0 and Data.rank_for(10, 45.0) == 3 and Data.rank_for(45, 70.0) == 8, "rank by level and reputation")

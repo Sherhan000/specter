@@ -12,7 +12,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 MIPMAPS = ["assets/ground/*.png", "assets/buildings/*.png", "assets/nature/*.png", "assets/units/*.png",
-           "assets/fx/*.png", "assets/props/*.png", "assets/sky/*.png", "assets/ui/*.png"]
+           "assets/fx/*.png", "assets/props/*.png", "assets/sky/*.png", "assets/ui/*.png", "assets/holidays/*.png"]
 EXACT = ["assets/world/*.png"]
 # big sprite sets are stored as lossy WebP to keep the download small; layers whose colour
 # channels carry data (room light groups) must stay lossless

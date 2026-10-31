@@ -664,6 +664,41 @@ func daily(after := Callable()) -> void:
 	hud.popup(Loc.t("daily_title"), "", btns, v, 290)
 
 
+func holiday() -> void:
+	var id := Game.holiday()
+	if id == "":
+		hud.toast(Loc.t("hol_none"))
+		return
+	var h: Dictionary = Holidays.LIST[id]
+	var v := _vbox(6)
+	hud.text(Loc.pick(h.text), v, 12, Color("3a2a1e"), _w())
+	hud.text(Loc.t("hol_left") % Holidays.days_left(Game.day), v, 12, Color("4a7a2a"), _w())
+	hud.text(Loc.t("hol_mood") % Holidays.MOOD, v, 11, Color("6a5a4a"), _w())
+	var c := _card(v)
+	var tv := _vbox(3)
+	c.add_child(tv)
+	hud.title(Loc.t("hol_tasks"), tv, 12)
+	var built := mini(int(Game.hol.built), Holidays.BUILD_GOAL)
+	hud.text("%s %s (%d / %d)" % [("✔" if built >= Holidays.BUILD_GOAL else "•"), Loc.t("hol_t_build"), built, Holidays.BUILD_GOAL], tv, 12, Color("3a2a1e"), _w() - 30)
+	hud.text("%s %s" % [("✔" if int(Game.hol.treats) > 0 else "•"), Loc.t("hol_t_treat")], tv, 12, Color("3a2a1e"), _w() - 30)
+	var r := Holidays.reward()
+	hud.price_row(int(r.coins), int(r.gems), true, tv)
+	var btns := []
+	if int(Game.hol.treats) == 0:
+		btns.append([Loc.t("hol_treat") + " " + Loc.num(Game.hol_treat_cost()), "orange", func():
+			Game.hol_treat()
+			holiday()])
+	if Game.hol_claimed():
+		hud.text(Loc.t("hol_taken"), v, 12, Color("4a7a2a"), _w())
+	elif Game.hol_tasks_done():
+		btns.append([Loc.t("claim"), "green", func():
+			var rr := Game.hol_claim()
+			if not rr.is_empty():
+				hud.toast(Loc.t("daily_got") % [Loc.num(int(rr.coins)), int(rr.gems)])])
+	btns.append([Loc.t("close"), "blue", Callable()])
+	hud.popup(Loc.pick(h.name), "", btns, v, 300)
+
+
 func achievements() -> void:
 	Game.check_ach()
 	var v := _vbox(5)

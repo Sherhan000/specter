@@ -65,6 +65,7 @@ var panels: Panels
 var dialog: DialogBox
 var tutorial: Tutorial
 var _toast_tw: Tween
+var holiday_btn: TextureButton
 var _gated: Array[Control] = []    ## main buttons the tutorial may switch off
 var _bar_t := 0.0
 var _drag_sc: ScrollContainer
@@ -573,6 +574,11 @@ func _build_side() -> void:
 		city.set_xray(not city.xray)
 		Game.sfx("tap")
 		toast(Loc.t("xray_on" if city.xray else "xray_off"))
+	holiday_btn = round_btn("calendar", "purple", func(): panels.holiday(), 34)
+	holiday_btn.name = "HolidayButton"
+	side_buttons.add_child(holiday_btn)
+	holiday_btn.visible = Game.holiday() != ""
+	Game.day_passed.connect(func(_d): holiday_btn.visible = Game.holiday() != "")
 	var xb := round_btn("eye", "blue", xray_cb, 34)
 	xb.name = "XrayButton"
 	side_buttons.add_child(xb)
