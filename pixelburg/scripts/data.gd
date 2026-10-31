@@ -132,6 +132,8 @@ static func rank_for(lvl: int, rep: float) -> int:
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Ночная жизнь: три новых здания, которые оживают после заката, — ночной клуб с неоновыми полосами, ночной рынок с фонариками и караоке-бар с гигантским микрофоном. Днём они закрыты, ночью их подсветка переливается разными цветами. А в выходные вечером над площадью, фонтаном и ратушей взлетают фейерверки!",
+	 "Night life: three new buildings that wake up after dusk — a night club with neon stripes, a night market with lanterns and a karaoke bar with a giant microphone. They're closed by day, and at night their lights shimmer in changing colours. And on weekend evenings fireworks burst over the plaza, the fountain and the town hall!"],
 	["Звания мэра: от «Старосты деревни» до «Мэра мегаполиса» — звание растёт с уровнем и репутацией и никогда не пропадает. За каждое новое звание — награда и прибавка к доходу города (до +20%), приходит письмо. Звание видно в панели сверху, в профиле и в сведениях о городе.",
 	 "Mayor ranks: from «Village Elder» to «Metropolis Mayor» — the rank grows with your level and reputation and is never lost. Every new rank brings a reward and a bonus to the city's income (up to +20%), plus a letter. The rank is shown in the top bar, in the profile and in the city info."],
 	["Награда за вход: заходите в игру каждый день подряд — на каждый день цикла из 7 дней своя награда, на 7-й день изумруды; пропустите день, и серия начнётся заново. Достижения: 50 целей на все стороны города (стройка, население, деньги, дороги, вода, аэропорт, преступность, митинги, бренды, исторические места и другие), у большинства несколько уровней с наградой. Кнопка с кубком справа показывает прогресс, а при получении появляется уведомление",
@@ -467,6 +469,12 @@ const B := {
 		"jobs": 7, "income": 120, "cycle": 180, "upkeep": 60, "radius": 28, "happy": 10},
 	"funfair": {"name": ["Парк аттракционов", "Funfair"], "cat": "fun", "zones": ["leisure"], "size": 3, "cost": 12000, "gems": 4, "lvl": 12, "time": 200,
 		"jobs": 10, "income": 200, "cycle": 200, "upkeep": 90, "radius": 28, "happy": 12},
+	"nightclub": {"name": ["Ночной клуб", "Night Club"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 9000, "lvl": 13, "time": 150,
+		"jobs": 12, "income": 260, "cycle": 180, "upkeep": 80, "radius": 14, "happy": 9, "night": true},
+	"night_market": {"name": ["Ночной рынок", "Night Market"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 6500, "lvl": 11, "time": 110,
+		"jobs": 10, "income": 190, "cycle": 160, "upkeep": 50, "radius": 14, "happy": 8, "night": true},
+	"karaoke": {"name": ["Караоке-бар", "Karaoke Bar"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 7500, "lvl": 12, "time": 130,
+		"jobs": 9, "income": 220, "cycle": 170, "upkeep": 60, "radius": 14, "happy": 10, "night": true},
 	"bowling": {"name": ["Боулинг", "Bowling Alley"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 5500, "lvl": 9, "time": 120,
 		"jobs": 6, "income": 150, "cycle": 180, "upkeep": 45, "radius": 16, "happy": 7},
 	"mini_golf": {"name": ["Мини-гольф", "Mini Golf"], "cat": "fun", "zones": ["leisure", "city"], "size": 2, "cost": 3000, "lvl": 7, "time": 80,
@@ -609,7 +617,7 @@ const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "it_run", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "security_office", "prison", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
-	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
+	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "nightclub", "night_market", "karaoke", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "gazebo", "picnic", "flag_pole", "bike_rental", "playground", "fountain", "park", "pond", "plaza", "statue", "art_sculpture", "clock_tower", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.

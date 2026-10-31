@@ -1454,6 +1454,12 @@ func _ready() -> void:
 	check(Game.rank == 2 and Game.rank_bonus() > 1.0 and Game.rank_name() != "", "rank is never lost and gives a bonus")
 	Game.level = rk_keep[0]; Game.rep = rk_keep[1]; Game.rank = rk_keep[2]; Game.coins = rk_keep[3]; Game.gems = rk_keep[4]
 
+	# ------------------------------------------------ night life
+	for nl_id in ["nightclub", "night_market", "karaoke"]:
+		check(Data.B.has(nl_id) and Data.ORDER.has(nl_id) and Data.B[nl_id].get("night", false), "night building %s is defined and listed" % nl_id)
+		check(Assets.tex("buildings/%s_1_0" % nl_id) != null, "night building %s has art" % nl_id)
+	check(FireworksFx.active(6, 21) and FireworksFx.active(7, 22) and not FireworksFx.active(3, 21) and not FireworksFx.active(6, 12), "fireworks only on weekend evenings")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

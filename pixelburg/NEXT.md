@@ -16,6 +16,7 @@
 
 ## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
 - 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
+- 43 Ночная жизнь: tools/art/b_night.py (nightclub, night_market, karaoke; поле "night" в data.gd → открыты 19–5 ч в life.gd, building_view.neon — цвет свечения плывёт), scripts/fireworks_fx.gd (FireworksFx, city.fireworks; выходные = день %7 in 6,0; 20–23 ч над plaza/fountain/town_hall).
 - Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
 
 ## Пункт 30 (ежедневные награды и достижения)

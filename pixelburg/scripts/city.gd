@@ -25,6 +25,7 @@ var hud: CanvasLayer
 var life: Life
 var weather: WeatherFx
 var disaster_fx: DisasterFx
+var fireworks: FireworksFx
 var metro: MetroView
 var water_life: WaterLife
 var street_props: StreetProps
@@ -103,6 +104,9 @@ func _ready() -> void:
 	disaster_fx = DisasterFx.new()
 	disaster_fx.city = self
 	add_child(disaster_fx)
+	fireworks = FireworksFx.new()
+	fireworks.city = self
+	add_child(fireworks)
 
 	hud = preload("res://scripts/hud.gd").new()
 	hud.city = self
