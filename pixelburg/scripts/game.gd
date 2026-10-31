@@ -41,6 +41,8 @@ var gems := 0
 var goods := 0
 var xp := 0
 var level := 1
+var cz := Citizens.new()   ## sample of residents: careers, wallets, health (citizens.gd)
+var rank := 0   ## best mayor rank reached (index in Data.RANKS)
 var beach: Array = []        ## owned beach segments (0..7, one per plot row)
 var flights: Array = []      ## bought airport routes (Data.COUNTRIES ids)
 var arrivals := {}           ## country -> travellers who flew in, all time
@@ -63,6 +65,8 @@ var crime := {}              ## bank heists and the mayor's record, see _empty_c
 var disaster := {}           ## natural event with a choice, see _empty_disaster()
 var visiting := ""           ## the friend whose city is shown (QR / code); "" = at home. Nothing is saved while visiting.
 var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
+var hol := _empty_hol()        ## holiday tasks of the current holiday, see Holidays
+var ach := _empty_ach()      ## achievements and the daily login streak, see Ach
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -293,6 +297,9 @@ func new_game() -> void:
 	brands = {}
 	crime = _empty_crime()
 	protest = _empty_protest()
+	ach = _empty_ach()
+	hol = _empty_hol()
+	cz.reset()
 	disaster = _empty_disaster()
 	claimed = []
 	laws = []
@@ -301,6 +308,7 @@ func new_game() -> void:
 	day_time = 0.29
 	tax = Data.TAX_DEFAULT
 	rep = 50.0
+	rank = 0
 	happy = 60.0
 	peak_pop = 0
 	caught = []
@@ -401,7 +409,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
-		"protest": protest.duplicate(true),
+		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true), "cz": cz.to_dict(),
 		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
@@ -409,7 +417,7 @@ func to_dict() -> Dictionary:
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
 		"caught": caught, "weather": weather, "weather_until": weather_until, "patrol_until": patrol_until, "mood": mood,
 		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "garbage": garbage, "tutorial": tutorial, "lost": lost,
-		"events": Events.to_dict(), "power_store": power_store,
+		"events": Events.to_dict(), "power_store": power_store, "rank": rank,
 	}
 
 
@@ -507,6 +515,9 @@ func from_dict(p: Dictionary) -> bool:
 		if cd.has(k):
 			crime[k] = bool(cd[k]) if crime[k] is bool else int(cd[k])
 	protest = _empty_protest()
+	ach = _load_ach(p.get("ach", {}))
+	hol = _load_hol(p.get("hol", {}))
+	cz.from_dict(p.get("cz", {}))
 	var pd: Dictionary = p.get("protest", {})
 	for k in protest:
 		if not pd.has(k):
@@ -576,6 +587,7 @@ func from_dict(p: Dictionary) -> bool:
 	weather_until = int(p.get("weather_until", 0))
 	patrol_until = int(p.get("patrol_until", 0))
 	power_store = float(p.get("power_store", 0.0))
+	rank = int(p.get("rank", Data.rank_for(level, rep)))
 	mood = p.get("mood", [])
 	ledger = p.get("ledger", [])
 	today = p.get("today", _empty_day())
@@ -864,6 +876,7 @@ func _on_hour() -> void:
 	_update_airport()
 	_update_probe()
 	_update_protest()
+	check_ach()
 	_update_disaster()
 	if now >= weather_until:
 		_pick_weather()
@@ -885,7 +898,7 @@ func _end_of_day() -> void:
 		var b: Dictionary = buildings[uid]
 		if b.priv != "" and b.built and not b.closed and not b.dmg:
 			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0 * (Data.BRAND_TAX if Data.brand_of(b.id) != "" else 1.0))
-	biz_tax = int(biz_tax * law_mult("biz") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
+	biz_tax = int(biz_tax * rank_bonus() * law_mult("biz") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 	if biz_tax > 0:
 		_earn("taxes", biz_tax)
 	if is_connected_to_highway():
@@ -899,25 +912,27 @@ func _end_of_day() -> void:
 			elif Data.B[b.id].get("landmark", false) and _works(uid):
 				tour += 400 * b.lvl
 			tour += hist_tourists(uid)
-		tour = int(tour * law_mult("tour") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
+		tour = int(tour * rank_bonus() * law_mult("tour") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 		if tour > 0:
 			_earn("tourism", tour)
 		if goods > 400:
 			var sold := (goods - 400) / 4
 			goods -= sold
 			_earn("export", sold / 2)
-	var fares := transit_fares()
+	var fares := int(transit_fares() * float(cz.prices.fare))
 	if fares > 0:
 		_earn("transit", fares)
 	if deposit > 0:
 		var interest := maxi(1, int(deposit * 0.015))
 		deposit += interest
 		_add_ledger("in", "interest", interest)
+	cz.on_day()
 	# ---- expenses
 	_spend("upkeep", daily_upkeep())
 	_spend("roads", daily_roads())
 	_spend("laws", int(law_sum("daily")))
 	add_rep(law_sum("rep"))
+	check_rank()
 	if not loan.is_empty():
 		var pay_now: int = mini(int(loan.daily), int(loan.left))
 		_spend("loan", pay_now)
@@ -948,6 +963,8 @@ func _end_of_day() -> void:
 		season = s
 		season_changed.emit(s)
 		_pick_weather()
+	check_ach()
+	_holiday_tick()
 	day_passed.emit(day)
 	Events.on_day(day)
 	changed.emit()
@@ -2286,7 +2303,29 @@ func add_xp(n: int) -> void:
 		gems += 1
 		sfx("levelup")
 		level_up.emit(level)
+	check_rank()
 	changed.emit()
+
+
+func rank_name() -> String:
+	return Loc.pick([Data.RANKS[rank][2], Data.RANKS[rank][3]])
+
+
+func rank_bonus() -> float:
+	return 1.0 + Data.RANKS[rank][4] / 100.0
+
+
+## Promote the mayor when level and reputation allow it (never demotes); sends a letter.
+func check_rank() -> void:
+	if visiting != "":
+		return
+	var r := Data.rank_for(level, rep)
+	if r > rank:
+		rank = r
+		coins += 500 * r
+		gems += r
+		sfx("levelup")
+		Events.rank_up(r)
 
 
 func can_afford(c: int, g: int) -> bool:
@@ -2352,6 +2391,7 @@ func place(id: String, x: int, y: int, rot := -1) -> int:
 		return 0
 	var uid := _add_building(id, x, y, false, 1, rot)
 	recalc()
+	hol_note_built()
 	building_added.emit(uid)
 	sfx("place")
 	sfx("construct", -8.0)
@@ -3706,3 +3746,146 @@ func paper_headlines() -> Array:
 	if h.is_empty():
 		h.append("n_calm")
 	return h
+
+
+# ====================================================================== achievements + daily reward (ROADMAP 30)
+func _empty_ach() -> Dictionary:
+	## got: achievement id -> tiers earned; last: day number of the last login; streak/best: days in a row;
+	## logins: days visited; pending: today's reward is waiting to be taken; cycle: its place in the 7-day cycle.
+	return {"got": {}, "last": 0, "streak": 0, "best": 0, "logins": 0, "pending": false, "cycle": 0}
+
+
+static func _load_ach(d: Dictionary) -> Dictionary:
+	var a := {"got": {}, "last": 0, "streak": 0, "best": 0, "logins": 0, "pending": false, "cycle": 0}
+	for k in ["last", "streak", "best", "logins", "cycle"]:
+		a[k] = int(d.get(k, 0))
+	a.pending = bool(d.get("pending", false))
+	for k in d.get("got", {}):
+		a.got[str(k)] = int(d.got[k])
+	return a
+
+
+## Number of the real-world day (local time), for the daily reward.
+static func real_day() -> int:
+	var bias := int(Time.get_time_zone_from_system().get("bias", 0))
+	return floori((Time.get_unix_time_from_system() + bias * 60.0) / 86400.0)
+
+
+## A new real day starts the next step of the 7-day streak (a missed day resets it). Returns true when a reward is waiting.
+func daily_roll(today_no := -1) -> bool:
+	var n := today_no if today_no >= 0 else real_day()
+	var last := int(ach.last)
+	if n != last:
+		ach.streak = int(ach.streak) + 1 if n == last + 1 else 1
+		ach.cycle = (int(ach.streak) - 1) % 7
+		ach.last = n
+		ach.logins = int(ach.logins) + 1
+		ach.best = maxi(int(ach.best), int(ach.streak))
+		ach.pending = true
+		check_ach()
+	return bool(ach.pending)
+
+
+func daily_claim() -> Dictionary:
+	if not bool(ach.pending):
+		return {}
+	var r := Ach.daily_reward(int(ach.cycle))
+	ach.pending = false
+	coins += int(r.coins)
+	gems += int(r.gems)
+	stats.coins_total = int(stats.coins_total) + int(r.coins)
+	sfx("levelup")
+	changed.emit()
+	return r
+
+
+func check_ach() -> void:
+	if lost or not profile.intro or visiting != "":
+		return
+	var got := Ach.check()
+	if got.is_empty():
+		return
+	var lines := []
+	for g in got:
+		var a: Array = g[0]
+		var tiers: int = (a[4] as Array).size()
+		var star: String = "" if tiers == 1 else " " + ["I", "II", "III", "IV"][mini(int(g[1]), 3)]
+		var gem_txt := " +%d %s" % [int(g[2].gems), Loc.t("gems")] if int(g[2].gems) > 0 else ""
+		lines.append(Loc.t("ach_toast") % [Loc.pick(a[2]) + star, Loc.num(int(g[2].coins)), gem_txt])
+	toast.emit("\n".join(lines))
+	sfx("levelup")
+	changed.emit()
+
+
+# ====================================================================== seasonal holidays (ROADMAP 31)
+func _empty_hol() -> Dictionary:
+	## key: this year's holiday the progress belongs to; built/treats: tasks done during it; done: rewards taken (keys).
+	return {"key": "", "built": 0, "treats": 0, "done": []}
+
+
+static func _load_hol(d: Dictionary) -> Dictionary:
+	var h := {"key": str(d.get("key", "")), "built": int(d.get("built", 0)), "treats": int(d.get("treats", 0)), "done": []}
+	for k in d.get("done", []):
+		h.done.append(str(k))
+	return h
+
+
+func holiday() -> String:
+	return Holidays.at(day)
+
+
+## A new day: a holiday starts (fresh tasks, toast) and every holiday day lifts the mood.
+func _holiday_tick() -> void:
+	var k := Holidays.key(day)
+	if k == "":
+		return
+	if str(hol.key) != k:
+		hol.key = k
+		hol.built = 0
+		hol.treats = 0
+		toast.emit(Loc.t("hol_start") % Loc.pick(Holidays.LIST[holiday()].name))
+	add_mood(Holidays.MOOD, 24, "holiday")
+
+
+func hol_note_built() -> void:
+	if holiday() != "" and str(hol.key) == Holidays.key(day):
+		hol.built = int(hol.built) + 1
+
+
+func hol_treat_cost() -> int:
+	return Holidays.TREAT_COST * level
+
+
+## Treat the residents to a feast: a happiness boost and one of the holiday tasks.
+func hol_treat() -> bool:
+	if holiday() == "" or str(hol.key) != Holidays.key(day):
+		return false
+	if int(hol.treats) > 0 or not pay(hol_treat_cost(), 0, "holiday"):
+		return false
+	hol.treats = 1
+	add_mood(4, 24, "holiday")
+	sfx("levelup")
+	changed.emit()
+	return true
+
+
+func hol_tasks_done() -> bool:
+	return int(hol.built) >= Holidays.BUILD_GOAL and int(hol.treats) >= 1
+
+
+func hol_claimed() -> bool:
+	return (hol.done as Array).has(Holidays.key(day))
+
+
+func hol_claim() -> Dictionary:
+	var k := Holidays.key(day)
+	if k == "" or str(hol.key) != k or hol_claimed() or not hol_tasks_done():
+		return {}
+	var r := Holidays.reward()
+	hol.done.append(k)
+	coins += int(r.coins)
+	gems += int(r.gems)
+	stats.coins_total = int(stats.coins_total) + int(r.coins)
+	sfx("levelup")
+	changed.emit()
+	return r

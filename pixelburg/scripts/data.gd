@@ -107,11 +107,45 @@ const ROAD_DECO := {
 const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
 const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
+## Mayor ranks: [min level, min reputation, ru, en, income bonus %]. Rank only goes up (the best one reached is kept).
+const RANKS := [
+	[1, 0, "Староста деревни", "Village Elder", 0],
+	[3, 30, "Глава посёлка", "Town Head", 2],
+	[6, 40, "Городской голова", "City Head", 4],
+	[10, 45, "Градоначальник", "Governor", 6],
+	[15, 50, "Мэр города", "City Mayor", 8],
+	[20, 55, "Мэр большого города", "Big City Mayor", 10],
+	[28, 60, "Мэр-реформатор", "Reform Mayor", 12],
+	[36, 65, "Мэр столицы", "Capital Mayor", 15],
+	[45, 70, "Мэр мегаполиса", "Metropolis Mayor", 20],
+]
+
+
+static func rank_for(lvl: int, rep: float) -> int:
+	var r := 0
+	for i in RANKS.size():
+		if lvl >= RANKS[i][0] and rep >= RANKS[i][1]:
+			r = i
+	return r
+
+
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
 	["Город друга: в настройках откройте «Город друга» — там QR-код вашего города. Друг сканирует его камерой телефона, копирует код и вставляет в своей игре — и гуляет по вашему городу. Код можно и просто отправить в мессенджере. В гостях ничего не сохраняется, кнопка «Домой» возвращает в свой город",
 	 "Friend's city: open \"Friend's city\" in the settings to see your city's QR code. A friend scans it with the phone camera, copies the code and pastes it in their game to walk around your city. You can also just send the code in a messenger. Nothing is saved while visiting; the Home button takes you back"],
+	["15 новых башен, у каждой свой силуэт: ступенчатый небоскрёб, башни-близнецы, пирамида, золотая и королевская башни, эко-башня с садами, ар-деко, башня с ветряками, с обсерваторией, игла, крестовая, парус, башни-врата, солнечная и тройная. Они открываются с 24-го по 38-й уровень во вкладке «Бизнес» и приносят много монет.",
+	 "15 new towers, each with its own silhouette: stepped skyscraper, twin towers, pyramid, golden and regal towers, an eco tower with gardens, art deco, a tower with wind turbines, an observatory, a needle, a cross, a sail, gate towers, a solar tower and a trio. They unlock from level 24 to 38 in the Business tab and earn a lot of coins."],
+	["Живые жители: у горожан появились профессии, образование и кошельки. Школа и IT-школа дают образование, а с ним — работу получше и растущую зарплату (по ступеням стажа). У каждой профессии своя оплата, жители тратят на еду и покупки. Дважды коснитесь человека на улице — откроется его карточка. Мэр задаёт цены на свет, воду и проезд: дорого — больше монет, но недовольство. Новая панель «Жители» (в окне города) — деньги жителей, средний кошелёк, зарплаты по профессиям, здоровье. Люди рождаются, болеют и умирают: от старости, болезней, бедности, загрязнения или из-за отсутствия больницы; болезни заразны, больница и роддом помогают.",
+	 "Living residents: citizens now have professions, education and wallets. The school and the IT school give education, and with it better jobs and growing wages (by career steps). Every profession pays differently, and residents spend on food and shopping. Tap a person on the street twice to open their card. The mayor sets the prices of power, water and fares: expensive earns more coins but angers people. The new Residents panel (in the city window) shows residents' money, the average wallet, wages by profession and health. People are born, fall ill and die — of old age, illness, poverty, pollution or the lack of a hospital; illness is contagious, and a hospital and maternity ward help."],
+	["Ночная жизнь: три новых здания, которые оживают после заката, — ночной клуб с неоновыми полосами, ночной рынок с фонариками и караоке-бар с гигантским микрофоном. Днём они закрыты, ночью их подсветка переливается разными цветами. А в выходные вечером над площадью, фонтаном и ратушей взлетают фейерверки!",
+	 "Night life: three new buildings that wake up after dusk — a night club with neon stripes, a night market with lanterns and a karaoke bar with a giant microphone. They're closed by day, and at night their lights shimmer in changing colours. And on weekend evenings fireworks burst over the plaza, the fountain and the town hall!"],
+	["Сезонные праздники на несколько игровых дней: Новый год (ёлка на площади, гирлянды на домах, снеговики), Навруз (котёл с сумалаком, качели, клумбы с цветами), Хэллоуин (тыквы, оранжевые фонари, добрые привидения) и День города (флажки, флаги и вечерние фейерверки). Украшения временные, жители веселее, а в окне праздника (кнопка с календарём справа) — особые задания с наградой: построить новые здания и угостить жителей",
+	 "Seasonal holidays lasting a few game days: New Year (a fir tree on the square, garlands on homes, snowmen), Navruz (a sumalak cauldron, swings, flower beds), Halloween (pumpkins, orange lanterns, friendly ghosts) and City Day (bunting, flags and evening fireworks). The decorations are temporary, residents are happier, and the holiday window (calendar button on the right) has special tasks with a reward: build new buildings and treat the residents"],
+	["Звания мэра: от «Старосты деревни» до «Мэра мегаполиса» — звание растёт с уровнем и репутацией и никогда не пропадает. За каждое новое звание — награда и прибавка к доходу города (до +20%), приходит письмо. Звание видно в панели сверху, в профиле и в сведениях о городе.",
+	 "Mayor ranks: from «Village Elder» to «Metropolis Mayor» — the rank grows with your level and reputation and is never lost. Every new rank brings a reward and a bonus to the city's income (up to +20%), plus a letter. The rank is shown in the top bar, in the profile and in the city info."],
+	["Награда за вход: заходите в игру каждый день подряд — на каждый день цикла из 7 дней своя награда, на 7-й день изумруды; пропустите день, и серия начнётся заново. Достижения: 50 целей на все стороны города (стройка, население, деньги, дороги, вода, аэропорт, преступность, митинги, бренды, исторические места и другие), у большинства несколько уровней с наградой. Кнопка с кубком справа показывает прогресс, а при получении появляется уведомление",
+	 "Daily reward: visit the game every day in a row — each day of the 7-day cycle has its own reward, day 7 gives emeralds; miss a day and the streak starts over. Achievements: 50 goals across the whole city (building, population, money, roads, water, the airport, crime, protests, brands, historic sights and more), most with several tiers and rewards. The trophy button on the right shows your progress, and a notice pops up when you earn one"],
 	["Режим фото: кнопка с фотоаппаратом справа убирает весь интерфейс — остаётся только город. Камеру можно двигать и приближать пальцами, а фильтры «День», «Закат», «Ночь» и «Ч/б» меняют настроение кадра. Кнопка-затвор сохраняет снимок в галерею телефона (папка Pictures/Pixelburg), на компьютере — в папку user://photos. Крестик слева сверху возвращает в игру",
 	 "Photo mode: the camera button on the right hides the whole interface so only the city is left. Move and zoom the camera with your fingers, and the Day, Sunset, Night and B&W filters set the mood of the shot. The shutter button saves the picture to the phone's gallery (Pictures/Pixelburg folder), on a computer to user://photos. The cross at the top left takes you back to the game"],
 	["Стихийные события с выбором: иногда на город обрушивается наводнение (у реки и моря), землетрясение, снежная буря зимой или нашествие туристов. Приходит письмо с тремя вариантами: дорого и надёжно, дёшево и рискованно или ничего не делать. Пожарные и больница снижают ущерб. Вода заливает берег, по земле идут трещины и трясётся экран, снег заметает улицы, а у достопримечательностей собираются толпы туристов. Повреждённые дома чинятся в их карточке",
@@ -314,6 +348,36 @@ const B := {
 		"jobs": 160, "use": 0, "income": 1500, "cycle": 360, "upkeep": 380},
 	"sky_heli": {"name": ["Небоскрёб с вертолётной площадкой", "Helipad Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 62000, "gems": 24, "lvl": 26, "time": 480,
 		"jobs": 180, "use": 0, "income": 1800, "cycle": 360, "upkeep": 420},
+	"tower_stepped": {"name": ["Ступенчатый небоскрёб", "Stepped Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 40000, "gems": 14, "lvl": 24, "time": 360,
+		"jobs": 150, "use": 0, "income": 1400, "cycle": 360, "upkeep": 330},
+	"tower_twin": {"name": ["Башни-близнецы", "Twin Towers"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 46000, "gems": 15, "lvl": 25, "time": 375,
+		"jobs": 158, "use": 0, "income": 1510, "cycle": 360, "upkeep": 350},
+	"tower_pyramid": {"name": ["Небоскрёб-пирамида", "Pyramid Skyscraper"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 52000, "gems": 16, "lvl": 26, "time": 390,
+		"jobs": 166, "use": 0, "income": 1620, "cycle": 360, "upkeep": 370},
+	"tower_gold": {"name": ["Золотая башня", "Golden Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 58000, "gems": 17, "lvl": 27, "time": 405,
+		"jobs": 174, "use": 0, "income": 1730, "cycle": 360, "upkeep": 390},
+	"tower_green": {"name": ["Эко-башня с садами", "Eco Garden Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 64000, "gems": 18, "lvl": 28, "time": 420,
+		"jobs": 182, "use": 0, "income": 1840, "cycle": 360, "upkeep": 410},
+	"tower_deco": {"name": ["Башня в стиле ар-деко", "Art Deco Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 70000, "gems": 19, "lvl": 29, "time": 435,
+		"jobs": 190, "use": 0, "income": 1950, "cycle": 360, "upkeep": 430},
+	"tower_wind": {"name": ["Башня с ветряками", "Wind Turbine Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 76000, "gems": 20, "lvl": 30, "time": 450,
+		"jobs": 198, "use": 0, "income": 2060, "cycle": 360, "upkeep": 450},
+	"tower_dome": {"name": ["Башня с обсерваторией", "Observatory Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 82000, "gems": 21, "lvl": 31, "time": 465,
+		"jobs": 206, "use": 0, "income": 2170, "cycle": 360, "upkeep": 470},
+	"tower_slim": {"name": ["Башня-игла", "Needle Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 88000, "gems": 22, "lvl": 32, "time": 480,
+		"jobs": 214, "use": 0, "income": 2280, "cycle": 360, "upkeep": 490},
+	"tower_cross": {"name": ["Крестовая башня", "Cross Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 94000, "gems": 23, "lvl": 33, "time": 495,
+		"jobs": 222, "use": 0, "income": 2390, "cycle": 360, "upkeep": 510},
+	"tower_sail": {"name": ["Башня-парус", "Sail Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 100000, "gems": 24, "lvl": 34, "time": 510,
+		"jobs": 230, "use": 0, "income": 2500, "cycle": 360, "upkeep": 530},
+	"tower_ring": {"name": ["Башни-врата", "Gate Towers"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 106000, "gems": 25, "lvl": 35, "time": 525,
+		"jobs": 238, "use": 0, "income": 2610, "cycle": 360, "upkeep": 550},
+	"tower_solar": {"name": ["Солнечная башня", "Solar Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 112000, "gems": 26, "lvl": 36, "time": 540,
+		"jobs": 246, "use": 0, "income": 2720, "cycle": 360, "upkeep": 570},
+	"tower_tripod": {"name": ["Тройная башня", "Trio Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 118000, "gems": 27, "lvl": 37, "time": 555,
+		"jobs": 254, "use": 0, "income": 2830, "cycle": 360, "upkeep": 590},
+	"tower_crown": {"name": ["Королевская башня", "Regal Tower"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 124000, "gems": 28, "lvl": 38, "time": 570,
+		"jobs": 262, "use": 0, "income": 2940, "cycle": 360, "upkeep": 610},
 	"mall": {"name": ["Торговый центр", "Mall"], "cat": "shop", "zones": ["city"], "size": 3, "cost": 20000, "gems": 8, "lvl": 18, "time": 300,
 		"jobs": 40, "use": 80, "income": 560, "cycle": 240, "upkeep": 160},
 	# ------------------------------------------------ production (jobs, goods out per cycle)
@@ -443,6 +507,12 @@ const B := {
 		"jobs": 7, "income": 120, "cycle": 180, "upkeep": 60, "radius": 28, "happy": 10},
 	"funfair": {"name": ["Парк аттракционов", "Funfair"], "cat": "fun", "zones": ["leisure"], "size": 3, "cost": 12000, "gems": 4, "lvl": 12, "time": 200,
 		"jobs": 10, "income": 200, "cycle": 200, "upkeep": 90, "radius": 28, "happy": 12},
+	"nightclub": {"name": ["Ночной клуб", "Night Club"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 9000, "lvl": 13, "time": 150,
+		"jobs": 12, "income": 260, "cycle": 180, "upkeep": 80, "radius": 14, "happy": 9, "night": true},
+	"night_market": {"name": ["Ночной рынок", "Night Market"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 6500, "lvl": 11, "time": 110,
+		"jobs": 10, "income": 190, "cycle": 160, "upkeep": 50, "radius": 14, "happy": 8, "night": true},
+	"karaoke": {"name": ["Караоке-бар", "Karaoke Bar"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 7500, "lvl": 12, "time": 130,
+		"jobs": 9, "income": 220, "cycle": 170, "upkeep": 60, "radius": 14, "happy": 10, "night": true},
 	"bowling": {"name": ["Боулинг", "Bowling Alley"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 5500, "lvl": 9, "time": 120,
 		"jobs": 6, "income": 150, "cycle": 180, "upkeep": 45, "radius": 16, "happy": 7},
 	"mini_golf": {"name": ["Мини-гольф", "Mini Golf"], "cat": "fun", "zones": ["leisure", "city"], "size": 2, "cost": 3000, "lvl": 7, "time": 80,
@@ -580,12 +650,12 @@ const B := {
 }
 const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house_american", "house_tajik", "house_aframe", "house_container", "house_med", "cottage", "house_duplex", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
 	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "ice_cream", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "bookshop", "barber", "pizzeria", "gas_station", "ev_station", "gas_highway", "car_wash", "auto_repair", "car_dealer", "boutique", "supermarket", "amid", "anis", "yovar", "market_stall", "market", "bazaar", "office", "restaurant",
-	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
+	"cinema", "hotel", "mall", "sky_office", "sky_heli", "tower_stepped", "tower_twin", "tower_pyramid", "tower_gold", "tower_green", "tower_deco", "tower_wind", "tower_dome", "tower_slim", "tower_cross", "tower_sail", "tower_ring", "tower_solar", "tower_tripod", "tower_crown", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "it_run", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "security_office", "prison", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
-	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
+	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "nightclub", "night_market", "karaoke", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "gazebo", "picnic", "flag_pole", "bike_rental", "playground", "fountain", "park", "pond", "plaza", "statue", "art_sculpture", "clock_tower", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.

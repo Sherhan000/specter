@@ -4,10 +4,12 @@ extends RefCounted
 ## building details, game over.
 
 var hud
+var cit: CitizenPanels
 
 
 func _init(p_hud) -> void:
 	hud = p_hud
+	cit = CitizenPanels.new(p_hud)
 
 
 func _vbox(sep := 6) -> VBoxContainer:
@@ -281,6 +283,7 @@ func city_info() -> void:
 		Color("b83a2a") if Game.water_ratio < 0.9 else Color("3a2a1e"))
 	_row(cv, "happy", Loc.t("happy"), "%d%% → %d%%" % [int(Game.happy), int(Game.happy_target)])
 	_row(cv, "reputation", Loc.t("rep"), str(int(Game.rep)))
+	_row(cv, "star", Loc.t("pf_rank"), Game.rank_name())
 	if Events.election_day > 0 and not Events.flags.get("election_done", false):
 		_row(cv, "calendar", Loc.t("ci_election") % Events.election_day, "%d%%" % int(Events.election_score()),
 			Color("2a7a2a") if Events.election_score() >= 50 else Color("b83a2a"))
@@ -299,7 +302,7 @@ func city_info() -> void:
 		for m in Game.mood:
 			_row(v, "", Loc.t("mood_" + str(m.why)), ("+" if int(m.v) > 0 else "") + str(int(m.v)),
 				Color("2a7a2a") if int(m.v) > 0 else Color("b83a2a"))
-	hud.popup(Loc.t("city"), "", [[Loc.t("laws"), "purple", laws], [Loc.t("close"), "blue", Callable()]], v)
+	hud.popup(Loc.t("city"), "", [[Loc.t("laws"), "purple", laws], [Loc.pick(["Жители", "Residents"]), "green", cit.analytics], [Loc.t("close"), "blue", Callable()]], v)
 
 
 ## Laws: pass one from the ready list or repeal a passed one.
@@ -618,6 +621,129 @@ func catch_animal(a: ForestAnimal) -> void:
 
 # ====================================================================== settings
 ## "What's new" after an update, shown once per version (and from the settings).
+# ====================================================================== daily reward + achievements (ROADMAP 30)
+func daily(after := Callable()) -> void:
+	var v := _vbox(6)
+	var cyc: int = int(Game.ach.cycle)
+	var pending: bool = bool(Game.ach.pending)
+	hud.text(Loc.t("daily_streak") % int(Game.ach.streak), v, 12, Color("4a7a2a"), _w())
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
+	v.add_child(grid)
+	for i in 7:
+		var r := Ach.daily_reward(i)
+		var c := _card(grid, 4)
+		c.custom_minimum_size = Vector2(62, 74)
+		var col := _vbox(2)
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		c.add_child(col)
+		var done: bool = i < cyc or (i == cyc and not pending and int(Game.ach.last) > 0)
+		var today_card: bool = i == cyc
+		var t: Label = hud.text("%s %d" % [Loc.t("day"), i + 1], col, 11, Color("7a2a1a") if today_card else Color("3a2a1e"))
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hud.icon_rect("gem" if int(r.gems) > 0 else "coin", col, 22).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		var amount: Label = hud.text(("%d" % int(r.gems)) if int(r.gems) > 0 else Loc.num(int(r.coins)), col, 11, Color("3a2a1e"))
+		amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if int(r.gems) > 0:
+			var extra: Label = hud.text("+" + Loc.num(int(r.coins)), col, 10, Color("6a5a4a"))
+			extra.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if done:
+			c.modulate = Color(0.7, 1.0, 0.7)
+		elif not today_card:
+			c.modulate = Color(1, 1, 1, 0.85)
+	hud.text(Loc.t("daily_hint"), v, 11, Color("6a5a4a"), _w())
+	var btns := []
+	if pending:
+		btns.append([Loc.t("claim"), "green", func():
+			var r := Game.daily_claim()
+			hud.toast(Loc.t("daily_got") % [Loc.num(int(r.coins)), int(r.gems)])
+			if after.is_valid():
+				after.call()])
+	else:
+		btns.append([Loc.t("close"), "blue", after])
+	hud.popup(Loc.t("daily_title"), "", btns, v, 290)
+
+
+func holiday() -> void:
+	var id := Game.holiday()
+	if id == "":
+		hud.toast(Loc.t("hol_none"))
+		return
+	var h: Dictionary = Holidays.LIST[id]
+	var v := _vbox(6)
+	hud.text(Loc.pick(h.text), v, 12, Color("3a2a1e"), _w())
+	hud.text(Loc.t("hol_left") % Holidays.days_left(Game.day), v, 12, Color("4a7a2a"), _w())
+	hud.text(Loc.t("hol_mood") % Holidays.MOOD, v, 11, Color("6a5a4a"), _w())
+	var c := _card(v)
+	var tv := _vbox(3)
+	c.add_child(tv)
+	hud.title(Loc.t("hol_tasks"), tv, 12)
+	var built := mini(int(Game.hol.built), Holidays.BUILD_GOAL)
+	hud.text("%s %s (%d / %d)" % [("✔" if built >= Holidays.BUILD_GOAL else "•"), Loc.t("hol_t_build"), built, Holidays.BUILD_GOAL], tv, 12, Color("3a2a1e"), _w() - 30)
+	hud.text("%s %s" % [("✔" if int(Game.hol.treats) > 0 else "•"), Loc.t("hol_t_treat")], tv, 12, Color("3a2a1e"), _w() - 30)
+	var r := Holidays.reward()
+	hud.price_row(int(r.coins), int(r.gems), true, tv)
+	var btns := []
+	if int(Game.hol.treats) == 0:
+		btns.append([Loc.t("hol_treat") + " " + Loc.num(Game.hol_treat_cost()), "orange", func():
+			Game.hol_treat()
+			holiday()])
+	if Game.hol_claimed():
+		hud.text(Loc.t("hol_taken"), v, 12, Color("4a7a2a"), _w())
+	elif Game.hol_tasks_done():
+		btns.append([Loc.t("claim"), "green", func():
+			var rr := Game.hol_claim()
+			if not rr.is_empty():
+				hud.toast(Loc.t("daily_got") % [Loc.num(int(rr.coins)), int(rr.gems)])])
+	btns.append([Loc.t("close"), "blue", Callable()])
+	hud.popup(Loc.pick(h.name), "", btns, v, 300)
+
+
+func achievements() -> void:
+	Game.check_ach()
+	var v := _vbox(5)
+	hud.text(Loc.t("ach_total") % [Ach.earned(), Ach.total()], v, 12, Color("4a7a2a"), _w())
+	v.add_child(hud.button(Loc.t("daily_title"), "calendar", "blue", func(): daily(achievements)))
+	for a in Ach.LIST:
+		var tiers: Array = a[4]
+		var t := Ach.tier_of(a[0])
+		var maxed := t >= tiers.size()
+		var val := Ach.value(a[1])
+		var c := _card(v, 5)
+		var h := _hbox(8)
+		c.add_child(h)
+		hud.icon_rect("trophy" if t > 0 else "lock", h, 24)
+		var mv := _vbox(2)
+		mv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(mv)
+		var star := ""
+		if tiers.size() > 1:
+			star = "  " + "★".repeat(t) + "☆".repeat(tiers.size() - t)
+		hud.title(Loc.pick(a[2]) + star, mv, 12, Color("7a2a1a") if not maxed else Color("3a7a2a"))
+		var shown := mini(t, tiers.size() - 1)
+		var goal := int(tiers[shown])
+		hud.text(Ach.target_text(a, shown), mv, 11, Color("3a2a1e"), _w() - 90)
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(_w() - 90, 8)
+		mv.add_child(bar)
+		var bg := ColorRect.new()
+		bg.color = Color(0, 0, 0, 0.25)
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bar.add_child(bg)
+		var fill := ColorRect.new()
+		fill.color = Color("5aa83a") if not maxed else Color("e0b030")
+		fill.set_anchors_preset(Control.PRESET_FULL_RECT)
+		fill.anchor_right = clampf(float(val) / maxf(1.0, goal), 0.0, 1.0) if not maxed else 1.0
+		bar.add_child(fill)
+		hud.text("%s / %s" % [Loc.num(mini(val, goal)), Loc.num(goal)] if not maxed else Loc.t("ach_done"), mv, 10, Color("4a7a2a"))
+		if not maxed:
+			var r := Ach.reward(a, t)
+			hud.price_row(int(r.coins), int(r.gems), true, mv)
+	hud.popup(Loc.t("ach_title"), "", [[Loc.t("close"), "blue", Callable()]], v, 330)
+
+
 func whats_new() -> void:
 	Game.set_setting("news", Data.NEWS_VERSION)
 	var v := VBoxContainer.new()
@@ -674,6 +800,7 @@ func profile() -> void:
 	var p: Dictionary = Game.profile
 	var t := "%s: %s\n%s: %s\n%s: %s" % [Loc.t("pf_name"), p.name, Loc.t("pf_age"), str(p.age),
 		Loc.t("pf_gender"), Loc.t("pf_f") if p.gender == "f" else Loc.t("pf_m") if p.gender == "m" else "-"]
+	t += "\n%s: %s (+%d%%)" % [Loc.t("pf_rank"), Game.rank_name(), Data.RANKS[Game.rank][4]]
 	hud.popup(Loc.t("profile"), t + "\n\n" + Loc.t("pf_local"), [[Loc.t("pf_delete"), "red", func():
 		hud.confirm(Loc.t("pf_delete_q"), func():
 			Game.delete_personal_data()

@@ -1312,6 +1312,63 @@ func _ready() -> void:
 	Game.level = pr_keep[4]
 	Game.recalc()
 
+	# ------------------------------------------------ achievements + daily reward (ROADMAP 30)
+	check(Ach.LIST.size() >= 50, "at least 50 achievements")
+	var ach_ids := {}
+	var ach_ok := true
+	for a in Ach.LIST:
+		ach_ids[a[0]] = true
+		var tg: Array = a[4]
+		for i in tg.size():
+			if i > 0 and int(tg[i]) <= int(tg[i - 1]):
+				ach_ok = false
+		if Ach.value(a[1]) < 0 or Loc.pick(a[2]) == "" or Ach.target_text(a, 0) == "":
+			ach_ok = false
+	check(ach_ok and ach_ids.size() == Ach.LIST.size(), "achievement ids are unique and tiers rise")
+	var ach_keep: Dictionary = Game.ach.duplicate(true)
+	var ach_coins := Game.coins
+	var ach_save_lost := Game.lost
+	Game.lost = false
+	Game.ach = Game._empty_ach()
+	Game.day = 12
+	Game.level = 11
+	var ach_got := Ach.check()
+	check(ach_got.size() >= 3 and Ach.tier_of("days") == 1 and Ach.tier_of("level") == 2, "reached tiers are awarded at once")
+	var ach_first := {}
+	for g in ach_got:
+		ach_first["%s:%d" % [g[0][0], g[1]]] = true
+	var ach_again := true
+	for g in Ach.check():
+		if ach_first.has("%s:%d" % [g[0][0], g[1]]):
+			ach_again = false
+	check(Game.coins > ach_coins and ach_again, "the reward is paid once")
+	check(Ach.earned() >= 3 and Ach.earned() <= Ach.total(), "earned count")
+	# daily reward: 7-day cycle, a missed day resets the streak
+	Game.ach = Game._empty_ach()
+	var d0 := 20000
+	check(Game.daily_roll(d0) and int(Game.ach.streak) == 1 and int(Game.ach.cycle) == 0, "first login starts the streak")
+	var ach_c0 := Game.coins
+	var ach_dr := Game.daily_claim()
+	check(int(ach_dr.coins) > 0 and Game.coins == ach_c0 + int(ach_dr.coins) and Game.daily_claim().is_empty(), "day 1 reward, taken once")
+	Game.daily_roll(d0)
+	check(not bool(Game.ach.pending), "same day: no new reward")
+	for k in range(1, 7):
+		Game.daily_roll(d0 + k)
+		Game.daily_claim()
+	check(int(Game.ach.streak) == 7 and int(Game.ach.cycle) == 6, "seven days in a row")
+	check(Ach.daily_reward(6).gems == Ach.DAILY_GEMS and Ach.daily_reward(2).gems == 0, "gems on the 7th day only")
+	var ach_g0 := Game.gems
+	Game.daily_roll(d0 + 7)
+	check(int(Game.ach.cycle) == 0 and int(Game.ach.streak) == 8, "the cycle wraps after day 7")
+	Game.daily_claim()
+	Game.daily_roll(d0 + 10)
+	check(int(Game.ach.streak) == 1 and int(Game.ach.best) == 8 and bool(Game.ach.pending), "a missed day resets the streak")
+	var ach_saved: Dictionary = Game.to_dict().ach
+	check(int(ach_saved.streak) == 1 and Game._load_ach(ach_saved).got.size() == Game.ach.got.size(), "achievements are saved")
+	Game.ach = ach_keep
+	Game.lost = ach_save_lost
+	Game.coins = ach_coins
+	Game.gems = ach_g0
 	# ------------------------------------------------ natural events with a choice
 	var dz_keep := [Game.coins, Game.tutorial, Game.level, Game.pop]
 	Game.coins = 1000000
@@ -1382,6 +1439,123 @@ func _ready() -> void:
 		DirAccess.remove_absolute(ph_path)
 	for ph_f in PhotoMode.FILTERS:
 		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
+
+	# ------------------------------------------------ seasonal holidays (ROADMAP 31)
+	var hl_keep := [Game.day, Game.hol.duplicate(true), Game.coins, Game.gems, Game.level, Game.mood.duplicate(true), Game.lost]
+	Game.lost = false
+	Game.level = 3
+	var hl_seen := {}
+	for d in range(1, 17):
+		var hid := Holidays.at(d)
+		if hid != "":
+			hl_seen[hid] = int(hl_seen.get(hid, 0)) + 1
+	check(hl_seen.size() == 4 and hl_seen.values().all(func(n): return n >= 2), "four holidays, each lasts several days of the year")
+	check(Holidays.at(1) == "navruz" and Holidays.at(7) == "cityday" and Holidays.at(11) == "halloween" and Holidays.at(15) == "newyear" and Holidays.at(5) == "", "holidays fall in their seasons")
+	check(Holidays.key(1) != Holidays.key(17) and Holidays.key(1) == Holidays.key(2), "holiday key is per year")
+	var hl_ok := true
+	for id in Holidays.ORDER:
+		for d in Holidays.LIST[id].deco:
+			if Assets.tex("holidays/" + d[0]) == null:
+				hl_ok = false
+	check(hl_ok, "every holiday decoration has a sprite")
+	Game.hol = Game._empty_hol()
+	Game.mood = []
+	Game.day = 14
+	Game._holiday_tick()
+	check(Game.holiday() == "" and Game.mood.is_empty(), "no mood bonus outside a holiday")
+	Game.day = 15
+	Game._holiday_tick()
+	check(Game.holiday() == "newyear" and Game.mood_total() >= Holidays.MOOD and str(Game.hol.key) == "newyear:0", "a holiday day lifts the mood")
+	check(Game.hol_claim().is_empty(), "no reward before the tasks")
+	Game.coins = 100000
+	Game.hol_note_built()
+	Game.hol_note_built()
+	check(not Game.hol_tasks_done() and Game.hol_treat() and Game.coins < 100000 and not Game.hol_treat(), "treat once")
+	var hl_c := Game.coins
+	var hl_r := Game.hol_claim()
+	check(int(hl_r.coins) > 0 and Game.coins == hl_c + int(hl_r.coins) and Game.hol_claim().is_empty(), "task reward, taken once a year")
+	Game.day = 16
+	Game._holiday_tick()
+	check(Game.hol_claimed(), "the second day keeps the taken reward")
+	Game.day = 15 + 16
+	Game._holiday_tick()
+	check(not Game.hol_claimed() and int(Game.hol.built) == 0 and int(Game.hol.treats) == 0, "next year's holiday has fresh tasks")
+	var hl_saved: Dictionary = Game.to_dict().hol
+	check(Game._load_hol(hl_saved).key == Game.hol.key, "holiday progress is saved")
+	Game.day = hl_keep[0]
+	Game.hol = hl_keep[1]
+	Game.coins = hl_keep[2]
+	Game.gems = hl_keep[3]
+	Game.level = hl_keep[4]
+	Game.mood = hl_keep[5]
+	Game.lost = hl_keep[6]
+	Game.recalc()
+	# ------------------------------------------------ mayor ranks
+	var rk_keep := [Game.level, Game.rep, Game.rank, Game.coins, Game.gems]
+	check(Data.rank_for(1, 100.0) == 0 and Data.rank_for(10, 45.0) == 3 and Data.rank_for(45, 70.0) == 8, "rank by level and reputation")
+	Game.rank = 0
+	Game.level = 6
+	Game.rep = 50.0
+	var rk_inbox := Events.inbox.size()
+	Game.check_rank()
+	check(Game.rank == 2 and Events.inbox.size() > rk_inbox and Events.inbox[0].kind == "rank", "promotion raises the rank and sends a letter")
+	Game.rep = 0.0
+	Game.check_rank()
+	check(Game.rank == 2 and Game.rank_bonus() > 1.0 and Game.rank_name() != "", "rank is never lost and gives a bonus")
+	Game.level = rk_keep[0]; Game.rep = rk_keep[1]; Game.rank = rk_keep[2]; Game.coins = rk_keep[3]; Game.gems = rk_keep[4]
+
+	# ------------------------------------------------ night life
+	for nl_id in ["nightclub", "night_market", "karaoke"]:
+		check(Data.B.has(nl_id) and Data.ORDER.has(nl_id) and Data.B[nl_id].get("night", false), "night building %s is defined and listed" % nl_id)
+		check(Assets.tex("buildings/%s_1_0" % nl_id) != null, "night building %s has art" % nl_id)
+	check(FireworksFx.active(6, 21) and FireworksFx.active(7, 22) and not FireworksFx.active(3, 21) and not FireworksFx.active(6, 12), "fireworks only on weekend evenings")
+
+	# ------------------------------------------------ citizens: careers, economy, health
+	var cz_keep := [Game.cz.to_dict().duplicate(true), Game.coins, Game.day, Game.pop]
+	var cz: Citizens = Game.cz
+	cz.reset()
+	check(Citizens.prof_for_building("it_run") == "it" and Citizens.prof_for_building("hospital") == "doctor" and Citizens.prof_for_building("farm") == "farmer", "professions by building")
+	cz.list = [cz._make(30, 1), cz._make(70, 1), cz._make(10, 1)]
+	check(cz.age_group(cz.list[0]) == "adult" and cz.age_group(cz.list[1]) == "retired" and cz.age_group(cz.list[2]) == "student", "age groups")
+	var cz_a: Dictionary = cz.list[0]
+	cz_a.job = "teacher"
+	cz_a.edu = 1
+	var w0 := cz.wage_of(cz_a)
+	cz_a.rank = 2
+	check(w0 > 0 and cz.wage_of(cz_a) > w0, "wage grows with career rank")
+	cz_a.edu = 2
+	check(cz.wage_of(cz_a) > w0, "education raises the wage")
+	cz.set_price("power", 1)
+	check(float(cz.prices.power) == 1.25, "price step up")
+	var cz_d := cz.to_dict().duplicate(true)
+	var cz2 := Citizens.new()
+	cz2.from_dict(cz_d)
+	check(cz2.list.size() == 3 and float(cz2.prices.power) == 1.25, "citizens save and load")
+	cz.reset()
+	# a sample follows the population, and a day passes without errors
+	Game.day = 20
+	cz.on_day()
+	check(cz.list.size() == mini(Game.pop, Citizens.CAP), "sample follows population")
+	var cz_s := cz.summary()
+	check(cz_s.n == cz.list.size(), "summary counts the sample")
+	cz.list[0].age = 90
+	var occ_before := Game.pop
+	cz._die(cz.list[0], "age")
+	check(int(cz.stats.deaths) == 1 and int(cz.stats.causes.age) == 1, "death is counted by cause")
+	Game.recalc()
+	check(Game.pop <= occ_before, "a death does not raise population")
+	cz.from_dict(cz_keep[0])
+	Game.coins = cz_keep[1]
+	Game.day = cz_keep[2]
+	Game.recalc()
+
+	# ------------------------------------------------ 15 new towers
+	var tw_n := 0
+	for tw_id in Data.B:
+		if str(tw_id).begins_with("tower_"):
+			tw_n += 1
+			check(Data.ORDER.has(tw_id) and Assets.tex("buildings/%s_1_0" % tw_id) != null and Assets.tex("buildings/%s_3_3" % tw_id) != null, "tower %s listed and has art" % tw_id)
+	check(tw_n == 15, "15 new towers exist")
 
 	# ------------------------------------------------ friend's city by QR code
 	var qr_img: Image = QR.image("HELLO", 1)

@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–28, 38–40 и отдельная задача «30 новых объектов» (вне ROADMAP).
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–28, 30–33, 42–48 и отдельная задача «30 новых объектов» (вне ROADMAP).
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы; b_houses3 — дешёвые стартовые дома; b_city30 — 20 зданий из набора «30 объектов»).
@@ -14,7 +14,7 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано (пункт 40 — город друга по QR-коду)
+## Сделано (пункт 48 — город друга по QR-коду)
 - scripts/qr.gd (class_name QR): свой кодировщик QR (байтовый режим, уровень L, версии 1–40), QR.image(text, scale) → Image; сверен бит в бит с python-библиотекой qrcode на версиях 6–40, со скриншота окна игры декодируется OpenCV.
 - game.gd: city_code() — короткий код «PXV1:» только того, как выглядит город (здания столбцами, тайлы дельтами, deflate+base64; стартовый город ~350 символов, ~300 зданий ~1–1.5 тыс., демо-город 1558 зданий ~5 тыс.);
   parse_city_code, visit_city(code) (сначала сохраняет свой город, строит гостевой через from_dict на копии своего сохранения), go_home() (load_game). Game.visiting: пока не "" — save_game ничего не пишет,
@@ -22,6 +22,29 @@
 - UI: настройки → «Город друга» (panels.friends: QR, если код ≤ Data.VISIT_QR_MAX 1400 символов, иначе подсказка отправить текстом; копировать код; поле для кода друга; «В гости»). В гостях — плашка «В гостях: имя» с кнопкой «Домой» (hud._show_visit_bar).
 - Сканирование встроенной камерой в игре нет: друг читает QR камерой телефона/Google Lens и вставляет текст. Проверки в logic_test (QR, код, гости, ничего не сохраняется, возврат домой).
 
+## Пункт 31 (сезонные праздники)
+- scripts/holidays.gd (class Holidays): LIST (navruz — весна 1–2 день сезона, cityday — лето 2–3, halloween — осень 3–4, newyear — зима 3–4; сезон = 4 дня, год = 16), at(day), key(day), награда.
+- Game.hol (сохранение "hol"): key, built, treats, done. _holiday_tick() в _end_of_day: новый праздник — сброс заданий и тост, каждый день +6 настроения (why "holiday").
+  Задания: построить 2 здания за праздник (hol_note_built в place) и угостить жителей (hol_treat, стоит 120·уровень). hol_claim() — награда раз в год.
+- scripts/holiday_view.gd (HolidayView в city): временные спрайты assets/holidays/*.png на свободных клетках у дорог, гирлянды/флажки на зданиях, фейерверки вечером в День города (рисуются кодом).
+  Графика — tools/art/holidays.py (pycairo, только новое). Панель panels.holiday(), кнопка-календарь в боковом ряду видна только в праздник. fix_imports: assets/holidays в mipmaps.
+- logic_test: проверки праздников; ui_test делает скриншоты h_*.
+## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
+- 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
+- 43 Ночная жизнь: tools/art/b_night.py (nightclub, night_market, karaoke; поле "night" в data.gd → открыты 19–5 ч в life.gd, building_view.neon — цвет свечения плывёт), scripts/fireworks_fx.gd (FireworksFx, city.fireworks; выходные = день %7 in 6,0; 20–23 ч над plaza/fountain/town_hall).
+- 44–46 Жители: scripts/citizens.gd (Citizens, Game.cz, в сохранении "cz"): выборка до 240 жителей (возраст, образование, профессия, ступень, кошелёк, болезнь), масштаб = pop/выборка. on_day() из _end_of_day: найм по профессиям зданий, обучение (школа→edu1, it_run→edu2), зарплата/расходы, коммуналка в казну (ledger "utilities"), болезни (заразность, больница лечит, загрязнение), смерти по причинам (age/illness/poverty/no_hospital/pollution), рождения (роддом ×2). Цены cz.prices (свет/вода/проезд, проезд множит transit_fares). UI: scripts/citizen_panels.gd (Panels.cit): кнопка «Жители» в окне города → analytics/prices/list/card; второй тап по пешеходу — карточка. Баланс-прогон: tools/dev/cz_sim.tscn.
+- 47 Башни: tools/art/b_towers2.py (15 tower_*, size 3, cat shop, уровни 24–38; в MODULES). Перерисовка: gen_assets.py buildings only=<id> (~20 с на башню). Не перерисовывать все без нужды (5 минут).
+- Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
+
+## Пункт 30 (ежедневные награды и достижения)
+- scripts/ach.gd (class Ach): LIST ~50 достижений [id, счётчик, имя, текст с %s, пороги уровней, вес награды], value(key) считает прогресс из Game, check() выдаёт награды за достигнутые уровни.
+  Награда уровня: монеты 250·вес·(t+1)², изумруды = номер уровня (одноуровневые — 1).
+- Game.ach (в сохранении, ключ "ach", SAVE_VERSION не менялся): got, last, streak, best, logins, pending, cycle. daily_roll() — новый реальный день (серия +1, пропуск сбрасывает),
+  daily_claim() — награда дня (7-й день: 5 изумрудов + монеты). check_ach() вызывается каждый час и в конце дня, тост с наградой.
+- UI: panels.daily() (окно 7 дней, открывается при входе, затем «Что нового»), panels.achievements() (кнопка-кубок в боковом ряду). Иконки старые (trophy, calendar).
+- В ROADMAP новые 30 и 31 (праздники); прежние 30–37 сдвинуты на 34–41 (32–33 — другой чат). logic_test: проверки достижений и серии входа.
+
+## Пункт 28 (ранее — митинги)
 ## Сделано (пункт 39 в ROADMAP = «п.33» пользователя — режим фото)
 - Кнопка-фотоаппарат (новая иконка assets/ui/icons/camera.png) в правой колонке HUD → scripts/photo_mode.gd (PhotoMode, создаётся в city.gd как city.photo): HUD скрыт, city.photo_mode блокирует тапы по зданиям,
   камера свободная как обычно (палец/щипок/колесо). Фильтры (шейдер по экрану): как есть, день, закат, ночь, ч/б. Затвор: прячет кнопки, снимает viewport, PNG → Pictures/Pixelburg на Android

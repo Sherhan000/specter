@@ -1237,7 +1237,9 @@ func _update_lights() -> void:
 					1.0 if share > 0.6 else 0.0, 1.0 if share > 0.2 and hsh < 50 else 0.0)
 		else:
 			var open := 7.0 <= h and h < 20.0
-			if b.id in ["hospital", "police", "fire_station", "hotel", "gas_station", "ev_station", "gas_highway"]:
+			if Data.B[b.id].get("night", false):
+				open = h >= 19.0 or h < 5.0
+			elif b.id in ["hospital", "police", "fire_station", "hotel", "gas_station", "ev_station", "gas_highway"]:
 				open = true
 			elif cat == "fun" or b.id in ["restaurant", "cinema", "cafe", "pizzeria", "shawarma", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]:
 				open = 10.0 <= h and h < 23.5
@@ -1810,6 +1812,7 @@ class Person extends RefCounted:
 	var driving := false
 	var gone := false
 	var fresh := false
+	var cid := 0             ## linked resident of the sample (Game.cz), set when tapped
 
 
 class Walker extends Node2D:
@@ -1860,6 +1863,9 @@ class Walker extends Node2D:
 
 	func tapped() -> void:
 		Game.sfx("tap")
+		if busy > 0.0 and person != null:
+			life.city.hud.panels.cit.card_for_person(person)   ## a second tap shows the resident's card
+			return
 		busy = 2.4
 		sprite.frame = row * 12 + 8
 		life.speech(self, life.phrase_for(self))

@@ -17,6 +17,7 @@ const MIN_UI_W := 540.0
 var root: Control
 var safe: Control
 var level_label: Label
+var rank_label: Label
 var xp_bar: ColorRect
 var pill_labels := {}
 var pills := {}
@@ -64,6 +65,7 @@ var panels: Panels
 var dialog: DialogBox
 var tutorial: Tutorial
 var _toast_tw: Tween
+var holiday_btn: TextureButton
 var _gated: Array[Control] = []    ## main buttons the tutorial may switch off
 var _bar_t := 0.0
 var _drag_sc: ScrollContainer
@@ -139,8 +141,12 @@ func _ready() -> void:
 			toast(Loc.t("offline"))
 		if Game.tutorial < 99:
 			tutorial.start.call_deferred()
-		elif Game.settings.get("news", "") != Data.NEWS_VERSION:
-			get_tree().create_timer(2.6).timeout.connect(panels.whats_new)
+		else:
+			var news_due: bool = Game.settings.get("news", "") != Data.NEWS_VERSION
+			if Game.daily_roll():
+				get_tree().create_timer(2.6).timeout.connect(func(): panels.daily(panels.whats_new if news_due else Callable()))
+			elif news_due:
+				get_tree().create_timer(2.6).timeout.connect(panels.whats_new)
 
 
 func _fit() -> void:
@@ -510,6 +516,7 @@ func _build_top() -> void:
 	xp_bg.color = Color("1a1622")
 	xp_bg.custom_minimum_size = Vector2(36, 3)
 	lvbox.add_child(xp_bg)
+	rank_label = text("", lvbox, 9, Color("f8c840"))
 	xp_bar = ColorRect.new()
 	xp_bar.color = Color("f8c840")
 	xp_bar.size = Vector2(0, 3)
@@ -554,7 +561,8 @@ func _build_side() -> void:
 	side_buttons.add_theme_constant_override("h_separation", 4)
 	safe.add_child(side_buttons)
 	for spec in [["mail", "orange", func(): panels.inbox()], ["finance", "green", func(): panels.finance()],
-			["mission", "blue", func(): panels.missions()], ["law", "purple", func(): panels.city_info()]]:
+			["mission", "blue", func(): panels.missions()], ["law", "purple", func(): panels.city_info()],
+			["trophy", "orange", func(): panels.achievements()]]:
 		var b := round_btn(spec[0], spec[1], spec[2], 34)
 		b.name = (spec[0] as String).capitalize() + "Button"
 		side_buttons.add_child(b)
@@ -568,6 +576,11 @@ func _build_side() -> void:
 		city.set_xray(not city.xray)
 		Game.sfx("tap")
 		toast(Loc.t("xray_on" if city.xray else "xray_off"))
+	holiday_btn = round_btn("calendar", "purple", func(): panels.holiday(), 34)
+	holiday_btn.name = "HolidayButton"
+	side_buttons.add_child(holiday_btn)
+	holiday_btn.visible = Game.holiday() != ""
+	Game.day_passed.connect(func(_d): holiday_btn.visible = Game.holiday() != "")
 	var xb := round_btn("eye", "blue", xray_cb, 34)
 	xb.name = "XrayButton"
 	side_buttons.add_child(xb)
@@ -1464,6 +1477,7 @@ func _process(delta: float) -> void:
 
 func _update() -> void:
 	level_label.text = str(Game.level)
+	rank_label.text = Game.rank_name()
 	xp_bar.size.x = roundf(36.0 * Game.xp / Data.xp_for_level(Game.level))
 	pill_labels.coins.text = Loc.num(Game.coins)
 	pill_labels.coins.add_theme_color_override("font_color", Color("ff7a6a") if Game.coins < 0 else Color("fff8e8"))

@@ -31,6 +31,7 @@ var fountains: Array[CPUParticles2D] = []
 var _fountain_t := 0.0
 var tex_name := ""
 var room_levels := Vector4.ZERO      ## wanted light of each room group (set by the residents)
+var neon := false                    ## night-life buildings: the glow slowly changes colour
 var openness := 1.0                  ## work places: share of the building that is lit at night
 var _room_now := Vector4.ZERO
 var _lvl := 0
@@ -50,6 +51,7 @@ func setup(p_uid: int, decal_layer: Node2D, shadow_layer: Node2D) -> void:
 	var b: Dictionary = Game.buildings[uid]
 	id = b.id
 	size = Data.B[id].size
+	neon = Data.B[id].get("night", false)
 	rot = int(b.get("rot", 0))
 	tile = Vector2i(b.x, b.y)
 	position = Iso.vertex(tile.x + size * 0.5, tile.y + size * 0.5)
@@ -350,6 +352,8 @@ func _process(delta: float) -> void:
 	_anim_t += delta
 	var night := Game.light_level()
 	glow.modulate.a = night * openness
+	if neon:
+		glow.modulate = Color.from_hsv(fmod(_anim_t * 0.08 + _phase, 1.0), 0.3, 1.0, night * openness)
 	_room_now = _room_now.lerp(room_levels, minf(1.0, delta * 3.0))
 	rooms.modulate = Color(_room_now.x, _room_now.y, _room_now.z, _room_now.w)
 	rooms.visible = night > 0.02
