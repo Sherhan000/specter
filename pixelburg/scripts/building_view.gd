@@ -20,6 +20,10 @@ var status_icon: Sprite2D
 var progress: ProgressBarNode
 var door: DoorView
 var garland: Node2D
+var house_lamp: HouseLampView
+var pool_layer: Node2D               ## where night light pools go (set by the city before setup)
+var _door_pts: Array[Vector2] = []   ## door corners a, b, t of the current picture (none: no door)
+var _lamp_key := ""
 var fire_fx: Array[Node2D] = []
 var heads: Array[Sprite2D] = []
 var smoke: Array[CPUParticles2D] = []
@@ -159,6 +163,24 @@ func refresh(animate := true) -> void:
 	sprite.modulate = Color(0.55, 0.5, 0.5) if b.dmg else Color.WHITE
 	_update_fire(b.fire > 0.0 or b.dmg)
 	_update_garland(b)
+	_update_house_lamp(b)
+
+
+## The player's lamp over the door; rebuilt when its style or the picture (and so the door) changes.
+func _update_house_lamp(b: Dictionary) -> void:
+	var st := str(b.get("hlamp", ""))
+	var key := "" if st == "" or _door_pts.is_empty() else st + "|" + tex_name
+	if key == _lamp_key:
+		return
+	_lamp_key = key
+	if house_lamp:
+		house_lamp.free_all()
+		house_lamp = null
+	if key == "":
+		return
+	house_lamp = HouseLampView.new()
+	add_child(house_lamp)
+	house_lamp.setup(st, _door_pts[0], _door_pts[1], _door_pts[2], pool_layer if pool_layer else _decals, position)
 
 
 func _setup_extras(m: Dictionary) -> void:
@@ -170,6 +192,7 @@ func _setup_extras(m: Dictionary) -> void:
 		h.queue_free()
 	heads.clear()
 	door.clear()
+	_door_pts.clear()
 	if m.is_empty():
 		return
 	for key in m.points:
@@ -249,6 +272,7 @@ func _setup_extras(m: Dictionary) -> void:
 		var b2 := Vector2(m.points.door_b[0], m.points.door_b[1]) + _shift
 		var t := Vector2(m.points.door_t[0], m.points.door_t[1]) + _shift
 		door.setup(a, b2, t)
+		_door_pts = [a, b2, t]
 
 
 ## Grid position of the door (a point on the facade) and of the lot entrance on the street side.

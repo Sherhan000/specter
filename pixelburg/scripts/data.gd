@@ -50,6 +50,12 @@ const POWER_HOME := 0.1    ## kW per resident
 const POWER_JOB := 0.3     ## kW per worker (plus POWER_BASE per business)
 const POWER_BASE := 1.0
 const POWER_LAMP := 0.25   ## kW per street lamp
+## A lamp over the front door of a home (placed with the lamp tool by tapping a house). Its look follows
+## the chosen street lamp style; the home gets a little happier.
+const HOUSE_LAMP_COST := 30
+const HOUSE_LAMP_HAPPY := 2
+const HOUSE_LAMP_UPKEEP := 0.25
+const POWER_HOUSE_LAMP := 0.1
 
 const ROADS := {
 	"dirt": {"name": ["Грунтовка", "Dirt road"], "cost": 6, "upkeep": 0.2, "row": 2, "speed": 0.75},
@@ -90,6 +96,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Фонарь над входом: в режиме фонаря нажмите на дом — над дверью появится фонарь (классика, модерн или два плафона по бокам), ночью он светит на крыльцо, а жителям уютнее", "A lamp over the door: in lamp mode tap a house and a lamp appears above its entrance (classic, modern or twin lights on both sides); at night it lights the porch and the residents feel cosier"],
 	["Дома можно связать в единый квартал: проведите стену от дома к дому — стена примыкает к домам. Новые стены: штукатурная стена квартала с черепицей и арка-переход с крышей. Дома одного квартала счастливее", "Join homes into one quarter: draw a wall from house to house and it joins onto them. New walls: a plastered quarter wall with a tiled top and a roofed arch passage. Homes of one quarter are happier"],
 	["Многоэтажные парковки, у каждой свой вид: бетонная с открытыми этажами, автоматическая башня со стеллажами, зелёная с растениями и солнечной крышей и круглая со спиральным пандусом — машины жителей заезжают внутрь и паркуются, в карточке видно, сколько мест занято", "Multi-storey car parks, each with its own look: an open concrete deck garage, an automated tower with car racks, a green garage with plants and a solar roof and a round one with a spiral ramp - residents' cars drive in and park there, and the card shows how many places are taken"],
 	["Кольцо на перекрёстке: нажмите на перекрёсток и выберите «Кольцо» — машины объезжают островок с фонтаном по кругу и уступают тем, кто уже на кольце, светофор и электричество не нужны", "Roundabouts: tap a crossing and choose Roundabout - cars circle an island with a fountain and give way to those already on the ring, no traffic light or power needed"],

@@ -804,7 +804,7 @@ func show_lamp_bar() -> void:
 	mode_hint.visible = false
 	for b in lamp_types.get_children():
 		b.modulate = Color.WHITE if b.get_meta("style") == city.lamp_style else Color(0.6, 0.6, 0.72)
-	mode_sub.text = Loc.t("hint_lamp")
+	mode_sub.text = Loc.t("hint_lamp") % Data.HOUSE_LAMP_COST
 	mode_sub.visible = true
 	for c in mode_price.get_children():
 		c.queue_free()

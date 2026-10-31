@@ -279,6 +279,7 @@ func light_allows(tile: Vector2i, dir: Vector2i) -> bool:
 func _add_view(uid: int) -> void:
 	var v := BuildingView.new()
 	world.add_child(v)
+	v.pool_layer = pools
 	v.setup(uid, decals, shadows)
 	views[uid] = v
 	scenery.rebuild_land_trees()
@@ -798,6 +799,16 @@ func _tap(screen_p: Vector2) -> void:
 				_set_road_preview(_road_path(road_start, tile))
 			hud.show_road_bar(_road_cost_text(), not road_tiles.is_empty())
 		Mode.LAMP:
+			# a tap on a home puts a lamp over its door (again with the same style: take it off)
+			var hv := pick_view(wp)
+			if hv and not hv.faded() and Data.B[hv.id].cat == "home":
+				var huid := hv.uid
+				if Game.buildings[huid].get("hlamp", "") == lamp_style:
+					hud.confirm(Loc.t("hlamp_remove_q"), func(): Game.remove_house_lamp(huid))
+				elif Game.place_house_lamp(huid, lamp_style):
+					hv.bounce()
+					hud.show_lamp_bar()
+				return
 			var q := _quarter_at(wp)
 			if Game.place_lamp(q, lamp_style):
 				hud.show_lamp_bar()

@@ -339,7 +339,7 @@ func _add_building(id: String, x: int, y: int, built: bool, lvl := 1, rot := -1)
 		rot = facing_for(x, y, maxi(1, Data.B[id].size), 0)
 	buildings[uid] = {"id": id, "x": x, "y": y, "lvl": lvl, "rot": rot, "built": built, "upg": false, "prog": 0.0,
 		"ready": false, "stocked": false, "occ": 0, "closed": false, "dmg": false, "priv": "", "link": 0, "fire": 0.0,
-		"cd_check": 0, "cd_meet": 0}
+		"cd_check": 0, "cd_meet": 0, "hlamp": ""}
 	_occupy(uid)
 	return uid
 
@@ -485,7 +485,8 @@ func from_dict(p: Dictionary) -> bool:
 			"built": bool(b.built), "upg": bool(b.get("upg", false)), "prog": float(b.prog), "ready": bool(b.ready),
 			"stocked": bool(b.get("stocked", false)), "occ": int(b.get("occ", 0)), "closed": bool(b.get("closed", false)),
 			"dmg": bool(b.get("dmg", false)), "priv": str(b.get("priv", "")), "link": int(b.get("link", 0)), "fire": float(b.get("fire", 0.0)),
-			"cd_check": int(b.get("cd_check", 0)), "cd_meet": int(b.get("cd_meet", 0))}
+			"cd_check": int(b.get("cd_check", 0)), "cd_meet": int(b.get("cd_meet", 0)),
+			"hlamp": str(b.get("hlamp", ""))}
 		_occupy(uid)
 	next_uid = int(p.next_uid)
 	claimed = p.claimed.map(func(v): return int(v))
@@ -727,6 +728,7 @@ func daily_upkeep() -> int:
 			continue
 		total += Data.stat(b.id, "upkeep", b.lvl) * (0.3 if b.closed else 1.0)
 	total += lamps.size() * 0.5 + lights.size() * 2.0 + rings.size() * Data.RING_UPKEEP
+	total += house_lamp_count() * Data.HOUSE_LAMP_UPKEEP
 	return int(round(total))
 
 
@@ -1071,6 +1073,9 @@ func recalc() -> void:
 			h += wv
 			reasons.append(["r_water_view", wv])
 		h += mini(_lamps_near(hc, 2.6), 3)
+		if str(b.get("hlamp", "")) != "":
+			h += Data.HOUSE_LAMP_HAPPY
+			reasons.append(["r_house_lamp", Data.HOUSE_LAMP_HAPPY])
 		if _jam_near(hc):
 			h -= 4
 			reasons.append(["r_jam", -4])
@@ -1286,7 +1291,7 @@ func is_intersection(c: Vector2i) -> bool:
 func _recalc_utilities() -> void:
 	_plant_kw = 0.0
 	_solar_kw = 0.0
-	_demand_kw = lamps.size() * Data.POWER_LAMP
+	_demand_kw = lamps.size() * Data.POWER_LAMP + house_lamp_count() * Data.POWER_HOUSE_LAMP
 	power_cap = 0.0
 	water_supply = Data.WATER_FREE
 	water_demand = 0
@@ -2199,6 +2204,53 @@ func remove_lamp(q: Vector2i) -> void:
 		lamps_changed.emit()
 		sfx("demolish")
 		save_game()
+
+
+## A lamp over the front door of a built home; style is one of the street lamp styles.
+func house_lamp_problem(uid: int) -> String:
+	if not buildings.has(uid) or Data.B[buildings[uid].id].cat != "home":
+		return "hlamp_home"
+	if not buildings[uid].built:
+		return "hlamp_built"
+	return ""
+
+
+func place_house_lamp(uid: int, style: String) -> bool:
+	var why := house_lamp_problem(uid)
+	if level < int(Data.B.lamp.lvl):
+		why = "locked"
+	elif why == "" and buildings[uid].hlamp == style:
+		why = "hlamp_same"
+	if why != "":
+		toast.emit(Loc.t(why) if why != "locked" else Loc.t("locked_lvl") % Data.B.lamp.lvl)
+		sfx("error")
+		return false
+	if not pay(Data.HOUSE_LAMP_COST, 0):
+		return false
+	buildings[uid].hlamp = style
+	add_xp(1)
+	recalc()
+	building_updated.emit(uid)
+	sfx("place")
+	save_game()
+	return true
+
+
+func remove_house_lamp(uid: int) -> void:
+	if buildings.has(uid) and buildings[uid].get("hlamp", "") != "":
+		buildings[uid].hlamp = ""
+		recalc()
+		building_updated.emit(uid)
+		sfx("demolish")
+		save_game()
+
+
+func house_lamp_count() -> int:
+	var n := 0
+	for uid in buildings:
+		if buildings[uid].get("hlamp", "") != "":
+			n += 1
+	return n
 
 
 func clear_tree(c: Vector2i) -> bool:

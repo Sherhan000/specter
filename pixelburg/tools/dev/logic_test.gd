@@ -394,6 +394,35 @@ func _ready() -> void:
 		check(Game.remove_walls(arch_line) and not Game.quarter_of.has(qh[0]) and int(Game.quarter_of[qh[1]].homes) == 2, "removing the arch splits the quarter")
 		Game.remove_walls(plaster_line)
 		check(Game.quarter_of.is_empty(), "no walls, no quarter")
+		# a lamp over the door of a home
+		var lh := qh[0]
+		Game.level = maxi(Game.level, int(Data.B.lamp.lvl))
+		Game.coins += 1000
+		var lc0 := Game.coins
+		var up0 := Game.daily_upkeep()
+		check(Game.house_lamp_problem(lh) == "" and Game.house_lamp_problem(-7) != "", "door lamps go on built homes only")
+		check(Game.place_house_lamp(lh, "classic") and Game.buildings[lh].hlamp == "classic", "lamp put over the door")
+		check(Game.coins == lc0 - Data.HOUSE_LAMP_COST and Game.house_lamp_count() == 1, "door lamp costs %d" % Data.HOUSE_LAMP_COST)
+		check(Game.daily_upkeep() >= up0, "door lamp upkeep counted")
+		if Game.home_reasons.has(lh):
+			check(Game.home_reasons[lh].any(func(r): return r[0] == "r_house_lamp"), "mood shows the door lamp")
+		check(not Game.place_house_lamp(lh, "classic"), "the same lamp twice is refused")
+		var hv: BuildingView = city.views.get(lh)
+		check(hv != null and hv.house_lamp != null and hv.house_lamp.lights.size() == 1, "door lamp drawn over the entrance")
+		if hv and hv.house_lamp:
+			var mid: Vector2 = (hv._door_pts[0] + hv._door_pts[1]) * 0.5
+			var dh := hv._door_pts[0].y - hv._door_pts[2].y
+			var lp: Vector2 = hv.house_lamp.lights[0]
+			check(lp.y < mid.y - dh * 0.3 and lp.y > mid.y - dh * 1.3 and absf(lp.x - mid.x) < 24.0, "lamp hangs by the top of the door (%s)" % lp)
+		check(Game.place_house_lamp(lh, "lantern") and hv.house_lamp != null and hv.house_lamp.lights.size() == 2, "twin lamps on both sides of the door")
+		Game.save_game()
+		Game.load_game()
+		check(str(Game.buildings[lh].get("hlamp", "")) == "lantern", "door lamp kept after loading")
+		Game.remove_house_lamp(lh)
+		check(Game.buildings[lh].hlamp == "" and Game.house_lamp_count() == 0, "door lamp removed")
+		if city.views.has(lh):
+			city.views[lh].refresh()
+			check(city.views[lh].house_lamp == null, "door lamp gone from the house")
 		for u in qh:
 			Game.demolish(u)
 	var deco_line: Array[Vector2i] = [road_tile]
