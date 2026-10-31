@@ -321,6 +321,7 @@ const S := {
 	"why_happy": ["Почему жители довольны или нет", "What residents like and dislike"],
 	"radius": ["Радиус действия (клеток)", "Range (tiles)"],
 	"park_places": ["Машин на парковке", "Cars parked"],
+	"hist_tour": ["Доход от туристов в день", "Tourist income a day"],
 	"r_decor": ["Зелень и декор рядом", "Greenery and decor nearby"],
 	"r_edu": ["Школа рядом", "School nearby"],
 	"r_fire": ["Пожарная часть рядом", "Fire station nearby"],

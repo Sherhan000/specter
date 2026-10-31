@@ -929,6 +929,29 @@ func _ready() -> void:
 		check(lf.garage_used(gar) == 0 and (not is_instance_valid(incar) or incar.state == "gone"), "cars leave a car park that was pulled down")
 		blocker.queue_free()
 
+	# ------------------------------------------------ castle and historic sights
+	for hid in ["castle", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch"]:
+		check(Data.B.has(hid) and Data.ORDER.has(hid) and int(Data.B[hid].get("hist", 0)) > 0 and Data.B[hid].happy > 0, "%s is a historic sight in the list" % hid)
+		check(Data.B[hid].cat == ("decor" if hid in ["minaret", "triumph_arch"] else "fun"), "%s sits in its tab" % hid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % hid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % hid), "%s has its own sprites" % hid)
+		check(Life.OUTINGS.has(hid), "residents go out to see %s" % hid)
+	check(Data.B.castle.size == 3 and Data.B.castle.income > 0, "the castle is a big 3x3 sight that sells tickets")
+	var hpos := Vector2i(-1, -1)
+	for yy in range(c - 16, c + 16):
+		for xx in range(c - 16, c + 16):
+			if hpos.x < 0 and Game.place_problem("castle", xx, yy) == "" and Game._touches_road(xx, yy, 3):
+				hpos = Vector2i(xx, yy)
+	var cas := Game._add_building("castle", hpos.x, hpos.y, true) if hpos.x >= 0 else 0
+	check(cas != 0, "castle can be placed by a road")
+	if cas != 0:
+		Game.recalc()
+		check(Game.hist_tourists(cas) == int(Data.B.castle.hist) * int(Game.buildings[cas].lvl), "a working castle brings tourists")
+		Game.buildings[cas].closed = true
+		check(Game.hist_tourists(cas) == 0, "a closed castle brings no tourists")
+		Game.buildings[cas].closed = false
+		Game.demolish(cas)
+	check(Game.hist_tourists(cas) == 0, "a pulled down castle brings no tourists")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

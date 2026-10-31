@@ -678,6 +678,7 @@ func _end_of_day() -> void:
 				tour += 120 * b.lvl
 			elif Data.B[b.id].get("landmark", false) and _works(uid):
 				tour += 400 * b.lvl
+			tour += hist_tourists(uid)
 		tour = int(tour * law_mult("tour"))
 		if tour > 0:
 			_earn("tourism", tour)
@@ -888,6 +889,14 @@ func _works(uid: int) -> bool:
 
 func works(uid: int) -> bool:
 	return buildings.has(uid) and _works(uid)
+
+
+## Tourists a day that a working historic sight (field "hist") brings, × its level.
+func hist_tourists(uid: int) -> int:
+	if not buildings.has(uid) or not _works(uid):
+		return 0
+	var b: Dictionary = buildings[uid]
+	return int(Data.B[b.id].get("hist", 0)) * int(b.lvl)
 
 
 # ====================================================================== population & happiness

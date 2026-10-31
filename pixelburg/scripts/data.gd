@@ -107,6 +107,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Замок и исторические объекты, у каждого свой вид: каменный замок со рвом, башнями и донжоном, мавзолей с бирюзовым куполом, пятиярусная пагода, руины античного храма (с уровнем его восстанавливают), кирпичный минарет и триумфальная арка. Они радуют жителей и привлекают туристов", "A castle and historic sights, each with its own look: a stone castle with a moat, towers and a keep, a mausoleum with a turquoise dome, a five-tier pagoda, ruins of an ancient temple (restored as it levels up), a brick minaret and a triumphal arch. They cheer residents up and draw tourists"],
 	["Плитка вместо травы: в режиме дорог выберите «Плитка» и проведите пальцем перед домами — серая, красная или узорная плитка и пешеходные дорожки. По ним гуляют пешеходы, иногда с собакой, а жителям рядом приятнее", "Paving instead of grass: in road mode pick «Paving» and drag in front of the houses - grey, terracotta or patterned tiles and footpaths. People stroll along them, sometimes with a dog, and the homes beside them are happier"],
 	["Фонарь над входом: в режиме фонаря нажмите на дом — над дверью появится фонарь (классика, модерн или два плафона по бокам), ночью он светит на крыльцо, а жителям уютнее", "A lamp over the door: in lamp mode tap a house and a lamp appears above its entrance (classic, modern or twin lights on both sides); at night it lights the porch and the residents feel cosier"],
 	["Дома можно связать в единый квартал: проведите стену от дома к дому — стена примыкает к домам. Новые стены: штукатурная стена квартала с черепицей и арка-переход с крышей. Дома одного квартала счастливее", "Join homes into one quarter: draw a wall from house to house and it joins onto them. New walls: a plastered quarter wall with a tiled top and a roofed arch passage. Homes of one quarter are happier"],
@@ -377,6 +378,15 @@ const B := {
 		"jobs": 10, "income": 200, "cycle": 200, "upkeep": 90, "radius": 28, "happy": 12},
 	"stadium": {"name": ["Стадион", "Stadium"], "cat": "fun", "zones": ["leisure", "city"], "size": 3, "cost": 18000, "gems": 6, "lvl": 16, "time": 260,
 		"jobs": 12, "income": 320, "cycle": 260, "upkeep": 120, "radius": 32, "happy": 14},
+	# historic sights: tickets like a museum, and "hist" = extra tourists a day (× level) once a road reaches them
+	"ancient_temple": {"name": ["Античный храм", "Ancient Temple"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 7000, "lvl": 9, "time": 160,
+		"jobs": 4, "income": 120, "cycle": 200, "upkeep": 40, "radius": 20, "happy": 8, "hist": 110},
+	"mausoleum": {"name": ["Мавзолей с куполом", "Domed Mausoleum"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 9000, "gems": 2, "lvl": 11, "time": 180,
+		"jobs": 5, "income": 150, "cycle": 200, "upkeep": 50, "radius": 22, "happy": 9, "hist": 140},
+	"pagoda": {"name": ["Пагода", "Pagoda"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 11000, "gems": 3, "lvl": 13, "time": 200,
+		"jobs": 5, "income": 170, "cycle": 200, "upkeep": 55, "radius": 22, "happy": 10, "hist": 160},
+	"castle": {"name": ["Замок", "Castle"], "cat": "fun", "zones": ["city", "leisure"], "size": 3, "cost": 24000, "gems": 6, "lvl": 15, "time": 300,
+		"jobs": 10, "income": 260, "cycle": 240, "upkeep": 110, "radius": 30, "happy": 14, "hist": 300},
 	# ------------------------------------------------ decor (happiness in a radius)
 	"tree": {"name": ["Деревья", "Trees"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 1, "cost": 30, "lvl": 1, "time": 2,
 		"happy": 2, "radius": 4, "upkeep": 0},
@@ -415,6 +425,11 @@ const B := {
 		"happy": 10, "radius": 8, "upkeep": 5},
 	"statue": {"name": ["Статуя", "Statue"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 5000, "gems": 3, "lvl": 10, "time": 60,
 		"happy": 20, "radius": 10, "upkeep": 8},
+	# historic monuments (decor): happiness around and tourists ("hist")
+	"triumph_arch": {"name": ["Триумфальная арка", "Triumphal Arch"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 3000, "gems": 1, "lvl": 8, "time": 50,
+		"happy": 12, "radius": 8, "upkeep": 5, "hist": 50},
+	"minaret": {"name": ["Минарет", "Minaret"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 4000, "gems": 2, "lvl": 10, "time": 60,
+		"happy": 14, "radius": 9, "upkeep": 6, "hist": 70},
 	# unfinished houses and building yards: pure decoration, "as if a construction is going on"
 	"site_small": {"name": ["Стройка: кладка стены", "Building: laying a wall"], "cat": "decor", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 120, "lvl": 2, "time": 5,
 		"happy": 1, "radius": 3, "upkeep": 0},
@@ -443,8 +458,8 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
 	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
-	"museum", "zoo", "funfair", "stadium",
-	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
+	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "zoo", "funfair", "stadium",
+	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.
 const COUNTRIES := {
