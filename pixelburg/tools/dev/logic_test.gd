@@ -1383,6 +1383,39 @@ func _ready() -> void:
 	for ph_f in PhotoMode.FILTERS:
 		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
 
+	# ------------------------------------------------ friend's city by QR code
+	var qr_img: Image = QR.image("HELLO", 1)
+	check(qr_img != null and qr_img.get_width() == 21 + 8, "a short text makes a version 1 QR code")
+	check(qr_img.get_pixel(4, 4).r < 0.5 and qr_img.get_pixel(5, 5).r > 0.5 and qr_img.get_pixel(6, 6).r < 0.5, "the QR code has its finder pattern")
+	var qr_big := ""
+	for qi in 1000:
+		qr_big += "x"
+	check(QR.image(qr_big, 1).get_width() > 100 + 8 and QR.image(qr_big + qr_big + qr_big, 1) == null, "long text picks a bigger version, too long gives nothing")
+	Game.save_game(true)
+	var qv_code := Game.city_code()
+	var qv_n := Game.buildings.values().filter(func(b): return b.built).size()
+	var qv_roads := Game.roads.size()
+	var qv_coins := Game.coins
+	var qv_sig := {}
+	for qu in Game.buildings:
+		if Game.buildings[qu].built:
+			qv_sig["%s@%d,%d" % [Game.buildings[qu].id, Game.buildings[qu].x, Game.buildings[qu].y]] = true
+	check(qv_code.begins_with(Game.VISIT_PREFIX) and Game.parse_city_code(qv_code).has("bp"), "the city code reads back")
+	check(Game.parse_city_code("PXB4:12:abc").is_empty() and not Game.visit_city("hello"), "a wrong code is refused")
+	check(Game.visit_city("Друг прислал: " + qv_code + "\n"), "a friend's code opens the city")
+	var qv_same := Game.buildings.size() == qv_n and Game.roads.size() == qv_roads
+	for qu in Game.buildings:
+		if not qv_sig.has("%s@%d,%d" % [Game.buildings[qu].id, Game.buildings[qu].x, Game.buildings[qu].y]):
+			qv_same = false
+	check(qv_same and Game.visiting != "", "the friend's city has the same buildings and roads")
+	check(Game.place_problem("bench", 1, 1) == "visit_mode", "no building in a friend's city")
+	var qv_disk := FileAccess.get_md5(Game.SAVE_PATH)
+	Game.coins += 999
+	Game.save_game(true)
+	check(FileAccess.get_md5(Game.SAVE_PATH) == qv_disk, "nothing is saved while visiting")
+	Game.go_home()
+	check(Game.visiting == "" and Game.coins == qv_coins and Game.buildings.values().filter(func(b): return b.built).size() == qv_n, "back home the own city is as it was")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

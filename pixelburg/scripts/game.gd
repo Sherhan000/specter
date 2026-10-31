@@ -61,6 +61,7 @@ var road_deco := {}          ## road tile -> decoration along its sidewalks (Dat
 var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"owner": name, "day": founded}
 var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
 var disaster := {}           ## natural event with a choice, see _empty_disaster()
+var visiting := ""           ## the friend whose city is shown (QR / code); "" = at home. Nothing is saved while visiting.
 var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
@@ -414,6 +415,8 @@ func to_dict() -> Dictionary:
 
 ## Saves the city (atomically, keeping the previous save as a backup).
 func save_game(now := false) -> void:
+	if visiting != "":
+		return
 	_finish_save()
 	var data := to_dict()
 	_write_save(data)
@@ -616,6 +619,167 @@ func import_code(code: String) -> bool:
 	settings = keep_settings
 	save_game()
 	return true
+
+
+# ====================================================================== friend's city (QR)
+const VISIT_PREFIX := "PXV1:"
+
+
+## Sorted tiles as deltas of their index (y * MAP + x): short and well compressible.
+static func _pack_tiles(tiles: Array) -> Array:
+	var idx: Array = tiles.map(func(c): return int(c.y) * Data.MAP + int(c.x))
+	idx.sort()
+	var out: Array = []
+	var last := 0
+	for i in idx:
+		out.append(i - last)
+		last = i
+	return out
+
+
+static func _unpack_tiles(deltas: Array) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	var i := 0
+	for d in deltas:
+		i += int(d)
+		out.append(Vector2i(i % Data.MAP, i / Data.MAP))
+	return out
+
+
+## Tiles grouped by their value (road type, wall type…): {value: packed tiles}.
+static func _pack_typed(m: Dictionary) -> Dictionary:
+	var by := {}
+	for c in m:
+		var k := str(m[c])
+		if not by.has(k):
+			by[k] = []
+		by[k].append(c)
+	for k in by:
+		by[k] = _pack_tiles(by[k])
+	return by
+
+
+## A short code of what the city looks like (no money, events or history) for a friend to visit.
+## Fits a QR code for small and middle cities.
+func city_code() -> String:
+	# columns: positions (packed tiles), ids, levels and turns as digit strings, house lamps by order
+	var order: Array = buildings.keys().filter(func(u): return buildings[u].built)
+	order.sort_custom(func(a, b): return int(buildings[a].y) * Data.MAP + int(buildings[a].x) < int(buildings[b].y) * Data.MAP + int(buildings[b].x))
+	var pos: Array = []
+	var bid: Array = []
+	var lv := ""
+	var hl: Array = []
+	for u in order:
+		var b: Dictionary = buildings[u]
+		pos.append(Vector2i(int(b.x), int(b.y)))
+		bid.append(b.id)
+		lv += str(int(b.lvl) * 4 + int(b.get("rot", 0)) % 4)
+		if str(b.get("hlamp", "")) != "":
+			hl.append_array([bid.size() - 1, b.hlamp])
+	var d := {"n": mayor_name(), "l": level, "d": day, "p": pop, "bp": _pack_tiles(pos), "bi": bid, "bl": lv, "hl": hl,
+		"r": _pack_typed(roads), "li": _pack_tiles(lights.keys()), "ri": _pack_tiles(rings.keys()),
+		"lp": _pack_typed(lamps), "w": _pack_tiles(water.keys()), "wl": _pack_typed(walls), "pv": _pack_typed(paves),
+		"rd": _pack_typed(road_deco), "pl": _pack_tiles(plots), "bh": beach, "c": _pack_tiles(cleared_trees.keys())}
+	var raw := JSON.stringify(d).to_utf8_buffer()
+	return VISIT_PREFIX + str(raw.size()) + ":" + Marshalls.raw_to_base64(raw.compress(FileAccess.COMPRESSION_DEFLATE))
+
+
+func mayor_name() -> String:
+	var n := str(profile.get("name", "")).strip_edges()
+	return n if n != "" else Loc.t("visit_noname")
+
+
+## Reads a friend's city code. Returns {} if it is not one.
+static func parse_city_code(code: String) -> Dictionary:
+	code = code.strip_edges().replace("\n", "").replace(" ", "")
+	var at := code.find(VISIT_PREFIX)
+	if at < 0:
+		return {}
+	var parts := code.substr(at + VISIT_PREFIX.length()).split(":")
+	if parts.size() != 2 or not parts[0].is_valid_int() or int(parts[0]) > 4_000_000:
+		return {}
+	var packed := Marshalls.base64_to_raw(parts[1])
+	if packed.is_empty():
+		return {}
+	var raw := packed.decompress(int(parts[0]), FileAccess.COMPRESSION_DEFLATE)
+	var d = JSON.parse_string(raw.get_string_from_utf8())
+	if typeof(d) != TYPE_DICTIONARY or not d.has("bp") or not d.has("r"):
+		return {}
+	return d
+
+
+## Shows a friend's city: the own city is saved first and comes back untouched (go_home).
+func visit_city(code: String) -> bool:
+	var f := parse_city_code(code)
+	if f.is_empty():
+		return false
+	save_game(true)
+	var d := to_dict()
+	d.time = Time.get_unix_time_from_system()
+	var list: Array = []
+	var bpos := _unpack_tiles(f.get("bp", []))
+	var bid: Array = f.get("bi", [])
+	var lv := str(f.get("bl", ""))
+	var hl := {}
+	var hla: Array = f.get("hl", [])
+	for i in range(0, hla.size() - 1, 2):
+		hl[int(hla[i])] = str(hla[i + 1])
+	var uid := 1
+	for i in mini(bpos.size(), mini(bid.size(), lv.length())):
+		var id := str(bid[i])
+		if not Data.B.has(id):
+			continue
+		var k := int(lv[i])
+		var lvl := clampi(k / 4, 1, 3)
+		var occ := Data.stat(id, "pop", lvl) if Data.B[id].cat == "home" else 0
+		list.append([uid, {"id": id, "x": bpos[i].x, "y": bpos[i].y, "lvl": lvl, "rot": k % 4,
+			"built": true, "prog": 0.0, "ready": false, "occ": occ, "hlamp": hl.get(i, "")}])
+		uid += 1
+	d.buildings = list
+	d.next_uid = uid
+	var typed := func(key: String) -> Array:
+		var out: Array = []
+		var m: Dictionary = f.get(key, {})
+		for k in m:
+			for c in _unpack_tiles(m[k]):
+				out.append([c.x, c.y, str(k)])
+		return out
+	var flat := func(key: String) -> Array:
+		return _unpack_tiles(f.get(key, [])).map(func(c): return [c.x, c.y])
+	d.roads = typed.call("r")
+	d.lamps = typed.call("lp")
+	d.walls = typed.call("wl")
+	d.paves = typed.call("pv")
+	d.road_deco = typed.call("rd")
+	d.lights = flat.call("li")
+	d.rings = flat.call("ri")
+	d.water = flat.call("w")
+	d.cleared = flat.call("c")
+	var pl: Array = flat.call("pl")
+	if not pl.is_empty():
+		d.plots = pl
+	d.beach = Array(f.get("bh", [])).map(func(v): return int(v))
+	d.lost = false
+	d.mood = []
+	d.garbage = 0.0
+	var keep := to_dict()
+	if not from_dict(d):
+		from_dict(keep)
+		return false
+	visiting = str(f.get("n", "?")).left(24)
+	if visiting == "":
+		visiting = "?"
+	offline_note = false
+	return true
+
+
+## Back from a friend's city: the own city is loaded from the save as it was.
+func go_home() -> void:
+	if visiting == "":
+		return
+	visiting = ""
+	if not load_game():
+		new_game()
 
 
 func reset_game(keep_profile := true) -> void:
@@ -2079,6 +2243,8 @@ func covered_by(svc: String, c: Vector2i) -> bool:
 
 
 func _check_lose() -> void:
+	if visiting != "":
+		return
 	if lost or peak_pop < 60:
 		return
 	if happy <= 2.0 and pop <= peak_pop * 0.4:
@@ -2141,6 +2307,8 @@ func pay(c: int, g: int, key := "build") -> bool:
 
 
 func place_problem(id: String, x: int, y: int, ignore_uid := 0) -> String:
+	if visiting != "":
+		return "visit_mode"
 	var n: int = maxi(1, Data.B[id].size) if id != "road" else 1
 	if id != "road":
 		if Data.B[id].get("unique", false) and ignore_uid == 0 and buildings.values().any(func(b): return b.id == id):

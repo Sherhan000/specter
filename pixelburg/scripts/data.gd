@@ -110,6 +110,8 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Город друга: в настройках откройте «Город друга» — там QR-код вашего города. Друг сканирует его камерой телефона, копирует код и вставляет в своей игре — и гуляет по вашему городу. Код можно и просто отправить в мессенджере. В гостях ничего не сохраняется, кнопка «Домой» возвращает в свой город",
+	 "Friend's city: open \"Friend's city\" in the settings to see your city's QR code. A friend scans it with the phone camera, copies the code and pastes it in their game to walk around your city. You can also just send the code in a messenger. Nothing is saved while visiting; the Home button takes you back"],
 	["Режим фото: кнопка с фотоаппаратом справа убирает весь интерфейс — остаётся только город. Камеру можно двигать и приближать пальцами, а фильтры «День», «Закат», «Ночь» и «Ч/б» меняют настроение кадра. Кнопка-затвор сохраняет снимок в галерею телефона (папка Pictures/Pixelburg), на компьютере — в папку user://photos. Крестик слева сверху возвращает в игру",
 	 "Photo mode: the camera button on the right hides the whole interface so only the city is left. Move and zoom the camera with your fingers, and the Day, Sunset, Night and B&W filters set the mood of the shot. The shutter button saves the picture to the phone's gallery (Pictures/Pixelburg folder), on a computer to user://photos. The cross at the top left takes you back to the game"],
 	["Стихийные события с выбором: иногда на город обрушивается наводнение (у реки и моря), землетрясение, снежная буря зимой или нашествие туристов. Приходит письмо с тремя вариантами: дорого и надёжно, дёшево и рискованно или ничего не делать. Пожарные и больница снижают ущерб. Вода заливает берег, по земле идут трещины и трясётся экран, снег заметает улицы, а у достопримечательностей собираются толпы туристов. Повреждённые дома чинятся в их карточке",
@@ -738,6 +740,9 @@ const DZ := {
 	"blizzard": {"cost": [700, 150, 0], "risk": [0.0, 0.4, 1.0], "frac": [0.0, 0.1, 0.2], "mood": [0, -3, -6], "rep": [2, 0, -2]},
 	"tourists": {"cost": [700, 120, 0], "gain": [2200, 1100, 300], "garbage": [0, 12, 25], "mood": [2, -1, -3], "rep": [3, 1, 0]},
 }
+
+## Friend's city (QR): longest city code still shown as a QR code (bigger ones are sent as text).
+const VISIT_QR_MAX := 1400
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]

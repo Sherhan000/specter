@@ -130,6 +130,8 @@ func _ready() -> void:
 		Game.settings["news"] = Data.NEWS_VERSION   # a new player has nothing to catch up on
 	elif Game.lost:
 		panels.game_over.call_deferred()
+	elif Game.visiting != "":
+		_show_visit_bar()
 	else:
 		_show_splash()
 		if Game.offline_note:
@@ -575,6 +577,29 @@ func _build_side() -> void:
 	side_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	side_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_place_side()
+
+
+## In a friend's city: whose city it is and the way back home (nothing done here is kept).
+func _show_visit_bar() -> void:
+	var box := HBoxContainer.new()
+	box.name = "VisitBar"
+	box.add_theme_constant_override("separation", 6)
+	var pc := PanelContainer.new()
+	pc.add_child(box)
+	var lab := _label(Loc.t("visit_bar") % Game.visiting, box, 11)
+	lab.add_theme_color_override("font_color", Color("3a2a1e"))
+	lab.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	box.add_child(button(Loc.t("visit_home"), "home", "green", func():
+		Game.go_home()
+		get_tree().reload_current_scene()))
+	var holder := CenterContainer.new()
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.add_child(pc)
+	safe.add_child(holder)
+	holder.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	holder.offset_top = 40.0
+	holder.offset_bottom = 40.0
+	toast(Loc.t("visit_hint"))
 
 
 ## The side column sits mid-right between the top bar and the build button; with big buttons
