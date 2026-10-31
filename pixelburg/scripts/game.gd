@@ -41,6 +41,7 @@ var gems := 0
 var goods := 0
 var xp := 0
 var level := 1
+var soc := Social.new()   ## "Pixelchat" feed (social.gd)
 var cz := Citizens.new()   ## sample of residents: careers, wallets, health (citizens.gd)
 var rank := 0   ## best mayor rank reached (index in Data.RANKS)
 var beach: Array = []        ## owned beach segments (0..7, one per plot row)
@@ -147,6 +148,7 @@ var _rng := RandomNumberGenerator.new()
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_rng.randomize()
+	soc.setup()
 	for i in 12:
 		var p := AudioStreamPlayer.new()
 		add_child(p)
@@ -299,6 +301,7 @@ func new_game() -> void:
 	ach = _empty_ach()
 	hol = _empty_hol()
 	cz.reset()
+	soc.reset()
 	disaster = _empty_disaster()
 	claimed = []
 	laws = []
@@ -408,7 +411,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
-		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true), "cz": cz.to_dict(),
+		"protest": protest.duplicate(true), "ach": ach.duplicate(true), "hol": hol.duplicate(true), "cz": cz.to_dict(), "soc": soc.to_dict(),
 		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
@@ -515,6 +518,7 @@ func from_dict(p: Dictionary) -> bool:
 	ach = _load_ach(p.get("ach", {}))
 	hol = _load_hol(p.get("hol", {}))
 	cz.from_dict(p.get("cz", {}))
+	soc.from_dict(p.get("soc", {}))
 	var pd: Dictionary = p.get("protest", {})
 	for k in protest:
 		if not pd.has(k):
@@ -2158,6 +2162,7 @@ func check_rank() -> void:
 		gems += r
 		sfx("levelup")
 		Events.rank_up(r)
+		soc.post("rank", [Data.RANKS[r][2], Data.RANKS[r][3]])
 
 
 func can_afford(c: int, g: int) -> bool:

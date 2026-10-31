@@ -97,7 +97,7 @@ func analytics() -> void:
 		hud.text(_t("Нет больницы или поликлиники — больные выздоравливают хуже и чаще умирают.", "No hospital or clinic — the sick recover worse and die more often."), v, 11, Color("b83a2a"), _w())
 	for e in cz.stats.recent.slice(0, 4):
 		hud.text("• " + Loc.pick(e), v, 10, Color("6a5a4a"), _w())
-	hud.popup(_t("Жители", "Residents"), "", [[_t("Цены", "Prices"), "green", prices], [_t("Список", "List"), "purple", list],
+	hud.popup(_t("Жители", "Residents"), "", [[_t("Цены", "Prices"), "green", prices], [_t("Список", "List"), "purple", list], [_t("Чат", "Chat"), "orange", feed],
 		[Loc.t("close"), "blue", Callable()]], v, 440)
 
 
@@ -192,3 +192,35 @@ func card_for_person(p) -> void:
 		return
 	p.cid = int(pick.id)
 	card(int(pick.id))
+
+
+# ---------------------------------------------------------------- the feed
+func feed() -> void:
+	var soc: Social = Game.soc
+	var v := _vbox(5)
+	var mood := soc.sentiment()
+	hud.text(_t("Что жители пишут о вас. Лайков всего: %d. Настроение ленты: %d%% довольных.", "What residents write about you. Likes in total: %d. Mood of the feed: %d%% happy.") % [soc.total_likes(), int(mood * 100)],
+		v, 11, Color("8a6a4a"), _w() - 20)
+	if soc.posts.is_empty():
+		hud.text(_t("Пока никто ничего не написал. Стройте, управляйте — жители заметят!", "Nobody has posted yet. Build, rule — residents will notice!"), v, 12, Color("3a2a1e"), _w() - 20)
+	for p in soc.posts.slice(0, 14):
+		var post: Dictionary = p
+		var c := _card(v)
+		var h := _hbox(5)
+		c.add_child(h)
+		var nm: Label = hud.text("@" + Loc.pick(post.who), h, 12, Color("2a5aa0") if int(post.mood) >= 0 else Color("a03a2a"))
+		nm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		nm.add_theme_font_override("font", hud.bold_font)
+		hud.text(_t("день %d", "day %d") % int(post.day), h, 10, Color("8a8a8a"))
+		hud.text(Loc.pick([post.ru, post.en]), c, 12, Color("3a2a1e"), _w() - 50)
+		var lh := _hbox(4)
+		c.add_child(lh)
+		hud.icon_rect("happy" if int(post.mood) >= 0 else "unhappy", lh)
+		var lk: Label = hud.text(str(int(post.likes)), lh, 12, Color("c03a5a"))
+		lk.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var like_btn: Button = hud.button(_t("Лайк", "Like") if not post.mine else _t("Вы лайкнули", "You liked"), "", "green" if not post.mine else "grey", func():
+			soc.like(int(post.id))
+			feed(), Vector2(0, 22))
+		like_btn.disabled = post.mine
+		lh.add_child(like_btn)
+	hud.popup(_t("Пиксельчат", "Pixelchat"), "", [[Loc.t("back"), "blue", analytics]], v, 440)
