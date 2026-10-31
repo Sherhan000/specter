@@ -13,6 +13,8 @@ extends Node
 const MAX_PERSONS := 260
 const MAX_MOVING_CARS := 70
 const WALK_SPEED := 0.2         ## tiles per second
+const HEIST_FLEE_R := 7.0      ## walkers this close to a robbed bank run away
+const HEIST_RUN := 2.6         ## how much faster scared people run
 const CAR_SPEED := 0.75
 const ACCEL := 0.9
 const BRAKE := 2.6
@@ -34,7 +36,7 @@ const JOB_KINDS := {
 	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "coffee_kiosk": "chef", "shawarma": "chef",
 	"donut_shop": "chef", "burger_bar": "chef", "food_trucks": "chef", "chaikhana": "chef", "drive_thru": "chef", "post_office": "postman",
 	"ice_cream": "chef", "ezhik_kiosk": "chef", "ezhik_shop": "chef", "ezhik_flag": "chef", "kot_kiosk": "chef", "kot_shop": "chef", "kot_flag": "chef", "pixelburger_kiosk": "chef", "pixelburger_shop": "chef", "pixelburger_flag": "chef",
-	"police_post": "police", "clinic": "doctor", "textile_mill": "builder", "car_plant": "builder", "auto_repair": "builder",
+	"police_post": "police", "security_office": "police", "prison": "police", "clinic": "doctor", "textile_mill": "builder", "car_plant": "builder", "auto_repair": "builder",
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
 ## Car kinds by role: residents' own cars, traffic passing through town, visitors from other towns.
@@ -1533,6 +1535,49 @@ func start_chase(caught: bool) -> void:
 		cop.start_route(path, null)
 
 
+## A bank heist: people nearby run away (those inside flee home), the robber drives off to the edge of the map;
+## the police chase him (catching him if caught). The mayor's robbery has no chase: nobody knows yet.
+func heist(uid: int, caught: bool, by_mayor: bool) -> void:
+	if not Game.buildings.has(uid) or city == null:
+		return
+	var at := Vector2(Game.entrance_tile(uid))
+	for w in walkers:
+		if is_instance_valid(w) and not w.done and w.g.distance_to(at) < HEIST_FLEE_R:
+			w.panic_run()
+	for p in persons:
+		if p.where == uid and p.walker == null and p.home != 0 and Game.buildings.has(p.home):
+			_start_trip(p, p.home, 2.0)
+	var ends := [Vector2i(0, Data.HIGHWAY_Y), Vector2i(Data.MAP - 1, Data.HIGHWAY_Y)]
+	var path := car_path(Game.entrance_tile(uid), ends[randi() % 2])
+	if path.size() < 4:
+		return
+	var thief := _make_car("sports")
+	thief.paint_color = Color("1e1e24") if by_mayor else Color("e8e8ea")
+	thief.role = "through"
+	thief.vmax_k = 1.5
+	thief.start_route(path, null)
+	if by_mayor:
+		return
+	var st := Game.service_building("police")
+	if st == 0:
+		return
+	var cop_path := car_path(Game.entrance_tile(st), Game.entrance_tile(uid))
+	var cop := _make_car("police")
+	cop.siren = true
+	cop.role = "through"
+	cop.vmax_k = 1.5
+	if caught:
+		# the patrol is already near: it follows the robber out of town
+		cop.delay = 1.2
+		cop.start_route(path, null)
+	elif cop_path.size() >= 2:
+		cop.role = "service"
+		cop.station = st
+		cop.start_route(cop_path, null)
+	else:
+		cop.vanish()
+
+
 # ====================================================================== interactions
 func _social() -> void:
 	var view: Rect2 = city.view_rect()
@@ -1646,6 +1691,7 @@ class Walker extends Node2D:
 	var i := 0
 	var busy := 0.0
 	var waving := false
+	var panic := 0.0          ## seconds left running away from a bank heist
 	var crossing := Vector3i(-1, -1, -1)
 	var side := 0.0
 	var done := false
@@ -1686,6 +1732,23 @@ class Walker extends Node2D:
 	func wave() -> void:
 		busy = 1.6
 		waving = true
+
+	## Scared by a bank heist: a "!" over the head and running fast for a while.
+	func panic_run() -> void:
+		busy = 0.0
+		waving = false
+		panic = 7.0
+		var b := Sprite2D.new()
+		b.texture = Assets.ui_icon("warn")
+		var ts := b.texture.get_size()
+		b.scale = Vector2(20.0, 20.0) / maxf(ts.x, 1.0)
+		b.position = Vector2(0, -46)
+		b.z_index = 30
+		add_child(b)
+		var tw := b.create_tween()
+		tw.tween_property(b, "position:y", -60.0, 2.4)
+		tw.parallel().tween_property(b, "modulate:a", 0.0, 2.4)
+		tw.tween_callback(b.queue_free)
 
 	func chat(other: Walker) -> void:
 		busy = 2.2
@@ -1736,6 +1799,9 @@ class Walker extends Node2D:
 		var d := target - g
 		var len := d.length()
 		var k := 1.25 if crossing != Vector3i(-1, -1, -1) else 1.0
+		if panic > 0.0:
+			panic -= delta
+			k *= Life.HEIST_RUN
 		var stp := speed * k * delta
 		if len <= stp:
 			g = target

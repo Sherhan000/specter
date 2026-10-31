@@ -1126,6 +1126,91 @@ func _ready() -> void:
 	Game.brands = {}
 	Game.level = br_lvl_keep
 
+	# ------------------------------------------------ crime: bank heists, the mayor in prison (ROADMAP 25)
+	for cr_id in ["security_office", "prison"]:
+		check(Data.B.has(cr_id) and cr_id in Data.ORDER and Data.tab_of(cr_id) == "service", "%s is in the service list" % cr_id)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % cr_id) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % cr_id), "%s has its own sprites" % cr_id)
+	check(Data.B.security_office.svc == "guard" and Data.B.prison.svc == "prison", "guards and prison have their services")
+	var cr_lvl_keep := Game.level
+	Game.level = 30
+	Game.crime = Game._empty_crime()
+	var cr_sp: Vector2i = Events.find_business_spot(2)
+	var cr_bank := Game._add_building("bank", cr_sp.x, cr_sp.y, true) if cr_sp.x >= 0 else 0
+	check(cr_bank != 0, "a bank can stand in the city")
+	if cr_bank != 0:
+		Game.recalc()
+		var cr_police: Array[int] = []
+		for cr_u in Game.buildings.keys():
+			if Data.B[Game.buildings[cr_u].id].get("svc", "") == "police":
+				cr_police.append(cr_u)
+		for cr_u in cr_police:
+			Game.buildings[cr_u].closed = true
+		check(Game.police_count() == 0 and Game.heist_catch_chance(cr_bank) == 0.0, "no police: robbers are never caught")
+		Game.coins = 10000
+		var cr_rep := Game.rep
+		check(not Game.bank_heist(cr_bank, 0.0) and Game.coins == 10000 - Game.heist_loot(cr_bank) and Game.rep < cr_rep, "an uncaught robbery takes the loot and reputation")
+		for cr_u in cr_police:
+			Game.buildings[cr_u].closed = false
+		var cr_pp := Events.find_business_spot(1)
+		var cr_post := Game._add_building("police_post", cr_pp.x, cr_pp.y, true) if cr_pp.x >= 0 else 0
+		Game.recalc()
+		check(Game.police_count() >= 1 and Game.heist_catch_chance(cr_bank) >= Data.HEIST_CATCH, "police give a chance to catch")
+		var cr_c := Game.coins
+		check(Game.bank_heist(cr_bank, 0.0) and Game.coins == cr_c and int(Game.crime.caught) == 1 and int(Game.crime.heists) == 2, "a caught robber gives the money back")
+		var cr_ch0 := Game.heist_catch_chance(cr_bank)
+		var cr_s0 := Game.mayor_suspect_chance(cr_bank)
+		var cr_gp := Vector2i(int(Game.buildings[cr_bank].x) + 2, int(Game.buildings[cr_bank].y))
+		var cr_guard := 0
+		for cr_dy in range(-8, 9):
+			for cr_dx in range(-8, 9):
+				if cr_guard == 0 and Game.place_problem("security_office", cr_gp.x + cr_dx, cr_gp.y + cr_dy) == "" \
+						and Game._touches_road(cr_gp.x + cr_dx, cr_gp.y + cr_dy, 1):
+					cr_guard = Game._add_building("security_office", cr_gp.x + cr_dx, cr_gp.y + cr_dy, true)
+		Game.recalc()
+		check(cr_guard != 0 and Game.bank_guarded(cr_bank), "guards cover a nearby bank")
+		check(Game.heist_catch_chance(cr_bank) > cr_ch0 and Game.mayor_suspect_chance(cr_bank) > cr_s0, "guards help catch robbers and the mayor")
+		var cr_m0 := Game.crime_mult()
+		var cr_pr := Events.find_business_spot(2)
+		var cr_prison := Game._add_building("prison", cr_pr.x, cr_pr.y, true) if cr_pr.x >= 0 else 0
+		Game.recalc()
+		check(cr_prison != 0 and Game.crime_mult() < cr_m0, "a prison cuts crime risk")
+		# the mayor robs a bank and gets away with it
+		check(Game.mayor_rob_problem(cr_bank) == "", "the mayor can rob a working bank")
+		cr_c = Game.coins
+		var cr_loot := Game.mayor_rob(cr_bank, 0.999)
+		check(cr_loot == Game.mayor_rob_loot(cr_bank) and Game.coins == cr_c + cr_loot and int(Game.crime.probe) > 0, "the mayor takes the loot, an investigation starts")
+		check(Game.mayor_rob_problem(cr_bank) == "rob_probe" and Game.mayor_rob(cr_bank) == 0, "no second robbery during the investigation")
+		Game.crime.probe = Game.abs_hour()
+		Game._update_probe()
+		check(not Game.in_jail() and int(Game.crime.probe) == 0 and Events.inbox[0].kind == "crime", "case closed: the mayor stays free")
+		check(Game.mayor_rob_problem(cr_bank) == "rob_wait", "the mayor must wait before the next robbery")
+		# the second time the police find out
+		Game.crime.cd = 0
+		Game.coins = 50000
+		cr_loot = Game.mayor_rob(cr_bank, 0.0)
+		cr_rep = Game.rep
+		Game.crime.probe = Game.abs_hour()
+		Game._update_probe()
+		check(Game.in_jail() and Game.jail_hours() == Data.JAIL_HOURS and Game.rep < cr_rep, "found out: the mayor goes to prison")
+		check(Game.coins == 50000 + cr_loot - cr_loot * Data.JAIL_FINE_MULT, "prison comes with a fine")
+		check(Events.inbox[0].opts.size() == 2 and str(Events.inbox[0].opts[1][1]) == "bail", "the arrest letter offers bail")
+		check("n_jail" in Game.paper_headlines(), "the newspaper writes about the jailed mayor")
+		var cr_n := Game.buildings.size()
+		check(Game.place("bench", cr_pp.x, cr_pp.y + 3) == 0 and Game.buildings.size() == cr_n, "no building while in prison")
+		check(Game.mayor_rob_problem(cr_bank) == "in_jail", "no robbing from prison")
+		Game.save_game(true)
+		var cr_saved: Dictionary = Game.to_dict().crime
+		check(int(cr_saved.jail) == int(Game.crime.jail) and int(cr_saved.mayor) == 2 and int(cr_saved.jailed) == 1, "crime record is saved")
+		Game.gems = Data.JAIL_BAIL_GEMS
+		check(Game.pay_bail() and not Game.in_jail() and Game.gems == 0, "bail gets the mayor out")
+		check(not Game.mood.any(func(m): return str(m.why) == "mayor_jail"), "bail ends the outrage")
+		check(Events.resident_heist(cr_bank) or true, "a resident heist posts a letter")
+		for cr_u in [cr_bank, cr_post, cr_guard, cr_prison]:
+			if cr_u != 0 and Game.buildings.has(cr_u):
+				Game.demolish(cr_u)
+	Game.crime = Game._empty_crime()
+	Game.level = cr_lvl_keep
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

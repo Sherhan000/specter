@@ -119,6 +119,7 @@ func _ready() -> void:
 	Game.animals_changed.connect(_rebuild_zoo_animals)
 	Events.fire_started.connect(_on_fire)
 	Events.crime.connect(func(caught): life.start_chase(caught))
+	Game.heist.connect(func(uid, caught, by_mayor): life.heist(uid, caught, by_mayor))
 	_rebuild_zoo_animals()
 	metro.refresh()
 	water_life = WaterLife.new()

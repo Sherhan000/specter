@@ -1206,6 +1206,8 @@ func _refresh_info() -> void:
 			info_actions.add_child(round_btn("demolish", "purple", func(): panels.garbage(), 26))
 		if d.get("svc", "") == "news":
 			info_actions.add_child(round_btn("newspaper", "purple", func(): panels.newspaper(), 26))
+		if b.id == "bank" and b.built:
+			info_actions.add_child(round_btn("warn", "red", func(): rob_bank(uid), 26))
 		if d.get("svc", "") == "airport":
 			info_actions.add_child(round_btn("plane", "purple", func(): panels.airport(), 26))
 		info_actions.add_child(round_btn("info", "blue", func(): panels.building_details(uid), 26))
@@ -1284,6 +1286,25 @@ func _size_modal(w: float) -> void:
 
 func close_modal() -> void:
 	modal.visible = false
+
+
+## The mayor robs a bank (ROADMAP 25): shows the loot and the risk first; in prison offers bail instead.
+func rob_bank(uid: int) -> void:
+	if Game.in_jail():
+		popup(Loc.t("title"), Loc.t("in_jail") % Game.jail_hours(), [[Loc.t("cancel"), "red", Callable()],
+			[Loc.t("bail_btn") % Data.JAIL_BAIL_GEMS, "green", func(): Game.pay_bail()]])
+		return
+	var why := Game.mayor_rob_problem(uid)
+	if why != "":
+		Game.toast.emit(Loc.t(why))
+		Game.sfx("error")
+		return
+	var pct := int(round(Game.mayor_suspect_chance(uid) * 100.0))
+	confirm(Loc.t("rob_q") % [Loc.num(Game.mayor_rob_loot(uid)), pct, Data.JAIL_HOURS, int(Data.JAIL_REP)], func():
+		var loot := Game.mayor_rob(uid)
+		if loot > 0:
+			Game.toast.emit(Loc.t("rob_done") % Loc.num(loot))
+		_info_key = "")
 
 
 func confirm(t: String, on_yes: Callable) -> void:

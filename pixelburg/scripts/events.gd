@@ -137,6 +137,8 @@ func _apply(act: String, m: Dictionary) -> void:
 	match act:
 		"ok":
 			pass
+		"bail":
+			Game.pay_bail()
 		# ---------------- violations
 		"fine":
 			Game.earn_event("fines", int(m.fine))
@@ -384,7 +386,14 @@ func _disasters(_h: int) -> void:
 		fire_p *= 1.25
 	if _rng.randf() < fire_p:
 		start_fire()
-	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.law_mult("crime") * Game.patrol_mult():
+	if Game.pop >= Data.HEIST_MIN_POP:
+		var banks := Game.working_banks()
+		if not banks.is_empty():
+			var bank: int = banks[_rng.randi() % banks.size()]
+			var hp := Data.HEIST_CHANCE * Game.crime_mult() * (Data.HEIST_GUARD_MULT if Game.bank_guarded(bank) else 1.0)
+			if _rng.randf() < hp:
+				resident_heist(bank)
+	if Game.pop >= 100 and _rng.randf() < 0.02 * Game.crime_mult():
 		var caught := Game.has_service("police")
 		if caught:
 			Game.add_rep(2)
@@ -405,6 +414,45 @@ func _disasters(_h: int) -> void:
 		post("illness", "zina", ["Эпидемия гриппа", "Flu outbreak"],
 			["Половина района слегла с гриппом, а больницы нет!", "Half the district has the flu and there is no hospital!"],
 			[[["Понятно", "Understood"], "ok"]])
+
+
+## A resident robs a bank: people run, the police chase; a message from the police chief.
+func resident_heist(bank: int) -> bool:
+	var loot := Game.heist_loot(bank)
+	var caught := Game.bank_heist(bank)
+	if caught:
+		post("crime", "oleg", ["Грабитель пойман!", "Robber caught!"],
+			["Житель ограбил банк, люди разбежались, но наши патрульные догнали его. Деньги (%d) вернули в банк." % loot,
+			 "A resident robbed the bank and people ran, but our patrol caught him. The money (%d) is back in the bank." % loot],
+			[[["Отлично", "Great"], "ok"]], {"uid": bank})
+	elif Game.police_count() == 0:
+		post("crime", "oleg", ["Ограбление банка", "Bank robbery"],
+			["Банк ограбили и унесли %d монет из казны. Полиции нет — ловить некому. Постройте полицию или охрану «Щит»." % loot,
+			 "The bank was robbed: %d coins from the treasury are gone. There is no police to chase them. Build a police station or Shield Guards." % loot],
+			[[["Понятно", "Understood"], "ok"]], {"uid": bank})
+	else:
+		post("crime", "oleg", ["Грабитель ушёл", "The robber got away"],
+			["Банк ограбили (%d монет), погоня не удалась. Больше полиции и охрана у банка помогут ловить грабителей." % loot,
+			 "The bank was robbed (%d coins) and the chase failed. More police and guards at the bank will help catch robbers." % loot],
+			[[["Понятно", "Understood"], "ok"]], {"uid": bank})
+	return caught
+
+
+## The investigation of the mayor's robbery found nothing.
+func probe_closed() -> void:
+	post("crime", "oleg", ["Дело закрыто", "Case closed"],
+		["Грабителя банка так и не нашли. Следствие закрыто… но в следующий раз мы будем внимательнее.",
+		 "The bank robber was never found. The case is closed… but next time we'll be more careful."],
+		[[["Хорошо", "OK"], "ok"]])
+
+
+## The police found out the mayor robbed the bank.
+func mayor_jailed(fine: int) -> void:
+	var m := post("crime", "oleg", ["Мэр арестован!", "The mayor is arrested!"],
+		["{Title}, камеры и свидетели всё показали: банк ограбили вы. Суд: %d ч. тюрьмы и штраф %d монет. Пока вы сидите, строить нельзя, налоги и туристы — вдвое меньше, город возмущён." % [Data.JAIL_HOURS, fine],
+		 "{Title}, the cameras and witnesses show it was you who robbed the bank. Court: %d h of prison and a %d coin fine. While you're inside you can't build, taxes and tourism are halved and the city is outraged." % [Data.JAIL_HOURS, fine]],
+		[[["Отсидеть", "Serve the time"], "ok"], [["Залог (%d гемов)" % Data.JAIL_BAIL_GEMS, "Bail (%d gems)" % Data.JAIL_BAIL_GEMS], "bail"]])
+	m.expires = Game.abs_hour() + Data.JAIL_HOURS
 
 
 func start_fire(uid := 0) -> void:

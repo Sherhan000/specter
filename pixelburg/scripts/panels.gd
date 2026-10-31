@@ -491,6 +491,10 @@ func building_details(uid: int) -> void:
 		_row(v, "info", Loc.t("hist_tour"), "+%d" % Game.hist_tourists(uid))
 	if d.has("park") and hud.city.life:
 		_row(v, "info", Loc.t("park_places"), "%d / %d" % [hud.city.life.garage_used(uid), Life.garage_capacity(uid)])
+	if Game.buildings[uid].id == "bank":
+		hud.text(Loc.t("crime_stats") % [int(Game.crime.heists), int(Game.crime.caught)], v, 11, Color("3a2a1e"), _w())
+		if Game.bank_guarded(uid):
+			hud.text(Loc.t("bank_guarded"), v, 11, Color("2a6a3a"), _w())
 	if Game.quarter_of.has(uid):
 		_row(v, "wall", Loc.t("quarter"), Loc.t("quarter_homes") % int(Game.quarter_of[uid].homes))
 	if str(Game.buildings[uid].get("hlamp", "")) != "":

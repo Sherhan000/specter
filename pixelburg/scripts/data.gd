@@ -110,6 +110,8 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Преступность и ограбления банков: иногда житель грабит банк — люди вокруг разбегаются, полиция мчится с мигалками и может поймать грабителя (тогда деньги вернутся). Новые здания: охрана «Щит» (банки под её защитой грабят реже, а грабителей чаще ловят) и тюрьма (меньше преступлений). Мэр тоже может ограбить банк (кнопка в карточке банка) — но если следствие узнает, мэра посадят: 3 дня нельзя строить, налоги и туристы вдвое меньше, штраф и падение репутации; можно выйти под залог",
+	 "Crime and bank heists: now and then a resident robs a bank — people around run away, the police race in with sirens and may catch the robber (then the money comes back). New buildings: Shield Guards (guarded banks are robbed less often and robbers are caught more often) and a prison (less crime). The mayor can rob a bank too (button in the bank's card) — but if the investigation finds out, the mayor goes to prison: no building for 3 days, taxes and tourism halved, a fine and a reputation hit; bail gets you out early"],
 	["Бренды жителей: с 6-го уровня жители основывают свои бренды — «Сладкий Ёж» (кондитерские), «Бодрый Кот» (кофейни), «Листик» (продукты), «Зарядик» (электроника), «Нитка» (одежда) и «Пиксельбургер» (бургерные). У каждого свои цвета, вывеска и эмблема. Бренд сам предлагает открыть киоск, магазин, а потом и большой флагман с парковкой; чем больше мест, тем выше уровень всей сети, а налог с них больше обычного", "Residents' brands: from level 6 residents found brands of their own - Sweet Hedgehog (sweet shops), Perky Cat (coffee houses), Leafy (groceries), Zaryadik (electronics), Nitka (clothes) and Pixelburger (burger bars). Each has its own colours, sign and emblem. The brand itself asks to open a kiosk, a shop and later a big flagship with a car park; the more places, the higher the whole chain's level, and they pay more tax than usual"],
 	["30 новых объектов, у каждого свой вид. Дороги: щебёнка, бетонка из плит и красная улица. Машины: малолитражка, минивэн, кабриолет, ретро-седан, лимузин, фургон с мороженым и бетономешалка. Здания: книжный, парикмахерская, кафе-мороженое, автомойка, автосервис, автосалон, пост полиции, поликлиника, боулинг, мини-гольф, летняя сцена, скейт-парк, беседка, часовая башня, флагшток, арт-объект, прокат велосипедов, место для пикника, текстильная фабрика и автозавод", "30 new objects, each with its own look. Roads: gravel, concrete plates and a red street. Cars: a city mini, a minivan, a convertible, a retro sedan, a limousine, an ice-cream van and a concrete mixer. Buildings: a bookshop, a barber shop, an ice-cream parlour, a car wash, an auto repair shop, a car dealership, a police post, a clinic, a bowling alley, mini golf, an open-air stage, a skate park, a gazebo, a clock tower, a flagpole, an art sculpture, a bike rental, a picnic spot, a textile mill and a car plant"],
 	["Новые недорогие дома для начала игры, у каждого свой вид: бревенчатая изба с резными наличниками и поленницей, глинобитный дом с тандыром, кирпичный домик с живой изгородью, домик-шалаш со стеклянным фасадом и костровищем, дом из морских контейнеров, белый средиземноморский дом с террасой на крыше и дом на две семьи", "New cheap homes for the early game, each with its own look: a log cabin with carved window frames and a woodpile, an adobe house with a tandoor oven, a brick house behind a hedge, an A-frame cabin with a glass front and a fire pit, a shipping-container house, a whitewashed Mediterranean house with a roof terrace and a duplex for two families"],
@@ -353,6 +355,10 @@ const B := {
 		"jobs": 4, "upkeep": 25, "svc": "sport", "radius": 14, "happy": 6},
 	"bank": {"name": ["Банк", "Bank"], "cat": "service", "zones": ["city"], "size": 2, "cost": 5000, "lvl": 7, "time": 120,
 		"jobs": 7, "upkeep": 40, "svc": "bank", "radius": 0, "happy": 2},
+	"security_office": {"name": ["Охрана «Щит»", "Shield Guards"], "cat": "service", "zones": ["city", "industry"], "size": 1, "cost": 2400, "lvl": 7, "time": 70,
+		"jobs": 4, "upkeep": 25, "svc": "guard", "radius": 12, "happy": 2},
+	"prison": {"name": ["Тюрьма", "Prison"], "cat": "service", "zones": ["city", "industry"], "size": 2, "cost": 6500, "gems": 1, "lvl": 9, "time": 150,
+		"jobs": 8, "upkeep": 60, "svc": "prison", "radius": 0, "happy": 0},
 	"library": {"name": ["Библиотека", "Library"], "cat": "service", "zones": ["city"], "size": 2, "cost": 3500, "lvl": 8, "time": 100,
 		"jobs": 4, "upkeep": 30, "svc": "culture", "radius": 18, "happy": 6},
 	"court": {"name": ["Суд", "Courthouse"], "cat": "service", "zones": ["city"], "size": 2, "cost": 6000, "lvl": 8, "time": 130,
@@ -558,7 +564,7 @@ const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
+	"kindergarten", "school", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "security_office", "prison", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
 	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "gazebo", "picnic", "flag_pole", "bike_rental", "playground", "fountain", "park", "pond", "plaza", "statue", "art_sculpture", "clock_tower", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
@@ -638,6 +644,32 @@ const TOWER_MEETING_COST := 300
 const TOWER_MEETING_COOLDOWN := 24
 const TOWER_MEETING_HAPPY := 10
 const TOWER_MEETING_HOURS := 24
+
+## Crime (ROADMAP 25). Residents rob banks now and then: people run away, the police chase the robber.
+## The mayor may rob a bank too: an investigation follows, and if the police find out, the mayor goes to prison.
+const HEIST_MIN_POP := 150
+const HEIST_CHANCE := 0.012        ## per hour, × crime multiplier (laws, watchtower check, prison)
+const HEIST_LOOT := 500            ## coins taken × bank level (a caught robber gives them back)
+const HEIST_CATCH := 0.55          ## chance to catch a robber with one police building
+const HEIST_CATCH_EXTRA := 0.1     ## + per extra police building
+const HEIST_CATCH_GUARD := 0.2     ## + if a guard agency covers the bank
+const HEIST_CATCH_MAX := 0.95
+const HEIST_GUARD_MULT := 0.5      ## guarded banks are robbed half as often
+const PRISON_CRIME_MULT := 0.6     ## a working prison cuts crime risk
+const MAYOR_ROB_LOOT := 1800       ## coins × bank level
+const MAYOR_ROB_COOLDOWN := 48     ## hours between the mayor's robberies
+const MAYOR_PROBE_HOURS := 6       ## the investigation takes this long
+const MAYOR_SUSPECT := 0.25        ## base chance the police find out it was the mayor
+const MAYOR_SUSPECT_POLICE := 0.12 ## + per working police building
+const MAYOR_SUSPECT_GUARD := 0.2   ## + if guards (cameras) cover the bank
+const MAYOR_SUSPECT_REPEAT := 0.1  ## + per earlier robbery by the mayor
+const MAYOR_SUSPECT_MAX := 0.95
+const JAIL_HOURS := 72             ## time the mayor spends in prison
+const JAIL_FINE_MULT := 2          ## fine = loot × this
+const JAIL_REP := 25.0
+const JAIL_MOOD := -8
+const JAIL_BAIL_GEMS := 5          ## get out early on bail
+const JAIL_TAX_MULT := 0.5         ## daily business tax and tourism while the mayor is in prison
 
 ## Simple city rules, checked every in-game hour. Breaking one costs reputation.
 const RULES := ["lights", "pollution", "roads", "school", "fire", "police", "health", "decor", "budget", "garbage"]

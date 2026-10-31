@@ -26,6 +26,7 @@ signal season_changed(season: String)
 signal animals_changed
 signal game_over
 signal plane_landed(country: String, pax: int)
+signal heist(uid: int, caught: bool, by_mayor: bool)   ## a bank was robbed (life: people run, police chase)
 
 const SAVE_PATH := "user://city.json"
 const SAVE_VERSION := 4
@@ -56,6 +57,7 @@ var walls := {}              ## Vector2i -> wall type (Data.WALLS)
 var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes joined by walls into one quarter
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
 var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"owner": name, "day": founded}
+var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -284,6 +286,7 @@ func new_game() -> void:
 	road_deco = {}
 	paves = {}
 	brands = {}
+	crime = _empty_crime()
 	claimed = []
 	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -390,6 +393,7 @@ func to_dict() -> Dictionary:
 		"walls": walls.keys().map(func(v): return [v.x, v.y, walls[v]]),
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
+		"crime": crime.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
@@ -486,6 +490,11 @@ func from_dict(p: Dictionary) -> bool:
 	for k in bd:
 		if Data.BRANDS.has(str(k)):
 			brands[str(k)] = {"owner": str(bd[k].get("owner", "")), "day": int(bd[k].get("day", 1))}
+	crime = _empty_crime()
+	var cd: Dictionary = p.get("crime", {})
+	for k in crime:
+		if cd.has(k):
+			crime[k] = bool(cd[k]) if crime[k] is bool else int(cd[k])
 	paves = {}
 	for v in p.get("paves", []):
 		if Data.PAVES.has(str(v[2])):
@@ -653,6 +662,7 @@ func _on_hour() -> void:
 	_move_population()
 	_update_garbage()
 	_update_airport()
+	_update_probe()
 	if now >= weather_until:
 		_pick_weather()
 	recalc()
@@ -673,7 +683,7 @@ func _end_of_day() -> void:
 		var b: Dictionary = buildings[uid]
 		if b.priv != "" and b.built and not b.closed and not b.dmg:
 			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0 * (Data.BRAND_TAX if Data.brand_of(b.id) != "" else 1.0))
-	biz_tax = int(biz_tax * law_mult("biz"))
+	biz_tax = int(biz_tax * law_mult("biz") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 	if biz_tax > 0:
 		_earn("taxes", biz_tax)
 	if is_connected_to_highway():
@@ -687,7 +697,7 @@ func _end_of_day() -> void:
 			elif Data.B[b.id].get("landmark", false) and _works(uid):
 				tour += 400 * b.lvl
 			tour += hist_tourists(uid)
-		tour = int(tour * law_mult("tour"))
+		tour = int(tour * law_mult("tour") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 		if tour > 0:
 			_earn("tourism", tour)
 		if goods > 400:
@@ -1520,6 +1530,166 @@ func hold_meeting(uid: int) -> bool:
 	return true
 
 
+# ====================================================================== crime (bank heists, the mayor in prison)
+func _empty_crime() -> Dictionary:
+	## heists: banks robbed by residents; caught: robbers caught; mayor: robberies by the mayor;
+	## probe: hour when the investigation of the mayor's robbery ends (0 = none); found: will they find out;
+	## loot: what the mayor took; cd: hour when the mayor may rob again; jail: hour when the mayor is released.
+	return {"heists": 0, "caught": 0, "mayor": 0, "probe": 0, "found": false, "loot": 0, "cd": 0, "jail": 0, "jailed": 0}
+
+
+## Crime risk multiplier: laws, a recent watchtower check and a working prison.
+func crime_mult() -> float:
+	return law_mult("crime") * patrol_mult() * (Data.PRISON_CRIME_MULT if has_service("prison") else 1.0)
+
+
+func police_count() -> int:
+	var n := 0
+	for uid in buildings:
+		if Data.B[buildings[uid].id].get("svc", "") == "police" and _works(uid):
+			n += 1
+	return n
+
+
+func working_banks() -> Array[int]:
+	var out: Array[int] = []
+	for uid in buildings:
+		if buildings[uid].id == "bank" and _works(uid):
+			out.append(uid)
+	return out
+
+
+## A guard agency covers this bank (cameras, guards).
+func bank_guarded(uid: int) -> bool:
+	if not buildings.has(uid):
+		return false
+	var b: Dictionary = buildings[uid]
+	return covered_by("guard", Vector2i(int(b.x), int(b.y)))
+
+
+func heist_catch_chance(uid: int) -> float:
+	var n := police_count()
+	if n == 0:
+		return 0.0
+	var p := Data.HEIST_CATCH + Data.HEIST_CATCH_EXTRA * (n - 1) + (Data.HEIST_CATCH_GUARD if bank_guarded(uid) else 0.0)
+	return minf(p, Data.HEIST_CATCH_MAX)
+
+
+func heist_loot(uid: int) -> int:
+	return Data.HEIST_LOOT * int(buildings[uid].lvl) if buildings.has(uid) else 0
+
+
+## A resident robs a bank. roll < 0 = random. Returns true if the robber was caught (the money comes back).
+func bank_heist(uid: int, roll := -1.0) -> bool:
+	if not buildings.has(uid):
+		return false
+	var r := roll if roll >= 0.0 else _rng.randf()
+	var caught := r < heist_catch_chance(uid)
+	crime.heists = int(crime.heists) + 1
+	if caught:
+		crime.caught = int(crime.caught) + 1
+		add_rep(2.0)
+	else:
+		_spend("heist", mini(heist_loot(uid), maxi(coins, 0)))
+		add_rep(-3.0)
+		add_mood(-4, 24, "crime")
+	heist.emit(uid, caught, false)
+	changed.emit()
+	return caught
+
+
+func in_jail() -> bool:
+	return abs_hour() < int(crime.get("jail", 0))
+
+
+func jail_hours() -> int:
+	return maxi(0, int(crime.get("jail", 0)) - abs_hour())
+
+
+## Chance the police find out the mayor robbed this bank.
+func mayor_suspect_chance(uid: int) -> float:
+	var p := Data.MAYOR_SUSPECT + Data.MAYOR_SUSPECT_POLICE * police_count() + Data.MAYOR_SUSPECT_REPEAT * int(crime.mayor)
+	if bank_guarded(uid):
+		p += Data.MAYOR_SUSPECT_GUARD
+	return minf(p, Data.MAYOR_SUSPECT_MAX)
+
+
+func mayor_rob_loot(uid: int) -> int:
+	return Data.MAYOR_ROB_LOOT * int(buildings[uid].lvl) if buildings.has(uid) else 0
+
+
+## Why the mayor can't rob this bank now ("" = can).
+func mayor_rob_problem(uid: int) -> String:
+	if not buildings.has(uid) or buildings[uid].id != "bank" or not _works(uid):
+		return "rob_closed"
+	if in_jail():
+		return "in_jail"
+	if int(crime.probe) > 0:
+		return "rob_probe"
+	if abs_hour() < int(crime.cd):
+		return "rob_wait"
+	return ""
+
+
+## The mayor robs a bank: coins now, an investigation for MAYOR_PROBE_HOURS. roll < 0 = random.
+## Returns the loot (0 if not possible).
+func mayor_rob(uid: int, roll := -1.0) -> int:
+	if mayor_rob_problem(uid) != "":
+		sfx("error")
+		return 0
+	var loot := mayor_rob_loot(uid)
+	var r := roll if roll >= 0.0 else _rng.randf()
+	crime.found = r < mayor_suspect_chance(uid)
+	crime.mayor = int(crime.mayor) + 1
+	crime.loot = loot
+	crime.probe = abs_hour() + Data.MAYOR_PROBE_HOURS
+	crime.cd = abs_hour() + Data.MAYOR_ROB_COOLDOWN
+	_earn("heist", loot)
+	add_mood(-3, 24, "crime")
+	heist.emit(uid, false, true)
+	sfx("coin")
+	changed.emit()
+	save_game()
+	return loot
+
+
+## End of the investigation: either the case is closed or the mayor goes to prison.
+func _update_probe() -> void:
+	if int(crime.get("probe", 0)) <= 0 or abs_hour() < int(crime.probe):
+		return
+	crime.probe = 0
+	if bool(crime.found):
+		go_to_jail()
+	else:
+		Events.probe_closed()
+
+
+func go_to_jail() -> void:
+	var fine := int(crime.loot) * Data.JAIL_FINE_MULT
+	crime.jail = abs_hour() + Data.JAIL_HOURS
+	crime.jailed = int(crime.jailed) + 1
+	crime.found = false
+	_spend("fines", fine)
+	add_rep(-Data.JAIL_REP)
+	add_mood(Data.JAIL_MOOD, Data.JAIL_HOURS, "mayor_jail")
+	Events.mayor_jailed(fine)
+	changed.emit()
+	save_game()
+
+
+## Get out of prison early on bail (gems).
+func pay_bail() -> bool:
+	if not in_jail() or not pay(0, Data.JAIL_BAIL_GEMS, "bail"):
+		return false
+	crime.jail = 0
+	add_rep(-3.0)
+	mood = mood.filter(func(m): return str(m.why) != "mayor_jail")
+	toast.emit(Loc.t("bail_done"))
+	changed.emit()
+	save_game()
+	return true
+
+
 func broken_rules() -> int:
 	var n := 0
 	for r in rules:
@@ -1649,8 +1819,10 @@ func place(id: String, x: int, y: int, rot := -1) -> int:
 	var why := place_problem(id, x, y)
 	if level < d.lvl:
 		why = "locked"
+	if in_jail():
+		why = "in_jail"
 	if why != "":
-		toast.emit(Loc.t(why) if why != "locked" else Loc.t("locked_lvl") % d.lvl)
+		toast.emit(Loc.t("locked_lvl") % d.lvl if why == "locked" else Loc.t("in_jail") % jail_hours() if why == "in_jail" else Loc.t(why))
 		sfx("error")
 		return 0
 	if not pay(d.cost, d.get("gems", 0)):
@@ -1788,6 +1960,10 @@ func can_upgrade(uid: int) -> String:
 
 func upgrade(uid: int) -> bool:
 	var b: Dictionary = buildings[uid]
+	if in_jail():
+		toast.emit(Loc.t("in_jail") % jail_hours())
+		sfx("error")
+		return false
 	if can_upgrade(uid) != "":
 		sfx("error")
 		return false
@@ -2960,6 +3136,10 @@ func paper_headlines() -> Array:
 		if str(m.why) == "crime":
 			h.append("n_crime")
 			break
+	if in_jail():
+		h.append("n_jail")
+	elif int(crime.get("caught", 0)) > 0 and int(crime.get("heists", 0)) > 0:
+		h.append("n_heist")
 	if power_ratio < 0.85:
 		h.append("n_power")
 	if water_ratio < 0.9:
