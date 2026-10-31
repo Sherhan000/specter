@@ -17,33 +17,20 @@ func _ready() -> void:
 	Events.chapter = 9
 	Events.flags = {"zoo_arc": true, "hall_arc": true, "election_done": true}
 	Game.day_time = 0.4
-	for i in 12:
-		var uid := Game._add_building(["house_small", "house_brick", "cottage"][i % 3], c - 8 + i * 2, c - 3, true, 2)
-		Game.buildings[uid].occ = 10
-	for id in ["hospital", "school", "it_run", "farm"]:
-		Game._add_building(id, c + randi_range(-6, 6), c + 4, true, 2)
+	var ids := ["tower_twin", "tower_gold", "tower_sail", "tower_ring", "tower_wind", "tower_crown"]
+	for i in ids.size():
+		Game._add_building(ids[i], c - 8 + (i % 3) * 4, c + 2 + (i / 3) * 4, true, 2)
 	Game.recalc()
-	for d in 90:
-		Game.day += 1
-		Game._move_population()
-		Game.recalc()
-		Game.cz.on_day()
 	city = load("res://scenes/main.tscn").instantiate()
 	add_child(city)
 	await _wait(2.0)
-	var pn = city.hud.panels
-	pn.cit.analytics()
-	await _wait(0.6)
-	await _shot("n3_analytics")
-	pn.cit.prices()
-	await _wait(0.5)
-	await _shot("n3_prices")
-	pn.cit.list()
-	await _wait(0.5)
-	await _shot("n3_list")
-	pn.cit.card(int(Game.cz.list[3].id))
-	await _wait(0.5)
-	await _shot("n3_card")
+	city.camera.position = Iso.center(Vector2i(c - 2, c + 4))
+	city.camera.zoom = Vector2(0.45, 0.45)
+	await _wait(1.0)
+	await _shot("n6_towers")
+	Game.day_time = 0.88
+	await _wait(1.0)
+	await _shot("n6_towers_night")
 	get_tree().quit()
 
 

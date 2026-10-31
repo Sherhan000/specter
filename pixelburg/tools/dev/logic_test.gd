@@ -1549,6 +1549,14 @@ func _ready() -> void:
 	Game.day = cz_keep[2]
 	Game.recalc()
 
+	# ------------------------------------------------ 15 new towers
+	var tw_n := 0
+	for tw_id in Data.B:
+		if str(tw_id).begins_with("tower_"):
+			tw_n += 1
+			check(Data.ORDER.has(tw_id) and Assets.tex("buildings/%s_1_0" % tw_id) != null and Assets.tex("buildings/%s_3_3" % tw_id) != null, "tower %s listed and has art" % tw_id)
+	check(tw_n == 15, "15 new towers exist")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:
