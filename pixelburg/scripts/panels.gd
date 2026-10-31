@@ -618,6 +618,94 @@ func catch_animal(a: ForestAnimal) -> void:
 
 # ====================================================================== settings
 ## "What's new" after an update, shown once per version (and from the settings).
+# ====================================================================== daily reward + achievements (ROADMAP 30)
+func daily(after := Callable()) -> void:
+	var v := _vbox(6)
+	var cyc: int = int(Game.ach.cycle)
+	var pending: bool = bool(Game.ach.pending)
+	hud.text(Loc.t("daily_streak") % int(Game.ach.streak), v, 12, Color("4a7a2a"), _w())
+	var grid := GridContainer.new()
+	grid.columns = 4
+	grid.add_theme_constant_override("h_separation", 5)
+	grid.add_theme_constant_override("v_separation", 5)
+	v.add_child(grid)
+	for i in 7:
+		var r := Ach.daily_reward(i)
+		var c := _card(grid, 4)
+		c.custom_minimum_size = Vector2(62, 74)
+		var col := _vbox(2)
+		col.alignment = BoxContainer.ALIGNMENT_CENTER
+		c.add_child(col)
+		var done: bool = i < cyc or (i == cyc and not pending and int(Game.ach.last) > 0)
+		var today_card: bool = i == cyc
+		var t: Label = hud.text("%s %d" % [Loc.t("day"), i + 1], col, 11, Color("7a2a1a") if today_card else Color("3a2a1e"))
+		t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hud.icon_rect("gem" if int(r.gems) > 0 else "coin", col, 22).size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		var amount: Label = hud.text(("%d" % int(r.gems)) if int(r.gems) > 0 else Loc.num(int(r.coins)), col, 11, Color("3a2a1e"))
+		amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if int(r.gems) > 0:
+			var extra: Label = hud.text("+" + Loc.num(int(r.coins)), col, 10, Color("6a5a4a"))
+			extra.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		if done:
+			c.modulate = Color(0.7, 1.0, 0.7)
+		elif not today_card:
+			c.modulate = Color(1, 1, 1, 0.85)
+	hud.text(Loc.t("daily_hint"), v, 11, Color("6a5a4a"), _w())
+	var btns := []
+	if pending:
+		btns.append([Loc.t("claim"), "green", func():
+			var r := Game.daily_claim()
+			hud.toast(Loc.t("daily_got") % [Loc.num(int(r.coins)), int(r.gems)])
+			if after.is_valid():
+				after.call()])
+	else:
+		btns.append([Loc.t("close"), "blue", after])
+	hud.popup(Loc.t("daily_title"), "", btns, v, 290)
+
+
+func achievements() -> void:
+	Game.check_ach()
+	var v := _vbox(5)
+	hud.text(Loc.t("ach_total") % [Ach.earned(), Ach.total()], v, 12, Color("4a7a2a"), _w())
+	v.add_child(hud.button(Loc.t("daily_title"), "calendar", "blue", func(): daily(achievements)))
+	for a in Ach.LIST:
+		var tiers: Array = a[4]
+		var t := Ach.tier_of(a[0])
+		var maxed := t >= tiers.size()
+		var val := Ach.value(a[1])
+		var c := _card(v, 5)
+		var h := _hbox(8)
+		c.add_child(h)
+		hud.icon_rect("trophy" if t > 0 else "lock", h, 24)
+		var mv := _vbox(2)
+		mv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		h.add_child(mv)
+		var star := ""
+		if tiers.size() > 1:
+			star = "  " + "★".repeat(t) + "☆".repeat(tiers.size() - t)
+		hud.title(Loc.pick(a[2]) + star, mv, 12, Color("7a2a1a") if not maxed else Color("3a7a2a"))
+		var shown := mini(t, tiers.size() - 1)
+		var goal := int(tiers[shown])
+		hud.text(Ach.target_text(a, shown), mv, 11, Color("3a2a1e"), _w() - 90)
+		var bar := Control.new()
+		bar.custom_minimum_size = Vector2(_w() - 90, 8)
+		mv.add_child(bar)
+		var bg := ColorRect.new()
+		bg.color = Color(0, 0, 0, 0.25)
+		bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+		bar.add_child(bg)
+		var fill := ColorRect.new()
+		fill.color = Color("5aa83a") if not maxed else Color("e0b030")
+		fill.set_anchors_preset(Control.PRESET_FULL_RECT)
+		fill.anchor_right = clampf(float(val) / maxf(1.0, goal), 0.0, 1.0) if not maxed else 1.0
+		bar.add_child(fill)
+		hud.text("%s / %s" % [Loc.num(mini(val, goal)), Loc.num(goal)] if not maxed else Loc.t("ach_done"), mv, 10, Color("4a7a2a"))
+		if not maxed:
+			var r := Ach.reward(a, t)
+			hud.price_row(int(r.coins), int(r.gems), true, mv)
+	hud.popup(Loc.t("ach_title"), "", [[Loc.t("close"), "blue", Callable()]], v, 330)
+
+
 func whats_new() -> void:
 	Game.set_setting("news", Data.NEWS_VERSION)
 	var v := VBoxContainer.new()

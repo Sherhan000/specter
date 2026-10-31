@@ -62,6 +62,7 @@ var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"o
 var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
 var disaster := {}           ## natural event with a choice, see _empty_disaster()
 var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
+var ach := _empty_ach()      ## achievements and the daily login streak, see Ach
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -292,6 +293,7 @@ func new_game() -> void:
 	brands = {}
 	crime = _empty_crime()
 	protest = _empty_protest()
+	ach = _empty_ach()
 	disaster = _empty_disaster()
 	claimed = []
 	laws = []
@@ -400,7 +402,7 @@ func to_dict() -> Dictionary:
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
-		"protest": protest.duplicate(true),
+		"protest": protest.duplicate(true), "ach": ach.duplicate(true),
 		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
@@ -504,6 +506,7 @@ func from_dict(p: Dictionary) -> bool:
 		if cd.has(k):
 			crime[k] = bool(cd[k]) if crime[k] is bool else int(cd[k])
 	protest = _empty_protest()
+	ach = _load_ach(p.get("ach", {}))
 	var pd: Dictionary = p.get("protest", {})
 	for k in protest:
 		if not pd.has(k):
@@ -700,6 +703,7 @@ func _on_hour() -> void:
 	_update_airport()
 	_update_probe()
 	_update_protest()
+	check_ach()
 	_update_disaster()
 	if now >= weather_until:
 		_pick_weather()
@@ -784,6 +788,7 @@ func _end_of_day() -> void:
 		season = s
 		season_changed.emit(s)
 		_pick_weather()
+	check_ach()
 	day_passed.emit(day)
 	Events.on_day(day)
 	changed.emit()
@@ -3538,3 +3543,72 @@ func paper_headlines() -> Array:
 	if h.is_empty():
 		h.append("n_calm")
 	return h
+
+
+# ====================================================================== achievements + daily reward (ROADMAP 30)
+func _empty_ach() -> Dictionary:
+	## got: achievement id -> tiers earned; last: day number of the last login; streak/best: days in a row;
+	## logins: days visited; pending: today's reward is waiting to be taken; cycle: its place in the 7-day cycle.
+	return {"got": {}, "last": 0, "streak": 0, "best": 0, "logins": 0, "pending": false, "cycle": 0}
+
+
+static func _load_ach(d: Dictionary) -> Dictionary:
+	var a := {"got": {}, "last": 0, "streak": 0, "best": 0, "logins": 0, "pending": false, "cycle": 0}
+	for k in ["last", "streak", "best", "logins", "cycle"]:
+		a[k] = int(d.get(k, 0))
+	a.pending = bool(d.get("pending", false))
+	for k in d.get("got", {}):
+		a.got[str(k)] = int(d.got[k])
+	return a
+
+
+## Number of the real-world day (local time), for the daily reward.
+static func real_day() -> int:
+	var bias := int(Time.get_time_zone_from_system().get("bias", 0))
+	return floori((Time.get_unix_time_from_system() + bias * 60.0) / 86400.0)
+
+
+## A new real day starts the next step of the 7-day streak (a missed day resets it). Returns true when a reward is waiting.
+func daily_roll(today_no := -1) -> bool:
+	var n := today_no if today_no >= 0 else real_day()
+	var last := int(ach.last)
+	if n != last:
+		ach.streak = int(ach.streak) + 1 if n == last + 1 else 1
+		ach.cycle = (int(ach.streak) - 1) % 7
+		ach.last = n
+		ach.logins = int(ach.logins) + 1
+		ach.best = maxi(int(ach.best), int(ach.streak))
+		ach.pending = true
+		check_ach()
+	return bool(ach.pending)
+
+
+func daily_claim() -> Dictionary:
+	if not bool(ach.pending):
+		return {}
+	var r := Ach.daily_reward(int(ach.cycle))
+	ach.pending = false
+	coins += int(r.coins)
+	gems += int(r.gems)
+	stats.coins_total = int(stats.coins_total) + int(r.coins)
+	sfx("levelup")
+	changed.emit()
+	return r
+
+
+func check_ach() -> void:
+	if lost or not profile.intro:
+		return
+	var got := Ach.check()
+	if got.is_empty():
+		return
+	var lines := []
+	for g in got:
+		var a: Array = g[0]
+		var tiers: int = (a[4] as Array).size()
+		var star: String = "" if tiers == 1 else " " + ["I", "II", "III", "IV"][mini(int(g[1]), 3)]
+		var gem_txt := " +%d %s" % [int(g[2].gems), Loc.t("gems")] if int(g[2].gems) > 0 else ""
+		lines.append(Loc.t("ach_toast") % [Loc.pick(a[2]) + star, Loc.num(int(g[2].coins)), gem_txt])
+	toast.emit("\n".join(lines))
+	sfx("levelup")
+	changed.emit()
