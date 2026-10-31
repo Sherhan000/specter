@@ -110,6 +110,8 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Офис «it-run» — IT-школа (2x2): тёмный кампус с фиолетовой подсветкой, стеклянным атриумом, светящимся значком </> и спутниковой тарелкой на крыше. Студенты ходят сюда на занятия, как в обычную школу, а город получает пользу: образование, радость жителей и рабочие места для преподавателей.",
+	 "The «it-run» office — an IT school (2x2): a dark campus with violet lighting, a glass atrium, a glowing </> logo and a satellite dish on the roof. Students attend classes here just like at a regular school, and the city benefits: education, happier residents and jobs for teachers."],
 	["Три супермаркета: «Амид» (сине-белый стеклянный зал с круглым логотипом), «Анис» (кирпичный рынок-зал с полосатыми тентами и звездой-анисом) и «Ёвар» (жёлто-бирюзовый склад-дискаунтер с пилообразной крышей и шестигранным логотипом). Жители ходят туда за покупками, а магазины дают доход и рабочие места.",
 	 "Three supermarkets: Amid (a blue-white glass hall with a round logo), Anis (a brick market hall with striped awnings and a star-anise logo) and Yovar (a yellow-teal discount warehouse with a saw-tooth roof and a hexagon logo). Residents go shopping there, and the stores bring income and jobs."],
 	["Преступность и ограбления банков: иногда житель грабит банк — люди вокруг разбегаются, полиция мчится с мигалками и может поймать грабителя (тогда деньги вернутся). Новые здания: охрана «Щит» (банки под её защитой грабят реже, а грабителей чаще ловят) и тюрьма (меньше преступлений). Мэр тоже может ограбить банк (кнопка в карточке банка) — но если следствие узнает, мэра посадят: 3 дня нельзя строить, налоги и туристы вдвое меньше, штраф и падение репутации; можно выйти под залог",
@@ -349,6 +351,8 @@ const B := {
 		"jobs": 3, "upkeep": 15, "svc": "edu", "radius": 9, "happy": 5},
 	"school": {"name": ["Школа", "School"], "cat": "service", "zones": ["city"], "size": 2, "cost": 2500, "lvl": 4, "time": 90,
 		"jobs": 6, "upkeep": 40, "svc": "edu", "radius": 16, "happy": 8},
+	"it_run": {"name": ["IT-школа «it-run»", "IT School «it-run»"], "cat": "service", "zones": ["city"], "size": 2, "cost": 6800, "lvl": 12, "time": 140,
+		"jobs": 9, "upkeep": 70, "svc": "edu", "radius": 18, "happy": 9},
 	"post_office": {"name": ["Почта", "Post Office"], "cat": "service", "zones": ["city"], "size": 1, "cost": 1800, "lvl": 5, "time": 60,
 		"jobs": 3, "upkeep": 18, "svc": "post", "radius": 18, "happy": 3},
 	"fire_station": {"name": ["Пожарная часть", "Fire Station"], "cat": "service", "zones": ["city", "industry"], "size": 2, "cost": 3500, "lvl": 5, "time": 100,
@@ -572,7 +576,7 @@ const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "security_office", "prison", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
+	"kindergarten", "school", "it_run", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "security_office", "prison", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
 	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "gazebo", "picnic", "flag_pole", "bike_rental", "playground", "fountain", "park", "pond", "plaza", "statue", "art_sculpture", "clock_tower", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,

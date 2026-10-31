@@ -1126,6 +1126,15 @@ func _ready() -> void:
 	Game.brands = {}
 	Game.level = br_lvl_keep
 
+	# ------------------------------------------------ IT school it-run (ROADMAP 27)
+	check(Data.B.has("it_run") and "it_run" in Data.ORDER and Data.tab_of("it_run") == "service", "it_run is in the service list")
+	check(Data.B.it_run.svc == "edu" and Data.B.it_run.size == 2 and Data.B.it_run.happy > 0 and Data.B.it_run.jobs > 0, "it_run works like a school")
+	check(FileAccess.file_exists("res://assets/buildings/it_run_1_0.png") and FileAccess.file_exists("res://assets/buildings/it_run_3_3.png"), "it_run has its own sprites")
+	check(FileAccess.get_md5("res://assets/buildings/it_run_2_0.png") != FileAccess.get_md5("res://assets/buildings/school_2_0.png"), "it_run looks unlike the school")
+	check(Life.JOB_KINDS.has("it_run"), "it_run staff have a job look")
+	var it_src := FileAccess.get_file_as_string("res://scripts/life.gd")
+	check(it_src.contains('"kindergarten", "it_run"'), "students are sent to classes at it_run")
+
 	# ------------------------------------------------ supermarkets Amid, Anis, Yovar (ROADMAP 26)
 	var sm_look := {}
 	for sm_id in ["amid", "anis", "yovar"]:

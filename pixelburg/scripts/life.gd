@@ -29,7 +29,7 @@ const COLORS := [Color("c8342a"), Color("2a5aa8"), Color("e8e8ea"), Color("a8acb
 	Color("e8c040"), Color("1e3060"), Color("7a4a2a"), Color("d8d0c0"), Color("8a2a4a")]
 const CIVIL := ["man", "woman", "man", "woman", "teen", "student"]
 const JOB_KINDS := {
-	"police": "police", "hospital": "doctor", "fire_station": "firefighter", "school": "business",
+	"police": "police", "hospital": "doctor", "fire_station": "firefighter", "school": "business", "it_run": "business",
 	"farm": "farmer", "orchard": "farmer", "greenhouse": "farmer", "ranch": "farmer", "warehouse": "builder",
 	"apiary": "farmer", "chicken_farm": "farmer", "melon_field": "farmer", "vineyard": "farmer", "windmill": "farmer", "fish_farm": "farmer", "dairy": "farmer",
 	"sawmill": "builder", "workshop": "builder", "power_plant": "builder", "water_station": "builder", "solar_panel": "builder", "factory": "builder", "logistics": "builder",
@@ -861,7 +861,7 @@ func _assign_jobs() -> void:
 			continue
 		if cat in ["shop", "ind", "service", "fun"]:
 			places[uid] = Data.stat(b.id, "jobs", b.lvl)
-		if b.id in ["school", "kindergarten"]:
+		if b.id in ["school", "kindergarten", "it_run"]:
 			schools.append(uid)
 	for p in persons:
 		if p.work > 0 and places.has(p.work):
