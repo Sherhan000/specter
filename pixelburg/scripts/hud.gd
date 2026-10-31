@@ -569,6 +569,9 @@ func _build_side() -> void:
 	var xb := round_btn("eye", "blue", xray_cb, 34)
 	xb.name = "XrayButton"
 	side_buttons.add_child(xb)
+	var pb := round_btn("camera", "orange", func(): city.photo.enter(), 34)
+	pb.name = "PhotoButton"
+	side_buttons.add_child(pb)
 	side_buttons.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	side_buttons.grow_horizontal = Control.GROW_DIRECTION_BEGIN
 	_place_side()

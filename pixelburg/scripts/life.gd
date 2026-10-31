@@ -59,6 +59,7 @@ var persons: Array = []
 var walkers: Array = []  ## Walker nodes outside
 var cyclists: Array = [] ## Cyclist nodes riding around
 var strollers: Array = [] ## Stroller nodes out for a walk on the paving
+var tourists: Array = [] ## Tourist nodes during a tourist rush
 var protesters: Array = [] ## Protester nodes at a protest (ROADMAP 28)
 var cars: Array = []     ## every Car node (parked or driving)
 var spots := {}          ## parking spot key -> Car (or a reservation)
@@ -86,6 +87,7 @@ func _ready() -> void:
 	Game.hour_passed.connect(func(_h): _dirty = true)
 	Game.plane_landed.connect(_on_plane_landed)
 	Game.protest_changed.connect(protest_changed)
+	Game.disaster_changed.connect(func(_s): _update_tourists())
 
 
 # ====================================================================== networks
@@ -1277,7 +1279,7 @@ func _process(delta: float) -> void:
 	for st in strollers:
 		if is_instance_valid(st):
 			st.step(delta)
-	for pr in protesters:
+	for pr in protesters + tourists:
 		if is_instance_valid(pr):
 			pr.step(delta)
 	_ambient_t -= delta
@@ -1285,6 +1287,7 @@ func _process(delta: float) -> void:
 		_ambient_t = 2.0
 		_ambient()
 		_update_protest()
+		_update_tourists()
 	_social_t -= delta
 	if _social_t <= 0.0:
 		_social_t = 0.9
@@ -1294,6 +1297,7 @@ func _process(delta: float) -> void:
 	cyclists = cyclists.filter(func(cy): return is_instance_valid(cy) and not cy.done)
 	strollers = strollers.filter(func(st): return is_instance_valid(st) and not st.done)
 	protesters = protesters.filter(func(pr): return is_instance_valid(pr) and not pr.done)
+	tourists = tourists.filter(func(pr): return is_instance_valid(pr) and not pr.done)
 
 
 func _rebuild_bins() -> void:
@@ -1585,10 +1589,58 @@ func heist(uid: int, caught: bool, by_mayor: bool) -> void:
 		cop.vanish()
 
 
+# ====================================================================== tourist rush
+## The sight tourists flock to: a historic place, else a square/park/fountain, else the town hall.
+func tourist_site() -> int:
+	var best := 0
+	var top := 0
+	for uid in Game.buildings:
+		var b: Dictionary = Game.buildings[uid]
+		if b.built and int(Data.B[b.id].get("hist", 0)) > top:
+			top = int(Data.B[b.id].hist)
+			best = uid
+	if best != 0:
+		return best
+	for kinds in [["plaza", "park", "fountain", "statue"], ["town_hall"]]:
+		for uid in Game.buildings:
+			if Game.buildings[uid].id in kinds and Game.buildings[uid].built:
+				return uid
+	return 0
+
+
+## Tourists arrive one by one while the rush lasts; when it is over they leave.
+func _update_tourists() -> void:
+	if city == null:
+		return
+	var rush: bool = Game.disaster_kind() == "tourists" and Game.disaster_active()
+	if not rush:
+		for t in tourists:
+			if is_instance_valid(t) and t.state == "stand":
+				t.leave(_protest_origin(t.g))
+		return
+	var standing := tourists.filter(func(t): return is_instance_valid(t) and t.state in ["come", "stand"])
+	var want := clampi(8 + Game.pop / 60, 8, 22)
+	if str(Game.disaster.phase) == "after" and int(Game.disaster.opt) == 2:
+		want = 5
+	var site := tourist_site()
+	var pl := protest_place(site) if site != 0 else []
+	if standing.size() >= want or pl.is_empty():
+		return
+	for i in mini(3, want - standing.size()):
+		var centre: Vector2 = pl[0]
+		var at: Vector2 = centre + pl[1] * randf_range(-1.8, 1.8) + pl[2] * randf_range(-0.2, 1.4)
+		var t := Tourist.new()
+		t.life = self
+		city.world.add_child(t)
+		t.start(_protest_origin(centre), at, pl[3], "")
+		tourists.append(t)
+
+
 # ====================================================================== protests (ROADMAP 28)
 ## Where the crowd stands: in front of the entrance of the protest site. Returns [centre, across, outwards, door].
-func protest_place() -> Array:
-	var site := int(Game.protest.get("site", 0))
+func protest_place(site := -1) -> Array:
+	if site < 0:
+		site = int(Game.protest.get("site", 0))
 	if not Game.buildings.has(site):
 		return []
 	var door := Game.entry_point(site)
@@ -1684,7 +1736,7 @@ func _social() -> void:
 func pick(wp: Vector2) -> Variant:
 	var best: Variant = null
 	var best_d := 26.0
-	for list in [walkers, cars, protesters]:
+	for list in [walkers, cars, protesters, tourists]:
 		for m in list:
 			if not is_instance_valid(m) or not m.visible:
 				continue

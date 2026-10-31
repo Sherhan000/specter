@@ -27,6 +27,7 @@ signal animals_changed
 signal game_over
 signal plane_landed(country: String, pax: int)
 signal heist(uid: int, caught: bool, by_mayor: bool)   ## a bank was robbed (life: people run, police chase)
+signal disaster_changed(state: String)   ## "start" (danger), "hit"/"safe" (answered), "end"
 signal protest_changed(state: String)   ## "start", "end" (people go home) or "force" (the police disperse them)
 
 const SAVE_PATH := "user://city.json"
@@ -59,6 +60,7 @@ var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes jo
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
 var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"owner": name, "day": founded}
 var crime := {}              ## bank heists and the mayor's record, see _empty_crime()
+var disaster := {}           ## natural event with a choice, see _empty_disaster()
 var protest := {}            ## residents' anger and the protest going on, see _empty_protest()
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
@@ -290,6 +292,7 @@ func new_game() -> void:
 	brands = {}
 	crime = _empty_crime()
 	protest = _empty_protest()
+	disaster = _empty_disaster()
 	claimed = []
 	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -398,6 +401,7 @@ func to_dict() -> Dictionary:
 		"brands": brands.duplicate(true),
 		"crime": crime.duplicate(true),
 		"protest": protest.duplicate(true),
+		"disaster": disaster.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
@@ -514,6 +518,19 @@ func from_dict(p: Dictionary) -> bool:
 			protest[k] = str(pd[k])
 		else:
 			protest[k] = int(pd[k])
+	disaster = _empty_disaster()
+	var dzd: Dictionary = p.get("disaster", {})
+	for k in disaster:
+		if not dzd.has(k):
+			continue
+		if disaster[k] is Array:
+			disaster[k] = (dzd[k] as Array).map(func(v): return int(v))
+		elif disaster[k] is bool:
+			disaster[k] = bool(dzd[k])
+		elif disaster[k] is String:
+			disaster[k] = str(dzd[k])
+		else:
+			disaster[k] = int(dzd[k])
 	paves = {}
 	for v in p.get("paves", []):
 		if Data.PAVES.has(str(v[2])):
@@ -683,6 +700,7 @@ func _on_hour() -> void:
 	_update_airport()
 	_update_probe()
 	_update_protest()
+	_update_disaster()
 	if now >= weather_until:
 		_pick_weather()
 	recalc()
@@ -1870,6 +1888,161 @@ func _end_protest(heard: bool) -> void:
 	protest_changed.emit("end")
 	changed.emit()
 	save_game()
+
+
+# ====================================================================== natural events (flood, quake, blizzard, tourists)
+func _empty_disaster() -> Dictionary:
+	## phase: "" calm, "threat" (waiting for the mayor's answer), "after" (consequences visible); kind: Data.DZ_KINDS;
+	## ends: hour the phase ends; cd: no new event before this hour; opt/hit: the answer and whether it went wrong;
+	## uids: buildings in danger (flood: near water; quake: random ones) / damaged ones; count: events so far.
+	return {"phase": "", "kind": "", "ends": 0, "cd": 0, "opt": -1, "hit": false, "count": 0, "uids": []}
+
+
+func disaster_active() -> bool:
+	return str(disaster.get("phase", "")) != ""
+
+
+func disaster_kind() -> String:
+	return str(disaster.get("kind", ""))
+
+
+func disaster_cost(kind: String, opt: int) -> int:
+	return int(Data.DZ[kind].cost[opt] * (1.0 + level / 10.0))
+
+
+## Which events can happen now (floods need water, blizzards need winter).
+func disaster_available() -> Array:
+	var out: Array = []
+	for k in Data.DZ_KINDS:
+		match k:
+			"flood":
+				if not water.is_empty() and season_name() != "winter":
+					out.append(k)
+			"blizzard":
+				if season_name() == "winter":
+					out.append(k)
+			"tourists":
+				if pop >= 100:
+					out.append(k)
+			_:
+				out.append(k)
+	return out
+
+
+## Buildings in danger: near water for a flood, a handful of random ones for a quake.
+func disaster_targets(kind: String) -> Array:
+	var out: Array = []
+	for uid in buildings:
+		var b: Dictionary = buildings[uid]
+		if not b.built or Data.B[b.id].cat == "decor":
+			continue
+		if kind == "flood":
+			var near := false
+			for dy in range(-4, 5):
+				for dx in range(-4, 5):
+					if water.has(Vector2i(b.x + dx, b.y + dy)):
+						near = true
+			if near:
+				out.append(uid)
+		elif kind == "quake":
+			out.append(uid)
+	out.shuffle()
+	return out.slice(0, 12 if kind == "quake" else 30)
+
+
+func _update_disaster() -> void:
+	if disaster.is_empty():
+		disaster = _empty_disaster()
+	var now := abs_hour()
+	match str(disaster.phase):
+		"threat":
+			if now >= int(disaster.ends):
+				disaster_choose(disaster_kind(), 2)
+		"after":
+			if now >= int(disaster.ends):
+				disaster.phase = ""
+				disaster.kind = ""
+				disaster.uids = []
+				disaster.cd = now + Data.DZ_COOLDOWN
+				disaster_changed.emit("end")
+				changed.emit()
+		_:
+			if now >= int(disaster.cd) and now >= Data.DZ_FIRST and pop >= Data.DZ_MIN_POP and not lost and tutorial >= 99 \
+					and not protest_active() and not in_jail() and randf() < Data.DZ_CHANCE:
+				start_disaster()
+
+
+## The danger appears: a letter with 3 answers, the effect is visible in the city.
+func start_disaster(kind := "") -> bool:
+	if disaster_active():
+		return false
+	var av := disaster_available()
+	if kind == "" and not av.is_empty():
+		kind = str(av.pick_random())
+	if kind == "":
+		return false
+	disaster.phase = "threat"
+	disaster.kind = kind
+	disaster.ends = abs_hour() + Data.DZ_HOURS
+	disaster.opt = -1
+	disaster.hit = false
+	disaster.uids = disaster_targets(kind)
+	disaster.count = int(disaster.count) + 1
+	Events.disaster_started(kind)
+	disaster_changed.emit("start")
+	changed.emit()
+	return true
+
+
+## The mayor answers (opt 0 expensive and safe, 1 cheap and risky, 2 nothing). No money for 0/1 = nothing.
+func disaster_choose(kind: String, opt: int) -> bool:
+	if str(disaster.get("phase", "")) != "threat" or kind != disaster_kind() or opt < 0 or opt > 2:
+		return false
+	var d: Dictionary = Data.DZ[kind]
+	if opt < 2 and not pay(disaster_cost(kind, opt), 0, "events"):
+		opt = 2
+	var hit := false
+	var n := 0
+	var sick := 0.5 if has_service("health") else 1.0
+	if kind == "tourists":
+		earn_event("tourists", int(d.gain[opt]))
+		garbage = clampf(garbage + float(d.garbage[opt]), 0.0, 100.0)
+		hit = opt > 0
+	else:
+		var risk := float(d.risk[opt])
+		if risk < 1.0:
+			if has_service("fire"):
+				risk -= Data.DZ_FIRE_SAVE
+			if has_service("health"):
+				risk -= Data.DZ_HEALTH_SAVE
+		hit = randf() < risk
+		if hit:
+			var pool: Array = (disaster.uids as Array).filter(func(u): return buildings.has(u))
+			n = clampi(ceili(pool.size() * float(d.frac[opt])), 1, 8) if not pool.is_empty() else 0
+			var dmged: Array = []
+			for i in n:
+				var u: int = pool[i]
+				buildings[u].dmg = true
+				dmged.append(u)
+				building_updated.emit(u)
+			disaster.uids = dmged
+			n = dmged.size()
+		else:
+			disaster.uids = []
+	var mv := int(round(float(d.mood[opt]) * (sick if int(d.mood[opt]) < 0 else 1.0)))
+	if mv != 0:
+		add_mood(mv, 24, "disaster_" + kind)
+	add_rep(float(d.rep[opt]))
+	disaster.phase = "after"
+	disaster.opt = opt
+	disaster.hit = hit
+	disaster.ends = abs_hour() + Data.DZ_AFTER
+	Events.disaster_result(kind, opt, hit, n)
+	disaster_changed.emit("hit" if hit else "safe")
+	recalc()
+	changed.emit()
+	save_game()
+	return true
 
 
 func broken_rules() -> int:

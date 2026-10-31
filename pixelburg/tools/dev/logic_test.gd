@@ -1312,6 +1312,77 @@ func _ready() -> void:
 	Game.level = pr_keep[4]
 	Game.recalc()
 
+	# ------------------------------------------------ natural events with a choice
+	var dz_keep := [Game.coins, Game.tutorial, Game.level, Game.pop]
+	Game.coins = 1000000
+	Game.tutorial = 99
+	Game.disaster = Game._empty_disaster()
+	for dz_k in Data.DZ_KINDS:
+		check(Events.DZ_TEXT.has(dz_k) and Data.DZ.has(dz_k) and Loc.S.has("mood_disaster_" + dz_k), "event %s has letter, balance and mood text" % dz_k)
+	check(FileAccess.file_exists("res://scripts/disaster_fx.gd") and FileAccess.file_exists("res://scripts/tourist.gd"), "event visuals exist")
+	Game.disaster = Game._empty_disaster()
+	Game.start_disaster("quake")
+	check(Game.disaster_active() and Game.disaster_kind() == "quake" and not Game.start_disaster("flood"), "an earthquake starts, only one event at a time")
+	check(Events.inbox[0].kind == "disaster" and Events.inbox[0].opts.size() == 3, "the event letter has 3 answers")
+	var dz_c0: int = Game.coins
+	check(Game.disaster_choose("quake", 0) and Game.coins < dz_c0 and str(Game.disaster.phase) == "after", "the safe answer costs money and ends the threat")
+	var dz_dmg := 0
+	for u in Game.buildings:
+		if Game.buildings[u].dmg:
+			dz_dmg += 1
+	Game.disaster.ends = Game.abs_hour()
+	Game._update_disaster()
+	check(not Game.disaster_active() and int(Game.disaster.cd) > Game.abs_hour(), "the event ends and a calm period follows")
+	Game.disaster = Game._empty_disaster()
+	Game.start_disaster("quake")
+	Game.disaster_choose("quake", 2)
+	var dz_after := 0
+	for u in Game.buildings:
+		if Game.buildings[u].dmg:
+			dz_after += 1
+	check(bool(Game.disaster.hit) and (dz_after > dz_dmg or Game.buildings.size() == 0), "doing nothing in an earthquake damages buildings")
+	for u in Game.buildings:
+		Game.buildings[u].dmg = false
+	Game.disaster = Game._empty_disaster()
+	Game.start_disaster("tourists")
+	var dz_c1: int = Game.coins
+	Game.disaster_choose("tourists", 0)
+	check(Game.coins > dz_c1 - 100000 and int(Game.disaster.opt) == 0, "tourists bring income")
+	Game.disaster = Game._empty_disaster()
+	Game.start_disaster("blizzard")
+	Game.coins = 0
+	Game.disaster_choose("blizzard", 0)
+	check(int(Game.disaster.opt) == 2, "no money for the paid answer means doing nothing")
+	Game.disaster = Game._empty_disaster()
+	Game.disaster.phase = "threat"
+	Game.disaster.kind = "flood"
+	Game.disaster.ends = Game.abs_hour() - 1
+	Game._update_disaster()
+	check(str(Game.disaster.phase) == "after" and int(Game.disaster.opt) == 2, "an unanswered event resolves itself as doing nothing")
+	Game.disaster = Game._empty_disaster()
+	Game.start_disaster("flood")
+	var dz_save := Game.disaster.duplicate(true)
+	check(str(dz_save.phase) == "threat" and Game.disaster_available().has("quake"), "the event record can be saved")
+	for u in Game.buildings:
+		Game.buildings[u].dmg = false
+	Game.disaster = Game._empty_disaster()
+	Game.coins = dz_keep[0]
+	Game.tutorial = dz_keep[1]
+	Game.level = dz_keep[2]
+	Game.recalc()
+
+	# ------------------------------------------------ photo mode
+	check(FileAccess.file_exists("res://scripts/photo_mode.gd") and Assets.tex("ui/icons/camera") != null, "photo mode and its camera icon exist")
+	check(Loc.S.has("photo_saved") and Loc.S.has("photo_failed"), "photo mode texts exist")
+	var ph_img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+	ph_img.fill(Color(0.2, 0.5, 0.8))
+	var ph_path := PhotoMode.save_image(ph_img)
+	check(ph_path != "" and FileAccess.file_exists(ph_path), "a photo is saved as a PNG file")
+	if ph_path != "":
+		DirAccess.remove_absolute(ph_path)
+	for ph_f in PhotoMode.FILTERS:
+		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:
