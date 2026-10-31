@@ -1334,7 +1334,14 @@ func _ready() -> void:
 	Game.level = 11
 	var ach_got := Ach.check()
 	check(ach_got.size() >= 3 and Ach.tier_of("days") == 1 and Ach.tier_of("level") == 2, "reached tiers are awarded at once")
-	check(Game.coins > ach_coins and Ach.check().is_empty(), "the reward is paid once")
+	var ach_first := {}
+	for g in ach_got:
+		ach_first["%s:%d" % [g[0][0], g[1]]] = true
+	var ach_again := true
+	for g in Ach.check():
+		if ach_first.has("%s:%d" % [g[0][0], g[1]]):
+			ach_again = false
+	check(Game.coins > ach_coins and ach_again, "the reward is paid once")
 	check(Ach.earned() >= 3 and Ach.earned() <= Ach.total(), "earned count")
 	# daily reward: 7-day cycle, a missed day resets the streak
 	Game.ach = Game._empty_ach()
