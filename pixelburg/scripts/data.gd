@@ -110,6 +110,8 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Три супермаркета: «Амид» (сине-белый стеклянный зал с круглым логотипом), «Анис» (кирпичный рынок-зал с полосатыми тентами и звездой-анисом) и «Ёвар» (жёлто-бирюзовый склад-дискаунтер с пилообразной крышей и шестигранным логотипом). Жители ходят туда за покупками, а магазины дают доход и рабочие места.",
+	 "Three supermarkets: Amid (a blue-white glass hall with a round logo), Anis (a brick market hall with striped awnings and a star-anise logo) and Yovar (a yellow-teal discount warehouse with a saw-tooth roof and a hexagon logo). Residents go shopping there, and the stores bring income and jobs."],
 	["Преступность и ограбления банков: иногда житель грабит банк — люди вокруг разбегаются, полиция мчится с мигалками и может поймать грабителя (тогда деньги вернутся). Новые здания: охрана «Щит» (банки под её защитой грабят реже, а грабителей чаще ловят) и тюрьма (меньше преступлений). Мэр тоже может ограбить банк (кнопка в карточке банка) — но если следствие узнает, мэра посадят: 3 дня нельзя строить, налоги и туристы вдвое меньше, штраф и падение репутации; можно выйти под залог",
 	 "Crime and bank heists: now and then a resident robs a bank — people around run away, the police race in with sirens and may catch the robber (then the money comes back). New buildings: Shield Guards (guarded banks are robbed less often and robbers are caught more often) and a prison (less crime). The mayor can rob a bank too (button in the bank's card) — but if the investigation finds out, the mayor goes to prison: no building for 3 days, taxes and tourism halved, a fine and a reputation hit; bail gets you out early"],
 	["Бренды жителей: с 6-го уровня жители основывают свои бренды — «Сладкий Ёж» (кондитерские), «Бодрый Кот» (кофейни), «Листик» (продукты), «Зарядик» (электроника), «Нитка» (одежда) и «Пиксельбургер» (бургерные). У каждого свои цвета, вывеска и эмблема. Бренд сам предлагает открыть киоск, магазин, а потом и большой флагман с парковкой; чем больше мест, тем выше уровень всей сети, а налог с них больше обычного", "Residents' brands: from level 6 residents found brands of their own - Sweet Hedgehog (sweet shops), Perky Cat (coffee houses), Leafy (groceries), Zaryadik (electronics), Nitka (clothes) and Pixelburger (burger bars). Each has its own colours, sign and emblem. The brand itself asks to open a kiosk, a shop and later a big flagship with a car park; the more places, the higher the whole chain's level, and they pay more tax than usual"],
@@ -278,6 +280,12 @@ const B := {
 		"jobs": 4, "use": 14, "income": 110, "cycle": 130, "upkeep": 26},
 	"supermarket": {"name": ["Супермаркет", "Supermarket"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 10, "time": 120,
 		"jobs": 12, "use": 30, "income": 170, "cycle": 160, "upkeep": 50},
+	"amid": {"name": ["Супермаркет «Амид»", "Amid Supermarket"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 5200, "lvl": 11, "time": 130,
+		"jobs": 14, "use": 34, "income": 200, "cycle": 160, "upkeep": 56},
+	"anis": {"name": ["Супермаркет «Анис»", "Anis Supermarket"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 4600, "lvl": 10, "time": 120,
+		"jobs": 13, "use": 32, "income": 182, "cycle": 155, "upkeep": 52},
+	"yovar": {"name": ["Супермаркет «Ёвар»", "Yovar Supermarket"], "cat": "shop", "zones": ["city", "industry"], "size": 2, "cost": 3800, "lvl": 9, "time": 110,
+		"jobs": 12, "use": 36, "income": 160, "cycle": 140, "upkeep": 44},
 	"market_stall": {"name": ["Рыночный прилавок", "Market Stall"], "cat": "shop", "zones": ["city", "farm", "leisure"], "size": 1, "cost": 600, "lvl": 3, "time": 20,
 		"jobs": 2, "use": 6, "income": 40, "cycle": 90, "upkeep": 6},
 	"market": {"name": ["Рынок", "Market"], "cat": "shop", "zones": ["city", "farm", "leisure"], "size": 2, "cost": 3800, "lvl": 8, "time": 90,
@@ -559,7 +567,7 @@ const B := {
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
 const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house_american", "house_tajik", "house_aframe", "house_container", "house_med", "cottage", "house_duplex", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
-	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "ice_cream", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "bookshop", "barber", "pizzeria", "gas_station", "ev_station", "gas_highway", "car_wash", "auto_repair", "car_dealer", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
+	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "ice_cream", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "bookshop", "barber", "pizzeria", "gas_station", "ev_station", "gas_highway", "car_wash", "auto_repair", "car_dealer", "boutique", "supermarket", "amid", "anis", "yovar", "market_stall", "market", "bazaar", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",

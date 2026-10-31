@@ -1126,6 +1126,17 @@ func _ready() -> void:
 	Game.brands = {}
 	Game.level = br_lvl_keep
 
+	# ------------------------------------------------ supermarkets Amid, Anis, Yovar (ROADMAP 26)
+	var sm_look := {}
+	for sm_id in ["amid", "anis", "yovar"]:
+		check(Data.B.has(sm_id) and sm_id in Data.ORDER and Data.tab_of(sm_id) == "shop", "%s is in the shop list" % sm_id)
+		check(Data.B[sm_id].size == 2 and Data.B[sm_id].income > 0 and Data.B[sm_id].jobs > 0, "%s has jobs and income" % sm_id)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % sm_id) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % sm_id), "%s has its own sprites" % sm_id)
+		check(sm_id in Life.SHOPS, "residents go shopping at %s" % sm_id)
+		sm_look[FileAccess.get_md5("res://assets/buildings/%s_2_0.png" % sm_id)] = true
+	check(sm_look.size() == 3, "the three supermarkets look different")
+	check(Data.B.amid.name[0].contains("Амид") and Data.B.anis.name[0].contains("Анис") and Data.B.yovar.name[0].contains("Ёвар"), "supermarket names on the signs")
+
 	# ------------------------------------------------ crime: bank heists, the mayor in prison (ROADMAP 25)
 	for cr_id in ["security_office", "prison"]:
 		check(Data.B.has(cr_id) and cr_id in Data.ORDER and Data.tab_of(cr_id) == "service", "%s is in the service list" % cr_id)

@@ -45,7 +45,7 @@ const THROUGH_CARS := ["sedan", "truck", "bus", "suv", "van", "hatch", "sedan", 
 const VISITOR_CARS := ["sedan", "suv", "hatch", "van", "minivan", "cabrio", "retro", "limo", "micro"]
 const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "ice_cream",
 	"ezhik_kiosk", "ezhik_shop", "ezhik_flag", "kot_kiosk", "kot_shop", "kot_flag", "pixelburger_kiosk", "pixelburger_shop", "pixelburger_flag"]
-const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway", "bookshop", "barber", "car_wash", "auto_repair", "car_dealer",
+const SHOPS := ["supermarket", "amid", "anis", "yovar", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway", "bookshop", "barber", "car_wash", "auto_repair", "car_dealer",
 	"listik_kiosk", "listik_shop", "listik_flag", "zaryadik_kiosk", "zaryadik_shop", "zaryadik_flag", "nitka_kiosk", "nitka_shop", "nitka_flag"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum", "castle", "khujand_fortress", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch",
 	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks",
