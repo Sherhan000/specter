@@ -178,6 +178,25 @@ func _apply(act: String, m: Dictionary) -> void:
 				Game.toast.emit(Loc.t("ev_biz_nospot"))
 		"decline_biz":
 			Game.add_rep(-1)
+		# ---------------- residents' brands
+		"accept_brand":
+			if Game.found_brand(str(m.brand), fmt(m.owner)):
+				Game.add_rep(2)
+				Game.toast.emit(Loc.t("ev_brand_founded") % Data.brand_name(m.brand))
+		"accept_branch":
+			var bid := str(m.brand)
+			var kind := str(m.kind)
+			var at: Vector2i = Vector2i(int(m.spot[0]), int(m.spot[1]))
+			var got := Game.open_branch(bid, kind, at.x, at.y)
+			if got == 0:
+				var s2 := find_business_spot(Data.B[bid + "_" + kind].size)
+				if s2 != Vector2i(-1, -1):
+					got = Game.open_branch(bid, kind, s2.x, s2.y)
+			if got > 0:
+				Game.add_rep(1)
+				Game.toast.emit(Loc.t("ev_branch_open") % Data.brand_name(bid))
+			else:
+				Game.toast.emit(Loc.t("ev_biz_nospot"))
 		# ---------------- festival
 		"festival":
 			if Game.pay(600, 0, "events"):
@@ -287,6 +306,11 @@ func find_business_spot(size: int) -> Vector2i:
 
 
 func _proposal() -> void:
+	if Game.level >= Data.BRAND_MIN_LEVEL:
+		if not Game.brands.is_empty() and _rng.randf() < 0.5 and brand_branch_proposal():
+			return
+		if Game.brands.size() < Data.BRANDS.size() and _rng.randf() < 0.35 and brand_found_proposal():
+			return
 	var biz: String = Data.PRIVATE_KINDS.pick_random()
 	if Game.level < int(Data.B[biz].lvl):
 		biz = "bakery"
@@ -302,6 +326,49 @@ func _proposal() -> void:
 			who[1], Data.B[biz].name[1].to_lower(), tax]],
 		[[["Разрешить", "Allow"], "accept_biz"], [["Отказать", "Refuse"], "decline_biz"]],
 		{"biz": biz, "spot": [spot.x, spot.y], "owner": who})
+
+
+# ====================================================================== residents' brands
+## A resident wants to found a brand of their own (one of Data.BRANDS not founded yet).
+func brand_found_proposal() -> bool:
+	var free: Array = Data.BRAND_ORDER.filter(func(k): return not Game.brands.has(k))
+	if free.is_empty():
+		return false
+	var bid: String = free.pick_random()
+	var br: Dictionary = Data.BRANDS[bid]
+	var who: Array = FIRST_NAMES.pick_random()
+	post("proposal", "alina", ["Новый бренд", "A new brand"],
+		["Жител%s %s хочет основать свой бренд «%s» — сеть %s. Бренд сам будет открывать киоски, магазины, а потом и флагманы, и платить налог больше обычного." % [
+			"ьница" if who[0].ends_with("а") or who[0].ends_with("я") else "ь", who[0], br.name[0], br.sells[0]],
+		 "Resident %s wants to found a brand of their own, «%s» — a chain of %s. The brand will open its kiosks, shops and later flagships itself and pay more tax than usual." % [
+			who[1], br.name[1], br.sells[1]]],
+		[[["Поддержать", "Support"], "accept_brand"], [["Отказать", "Refuse"], "decline_biz"]],
+		{"brand": bid, "owner": who})
+	return true
+
+
+## A founded brand wants to open its next place.
+func brand_branch_proposal() -> bool:
+	var bid: String = Game.brands.keys().pick_random()
+	var kind := Game.brand_next_kind(bid)
+	var id := bid + "_" + kind
+	var spot := find_business_spot(Data.B[id].size)
+	if spot == Vector2i(-1, -1) and kind == "flag":
+		kind = "shop"
+		id = bid + "_" + kind
+		spot = find_business_spot(1)
+	if spot == Vector2i(-1, -1):
+		return false
+	var br: Dictionary = Data.BRANDS[bid]
+	var tax := int(Data.stat(id, "income", Game.brand_level(bid)) * 3 * Game.tax / 10.0 * Data.BRAND_TAX)
+	post("proposal", "alina", [br.name[0], br.name[1]],
+		["Бренд «%s» (владелец: %s) хочет открыть новое место: %s. Город ничего не платит, налог около %d монет в день." % [
+			br.name[0], str(Game.brands[bid].owner), Data.B[id].name[0].to_lower(), tax],
+		 "The «%s» brand (owner: %s) wants to open a new place: %s. The city pays nothing, the tax is about %d coins a day." % [
+			br.name[1], str(Game.brands[bid].owner), Data.B[id].name[1].to_lower(), tax]],
+		[[["Разрешить", "Allow"], "accept_branch"], [["Отказать", "Refuse"], "decline_biz"]],
+		{"brand": bid, "kind": kind, "spot": [spot.x, spot.y]})
+	return true
 
 
 # ====================================================================== disasters

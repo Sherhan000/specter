@@ -110,6 +110,7 @@ const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "b
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Бренды жителей: с 6-го уровня жители основывают свои бренды — «Сладкий Ёж» (кондитерские), «Бодрый Кот» (кофейни), «Листик» (продукты), «Зарядик» (электроника), «Нитка» (одежда) и «Пиксельбургер» (бургерные). У каждого свои цвета, вывеска и эмблема. Бренд сам предлагает открыть киоск, магазин, а потом и большой флагман с парковкой; чем больше мест, тем выше уровень всей сети, а налог с них больше обычного", "Residents' brands: from level 6 residents found brands of their own - Sweet Hedgehog (sweet shops), Perky Cat (coffee houses), Leafy (groceries), Zaryadik (electronics), Nitka (clothes) and Pixelburger (burger bars). Each has its own colours, sign and emblem. The brand itself asks to open a kiosk, a shop and later a big flagship with a car park; the more places, the higher the whole chain's level, and they pay more tax than usual"],
 	["30 новых объектов, у каждого свой вид. Дороги: щебёнка, бетонка из плит и красная улица. Машины: малолитражка, минивэн, кабриолет, ретро-седан, лимузин, фургон с мороженым и бетономешалка. Здания: книжный, парикмахерская, кафе-мороженое, автомойка, автосервис, автосалон, пост полиции, поликлиника, боулинг, мини-гольф, летняя сцена, скейт-парк, беседка, часовая башня, флагшток, арт-объект, прокат велосипедов, место для пикника, текстильная фабрика и автозавод", "30 new objects, each with its own look. Roads: gravel, concrete plates and a red street. Cars: a city mini, a minivan, a convertible, a retro sedan, a limousine, an ice-cream van and a concrete mixer. Buildings: a bookshop, a barber shop, an ice-cream parlour, a car wash, an auto repair shop, a car dealership, a police post, a clinic, a bowling alley, mini golf, an open-air stage, a skate park, a gazebo, a clock tower, a flagpole, an art sculpture, a bike rental, a picnic spot, a textile mill and a car plant"],
 	["Новые недорогие дома для начала игры, у каждого свой вид: бревенчатая изба с резными наличниками и поленницей, глинобитный дом с тандыром, кирпичный домик с живой изгородью, домик-шалаш со стеклянным фасадом и костровищем, дом из морских контейнеров, белый средиземноморский дом с террасой на крыше и дом на две семьи", "New cheap homes for the early game, each with its own look: a log cabin with carved window frames and a woodpile, an adobe house with a tandoor oven, a brick house behind a hedge, an A-frame cabin with a glass front and a fire pit, a shipping-container house, a whitewashed Mediterranean house with a roof terrace and a duplex for two families"],
 	["Крепость Худжанда — одна на город (4x4): кирпичные стены с круглыми зубцами, башни, высокий портал ворот со стрельчатой аркой, музей во дворе, а перед ней парк Камоли Худжанди с фонтаном, чинарами и памятником поэту. Привлекает больше всего туристов", "The Khujand Fortress, one per city (4x4): brick walls with rounded battlements, towers, a tall gate portal with a pointed arch, a museum in the courtyard and in front the Kamoli Khujandi park with a fountain, plane trees and the poet's statue. Draws the most tourists of all"],
@@ -510,6 +511,43 @@ const B := {
 	# the airport: one per city, needs a road to the highway; flights from the bought routes bring travellers (Game.flights)
 	"airport": {"name": ["Аэропорт", "Airport"], "cat": "service", "unique": true, "highway": true, "zones": ["industry", "leisure", "city"], "size": 4,
 		"cost": 60000, "gems": 12, "lvl": 16, "time": 420, "jobs": 60, "upkeep": 280, "svc": "airport", "radius": 999, "happy": 0},
+	# residents' brands (item 24): opened only by brands (not in ORDER), see BRANDS; graphics tools/art/b_brands.py
+	"ezhik_kiosk": {"name": ["Киоск «Сладкий Ёж»", "Sweet Hedgehog Kiosk"], "cat": "shop", "brand": "ezhik", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"ezhik_shop": {"name": ["Магазин «Сладкий Ёж»", "Sweet Hedgehog Shop"], "cat": "shop", "brand": "ezhik", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"ezhik_flag": {"name": ["Флагман «Сладкий Ёж»", "Sweet Hedgehog Flagship"], "cat": "shop", "brand": "ezhik", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
+	"kot_kiosk": {"name": ["Киоск «Бодрый Кот»", "Perky Cat Kiosk"], "cat": "shop", "brand": "kot", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"kot_shop": {"name": ["Магазин «Бодрый Кот»", "Perky Cat Shop"], "cat": "shop", "brand": "kot", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"kot_flag": {"name": ["Флагман «Бодрый Кот»", "Perky Cat Flagship"], "cat": "shop", "brand": "kot", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
+	"listik_kiosk": {"name": ["Киоск «Листик»", "Leafy Kiosk"], "cat": "shop", "brand": "listik", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"listik_shop": {"name": ["Магазин «Листик»", "Leafy Shop"], "cat": "shop", "brand": "listik", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"listik_flag": {"name": ["Флагман «Листик»", "Leafy Flagship"], "cat": "shop", "brand": "listik", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
+	"zaryadik_kiosk": {"name": ["Киоск «Зарядик»", "Zaryadik Kiosk"], "cat": "shop", "brand": "zaryadik", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"zaryadik_shop": {"name": ["Магазин «Зарядик»", "Zaryadik Shop"], "cat": "shop", "brand": "zaryadik", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"zaryadik_flag": {"name": ["Флагман «Зарядик»", "Zaryadik Flagship"], "cat": "shop", "brand": "zaryadik", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
+	"nitka_kiosk": {"name": ["Киоск «Нитка»", "Nitka Kiosk"], "cat": "shop", "brand": "nitka", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"nitka_shop": {"name": ["Магазин «Нитка»", "Nitka Shop"], "cat": "shop", "brand": "nitka", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"nitka_flag": {"name": ["Флагман «Нитка»", "Nitka Flagship"], "cat": "shop", "brand": "nitka", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
+	"pixelburger_kiosk": {"name": ["Киоск «Пиксельбургер»", "Pixelburger Kiosk"], "cat": "shop", "brand": "pixelburger", "zones": ["city"], "size": 1, "cost": 600, "lvl": 5, "time": 20,
+		"jobs": 2, "use": 6, "income": 42, "cycle": 100, "upkeep": 8},
+	"pixelburger_shop": {"name": ["Магазин «Пиксельбургер»", "Pixelburger Shop"], "cat": "shop", "brand": "pixelburger", "zones": ["city"], "size": 1, "cost": 1200, "lvl": 5, "time": 35,
+		"jobs": 3, "use": 10, "income": 74, "cycle": 110, "upkeep": 14},
+	"pixelburger_flag": {"name": ["Флагман «Пиксельбургер»", "Pixelburger Flagship"], "cat": "shop", "brand": "pixelburger", "zones": ["city"], "size": 2, "cost": 4200, "lvl": 8, "time": 60,
+		"jobs": 8, "use": 24, "income": 170, "cycle": 130, "upkeep": 30},
 	# street lamps stand on the sidewalks and are placed with their own tool (see Game.place_lamp)
 	"lamp": {"name": ["Фонарь", "Street Lamp"], "cat": "decor", "zones": ["city", "farm", "industry", "leisure"], "size": 0, "cost": LAMP_COST, "lvl": 2, "time": 0,
 		"happy": 1, "radius": 2, "upkeep": 0},
@@ -554,6 +592,21 @@ const LANDMARK_RADIUS := 16  ## homes this close to the tower are happier
 const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
 const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "bookshop", "barber", "ice_cream"]
+## Residents' own brands (all names invented): a founded brand opens its kiosks, shops and flagships itself.
+## name, what it sells (genitive plural, for "a chain of ..."), sector (food: residents eat there, shop: they shop), colour for the UI.
+const BRANDS := {
+	"ezhik": {"name": ["Сладкий Ёж", "Sweet Hedgehog"], "sells": ["кондитерских", "sweet shops"], "sector": "food", "color": "e87aa8"},
+	"kot": {"name": ["Бодрый Кот", "Perky Cat"], "sells": ["кофеен", "coffee houses"], "sector": "food", "color": "2a7a6a"},
+	"listik": {"name": ["Листик", "Leafy"], "sells": ["продуктовых", "grocery stores"], "sector": "shop", "color": "3a9a4a"},
+	"zaryadik": {"name": ["Зарядик", "Zaryadik"], "sells": ["магазинов электроники", "electronics stores"], "sector": "shop", "color": "2a5ad8"},
+	"nitka": {"name": ["Нитка", "Nitka"], "sells": ["магазинов одежды", "clothing stores"], "sector": "shop", "color": "7a3a9a"},
+	"pixelburger": {"name": ["Пиксельбургер", "Pixelburger"], "sells": ["бургерных", "burger bars"], "sector": "food", "color": "d83a2a"},
+}
+const BRAND_ORDER := ["ezhik", "kot", "listik", "zaryadik", "nitka", "pixelburger"]
+const BRAND_KINDS := ["kiosk", "shop", "flag"]   ## building id = brand + "_" + kind
+const BRAND_MIN_LEVEL := 6     ## city level when residents start founding brands
+const BRAND_TAX := 1.3         ## brand branches pay this much more tax than other private businesses
+const BRAND_FLAG_BRANCHES := 3 ## branches a brand needs before it opens a flagship
 const ANIMALS := ["deer", "rabbit", "fox", "boar", "wolf", "bear"]
 ## lots people walk through (their props are drawn as part of the building)
 const WALKABLE := ["park", "plaza", "bench", "fountain", "statue", "playground", "pond", "flowerbed", "zoo", "funfair"]
@@ -626,6 +679,15 @@ static func xp_for_level(level: int) -> int:
 
 static func tab_of(id: String) -> String:
 	return B[id].get("tab", B[id].cat)
+
+
+## Brand that owns this building kind ("" for ordinary buildings).
+static func brand_of(id: String) -> String:
+	return str(B[id].get("brand", "")) if B.has(id) else ""
+
+
+static func brand_name(bid: String) -> String:
+	return Loc.pick(BRANDS[bid].name) if BRANDS.has(bid) else ""
 
 
 static func name_of(id: String) -> String:

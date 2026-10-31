@@ -2,7 +2,7 @@
 
 ## Сейчас
 - В Google Play 1.3.1 (code 5). В main готова следующая версия (1.4.0, не собрана): всё ниже + см. Data.NEWS.
-- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–23 и отдельная задача «30 новых объектов» (вне ROADMAP).
+- План обновлений по пунктам — ROADMAP.md (один пункт на чат). Сделаны пункты 1–24 и отдельная задача «30 новых объектов» (вне ROADMAP).
 
 ## Что есть в игре (кратко, где искать)
 - Здания: scripts/data.gd (B, ORDER, TABS); графика: tools/art/b_*.py (b_towers — башни, отели, транспорт, Душанбе; b_houses2 — дома мира, дачи, башня-виллы; b_houses3 — дешёвые стартовые дома; b_city30 — 20 зданий из набора «30 объектов»).
@@ -14,7 +14,20 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (30 новых объектов, не пункт ROADMAP)
+## Сделано в последней сессии (пункт 24 — бренды жителей)
+- 6 выдуманных брендов (без реальных названий и логотипов): Data.BRANDS / BRAND_ORDER — ezhik «Сладкий Ёж» (кондитерские, food), kot «Бодрый Кот» (кофейни, food),
+  listik «Листик» (продукты, shop), zaryadik «Зарядик» (электроника, shop), nitka «Нитка» (одежда, shop), pixelburger «Пиксельбургер» (бургерные, food).
+- У каждого 3 вида объектов (Data.BRAND_KINDS): <бренд>_kiosk (1x1), <бренд>_shop (1x1), <бренд>_flag (2x2, флагман с парковкой и пилоном). Поле "brand" в Data.B,
+  в Data.ORDER их НЕТ — игрок не строит, открывает только бренд. Data.brand_of(id), Data.brand_name(bid). Графика — новый модуль tools/art/b_brands.py (в MODULES):
+  свои цвета, вывеска (латиница), эмблема (сердце, чашка, лист, молния, алмаз, звезда — emblem()/logo_face()/logo_cube()/logo_pylon()), ночью светится.
+- game.gd: Game.brands (bid → {owner, day}, ключ "brands" в сохранении, SAVE_VERSION не менялся); found_brand, brand_branches, brand_level (1 / 3+ мест → 2 / 6+ → 3),
+  brand_next_kind (сначала киоск, потом магазин/киоск по очереди, флагман от BRAND_FLAG_BRANCHES 3 мест и ур. города 8), open_branch (через place_private), sync_brand
+  (все места сети на уровне бренда; вызывается и при сносе). Налог с мест бренда × Data.BRAND_TAX 1.3.
+- events.gd: в _proposal с ур. BRAND_MIN_LEVEL 6 — brand_found_proposal (житель основывает бренд, «Поддержать»/accept_brand) и brand_branch_proposal (бренд просит открыть место, accept_branch).
+- life.gd: food-бренды в FOOD (+JOB_KINDS chef, флагманы в OUTINGS), shop-бренды в SHOPS. Карточка: строки «Бренд», «Сеть: n мест, ур.», пояснение; заметка brand_owner.
+- Проверки в logic_test (данные, спрайты, основание, виды мест, рост уровня, сохранение, снос, события), Data.NEWS дополнен. Спрайты проверены листом-превью, на телефоне глазами не смотрели.
+
+## 30 новых объектов (ранее, не пункт ROADMAP)
 - Дороги (3): gravel «Щебёнка» (9, без тротуаров, как грунтовка, счастье −1 с причиной r_dirt), concrete «Бетонка из плит» (22, городская, plates() в шейдере, без осевой),
   red «Красная улица» (32, городская, красный асфальт с жёлтыми краевыми линиями, счастье +1). ground.gd ROAD_IDS 16/17/18 (pave() теперь только 12–15), STREETS + concrete/red; Data.ROADS/ROAD_ORDER; Life.lane_for.
 - Машины (7): units4.CARS micro, minivan, cabrio, retro (свободная покраска), limo, icecream (фургон с мороженым), mixer (бетономешалка, флаг drum — круглый ребристый барабан).

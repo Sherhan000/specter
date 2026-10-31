@@ -33,18 +33,21 @@ const JOB_KINDS := {
 	"sawmill": "builder", "workshop": "builder", "power_plant": "builder", "water_station": "builder", "solar_panel": "builder", "factory": "builder", "logistics": "builder",
 	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "coffee_kiosk": "chef", "shawarma": "chef",
 	"donut_shop": "chef", "burger_bar": "chef", "food_trucks": "chef", "chaikhana": "chef", "drive_thru": "chef", "post_office": "postman",
-	"ice_cream": "chef", "police_post": "police", "clinic": "doctor", "textile_mill": "builder", "car_plant": "builder", "auto_repair": "builder",
+	"ice_cream": "chef", "ezhik_kiosk": "chef", "ezhik_shop": "chef", "ezhik_flag": "chef", "kot_kiosk": "chef", "kot_shop": "chef", "kot_flag": "chef", "pixelburger_kiosk": "chef", "pixelburger_shop": "chef", "pixelburger_flag": "chef",
+	"police_post": "police", "clinic": "doctor", "textile_mill": "builder", "car_plant": "builder", "auto_repair": "builder",
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
 ## Car kinds by role: residents' own cars, traffic passing through town, visitors from other towns.
 const RESIDENT_CARS := ["sedan", "hatch", "sedan", "suv", "hatch", "pickup", "sedan", "van", "sports", "micro", "minivan", "cabrio", "retro"]
 const THROUGH_CARS := ["sedan", "truck", "bus", "suv", "van", "hatch", "sedan", "delivery", "mixer", "icecream", "minivan", "limo"]
 const VISITOR_CARS := ["sedan", "suv", "hatch", "van", "minivan", "cabrio", "retro", "limo", "micro"]
-const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "ice_cream"]
-const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway", "bookshop", "barber", "car_wash", "auto_repair", "car_dealer"]
+const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "ice_cream",
+	"ezhik_kiosk", "ezhik_shop", "ezhik_flag", "kot_kiosk", "kot_shop", "kot_flag", "pixelburger_kiosk", "pixelburger_shop", "pixelburger_flag"]
+const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway", "bookshop", "barber", "car_wash", "auto_repair", "car_dealer",
+	"listik_kiosk", "listik_shop", "listik_flag", "zaryadik_kiosk", "zaryadik_shop", "zaryadik_flag", "nitka_kiosk", "nitka_shop", "nitka_flag"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum", "castle", "khujand_fortress", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch",
 	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks",
-	"bowling", "mini_golf", "open_stage", "skate_park", "gazebo", "picnic", "clock_tower", "art_sculpture", "ice_cream"]
+	"bowling", "mini_golf", "open_stage", "skate_park", "gazebo", "picnic", "clock_tower", "art_sculpture", "ice_cream", "ezhik_flag", "kot_flag", "pixelburger_flag"]
 
 var city: Node
 var car_grid := AStarGrid2D.new()

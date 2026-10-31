@@ -500,7 +500,12 @@ func building_details(uid: int) -> void:
 		for r in Game.home_reasons[uid]:
 			_row(v, "happy" if int(r[1]) > 0 else "unhappy", Loc.t(str(r[0])), ("+" if int(r[1]) > 0 else "") + str(r[1]),
 				Color("2a7a2a") if int(r[1]) > 0 else Color("b83a2a"))
-	if b.priv != "":
+	var bid := Data.brand_of(b.id)
+	if bid != "":
+		_row(v, "star", Loc.t("brand"), "«%s»" % Data.brand_name(bid))
+		_row(v, "shop", Loc.t("brand_chain"), Loc.t("brand_chain_v") % [Game.brand_branches(bid).size(), Game.brand_level(bid)])
+		hud.text(Loc.t("brand_note") % Loc.pick(Data.BRANDS[bid].sells), v, 11, Color("6a5a4a"), _w())
+	elif b.priv != "":
 		hud.text(Loc.t("private_note"), v, 11, Color("6a5a4a"), _w())
 	hud.popup(Data.name_of(b.id), "", [[Loc.t("close"), "blue", Callable()]], v)
 

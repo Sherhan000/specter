@@ -26,9 +26,10 @@ func _ready() -> void:
 	var c := Data.CENTER
 
 	# ------------------------------------------------ data and sprites
-	check(Data.ORDER.size() == Data.B.size() and Data.B.size() >= 55, "%d building types" % Data.B.size())
+	var brand_ids: Array = Data.B.keys().filter(func(k): return Data.brand_of(k) != "")
+	check(Data.ORDER.size() + brand_ids.size() == Data.B.size() and Data.B.size() >= 55, "%d building types" % Data.B.size())
 	var missing := 0
-	for id in Data.ORDER:
+	for id in Data.ORDER + brand_ids:
 		if id == "lamp":
 			continue
 		for L in [1, 2, 3]:
@@ -1059,6 +1060,71 @@ func _ready() -> void:
 	check(Data.B.police_post.svc == "police" and Data.B.clinic.svc == "health", "police post and clinic count as police and health")
 	check(Life.FOOD.has("ice_cream") and Life.SHOPS.has("car_wash") and Life.OUTINGS.has("bowling") and Life.OUTINGS.has("gazebo"), "residents use the new places")
 	check(Life.JOB_KINDS.get("car_plant", "") == "builder" and Life.JOB_KINDS.get("clinic", "") == "doctor", "new workplaces dress their workers")
+
+
+	# ------------------------------------------------ residents' brands (item 24)
+	check(Data.BRAND_ORDER.size() == Data.BRANDS.size() and Data.BRANDS.size() >= 5, "several residents' brands")
+	check(brand_ids.size() == Data.BRANDS.size() * Data.BRAND_KINDS.size(), "every brand has a kiosk, a shop and a flagship")
+	for br_bk in Data.BRAND_ORDER:
+		for br_kd in Data.BRAND_KINDS:
+			var br_kid: String = br_bk + "_" + br_kd
+			check(Data.B.has(br_kid) and Data.brand_of(br_kid) == br_bk and not Data.ORDER.has(br_kid) and Data.B[br_kid].cat == "shop", "%s belongs to the brand only" % br_kid)
+			check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % br_kid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % br_kid), "%s has its own sprites" % br_kid)
+			var br_food: bool = Data.BRANDS[br_bk].sector == "food"
+			check((Life.FOOD.has(br_kid) if br_food else Life.SHOPS.has(br_kid)), "residents use %s" % br_kid)
+	check(Data.brand_of("bakery") == "" and Data.brand_name("kot") != "", "ordinary shops have no brand")
+	var br_lvl_keep := Game.level
+	Game.level = 12
+	check(Game.open_branch("kot", "kiosk", c, c) == 0, "no branches before the brand is founded")
+	check(Game.found_brand("kot", "Тимур") and not Game.found_brand("kot", "Анна"), "a resident founds a brand once")
+	check(Game.brand_next_kind("kot") == "kiosk", "a new brand starts with a kiosk")
+	var br_opened: Array[int] = []
+	for i in 7:
+		var br_kd2 := Game.brand_next_kind("kot")
+		var br_sp: Vector2i = Events.find_business_spot(Data.B["kot_" + br_kd2].size)
+		if br_sp == Vector2i(-1, -1) and br_kd2 == "flag":
+			br_kd2 = "shop"
+			br_sp = Events.find_business_spot(1)
+		if br_sp == Vector2i(-1, -1):
+			break
+		var br_nu := Game.open_branch("kot", br_kd2, br_sp.x, br_sp.y)
+		if br_nu > 0:
+			br_opened.append(br_nu)
+	check(br_opened.size() >= 6, "the brand opens branches (%d)" % br_opened.size())
+	var br_kinds_seen := {}
+	for br_u in br_opened:
+		br_kinds_seen[Game.buildings[br_u].id] = true
+		check(Game.buildings[br_u].priv == "Тимур", "branch belongs to the brand's founder")
+	check(br_kinds_seen.has("kot_kiosk") and br_kinds_seen.has("kot_shop"), "brand opens different kinds of places")
+	check(Game.brand_level("kot") == 3 and br_opened.all(func(br_u): return int(Game.buildings[br_u].lvl) == 3), "a big chain levels up all its places")
+	for br_u in br_opened:
+		Game.buildings[br_u].built = true
+	check(Game.can_upgrade(br_opened[0]) in ["private", "max"], "the player cannot upgrade a brand's place")
+	Game.save_game(true)
+	var br_saved_brands: Dictionary = Game.to_dict().brands
+	check(br_saved_brands.has("kot") and str(br_saved_brands.kot.owner) == "Тимур", "brands are saved")
+	Game.demolish(br_opened[0])
+	Game.demolish(br_opened[1])
+	check(Game.brand_branches("kot").size() == br_opened.size() - 2 and Game.brand_level("kot") == 2
+		and int(Game.buildings[br_opened[2]].lvl) == 2, "demolishing branches shrinks the chain")
+	for br_u in br_opened:
+		if Game.buildings.has(br_u):
+			Game.demolish(br_u)
+	var br_ev0 := Events.inbox.size()
+	check(Events.brand_found_proposal() and Events.inbox.size() == br_ev0 + 1 and Events.inbox[0].kind == "proposal", "a resident proposes a new brand")
+	var br_fb: String = str(Events.inbox[0].brand)
+	check(br_fb != "kot" and Data.BRANDS.has(br_fb), "proposal offers a brand not founded yet")
+	Events.resolve(int(Events.inbox[0].id), 0)
+	check(Game.brands.has(br_fb), "accepting the proposal founds the brand")
+	check(Events.brand_branch_proposal() and str(Events.inbox[0].get("kind", "")) in Data.BRAND_KINDS, "a brand proposes its next place")
+	var br_pb: String = str(Events.inbox[0].brand)
+	var br_before := Game.brand_branches(br_pb).size()
+	Events.resolve(int(Events.inbox[0].id), 0)
+	check(Game.brand_branches(br_pb).size() == br_before + 1, "accepting opens the brand's place")
+	for br_u in Game.brand_branches(br_pb):
+		Game.demolish(br_u)
+	Game.brands = {}
+	Game.level = br_lvl_keep
 
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200

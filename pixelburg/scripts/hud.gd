@@ -1102,6 +1102,8 @@ func _refresh_info() -> void:
 			note = Loc.t("working") % Loc.duration((d.cycle - b.prog) / maxf(0.15, spd))
 		if b.priv != "":
 			note = Loc.t("private_owner") % b.priv
+			if Data.brand_of(b.id) != "":
+				note = Loc.t("brand_owner") % [Data.brand_name(Data.brand_of(b.id)), b.priv]
 		if d.cat in ["home", "shop", "ind", "fun"]:
 			ratio = b.prog / d.cycle
 	info_note.text = note

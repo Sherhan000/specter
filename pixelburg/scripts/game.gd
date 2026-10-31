@@ -55,6 +55,7 @@ var water_body := {}         ## Vector2i -> 1 river, 2 sea, 3 ocean (by the size
 var walls := {}              ## Vector2i -> wall type (Data.WALLS)
 var quarter_of := {}         ## home uid -> {"homes", "happy", "tile"}: homes joined by walls into one quarter
 var road_deco := {}          ## road tile -> decoration along its sidewalks (Data.ROAD_DECO)
+var brands := {}             ## residents' brands: brand id (Data.BRANDS) -> {"owner": name, "day": founded}
 var paves := {}              ## Vector2i -> paving on the grass (Data.PAVES); strollers walk on it
 var claimed: Array = []
 var stats := {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -282,6 +283,7 @@ func new_game() -> void:
 	walls = {}
 	road_deco = {}
 	paves = {}
+	brands = {}
 	claimed = []
 	laws = []
 	stats = {"coins_total": 0, "goods_total": 0, "upgrades": 0}
@@ -387,6 +389,7 @@ func to_dict() -> Dictionary:
 		"water": water.keys().map(func(v): return [v.x, v.y]),
 		"walls": walls.keys().map(func(v): return [v.x, v.y, walls[v]]),
 		"paves": paves.keys().map(func(v): return [v.x, v.y, paves[v]]),
+		"brands": brands.duplicate(true),
 		"road_deco": road_deco.keys().map(func(v): return [v.x, v.y, road_deco[v]]),
 		"buildings": buildings.keys().map(func(u): return [u, buildings[u]]),
 		"next_uid": next_uid, "claimed": claimed, "laws": laws, "stats": stats, "settings": settings, "profile": profile,
@@ -478,6 +481,11 @@ func from_dict(p: Dictionary) -> bool:
 	for v in p.get("walls", []):
 		if Data.WALLS.has(str(v[2])):
 			walls[_v2(v)] = str(v[2])
+	brands = {}
+	var bd: Dictionary = p.get("brands", {})
+	for k in bd:
+		if Data.BRANDS.has(str(k)):
+			brands[str(k)] = {"owner": str(bd[k].get("owner", "")), "day": int(bd[k].get("day", 1))}
 	paves = {}
 	for v in p.get("paves", []):
 		if Data.PAVES.has(str(v[2])):
@@ -664,7 +672,7 @@ func _end_of_day() -> void:
 	for uid in buildings:
 		var b: Dictionary = buildings[uid]
 		if b.priv != "" and b.built and not b.closed and not b.dmg:
-			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0)
+			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0 * (Data.BRAND_TAX if Data.brand_of(b.id) != "" else 1.0))
 	biz_tax = int(biz_tax * law_mult("biz"))
 	if biz_tax > 0:
 		_earn("taxes", biz_tax)
@@ -1667,6 +1675,71 @@ func place_private(id: String, x: int, y: int, owner: String) -> int:
 	return uid
 
 
+# ====================================================================== residents' brands
+## A resident founds a brand; from now on the brand itself proposes its kiosks, shops and flagships.
+func found_brand(bid: String, owner: String) -> bool:
+	if not Data.BRANDS.has(bid) or brands.has(bid):
+		return false
+	brands[bid] = {"owner": owner, "day": day}
+	save_game()
+	return true
+
+
+## Buildings of a brand (any state), oldest first.
+func brand_branches(bid: String) -> Array[int]:
+	var out: Array[int] = []
+	for uid in buildings:
+		if Data.brand_of(buildings[uid].id) == bid:
+			out.append(uid)
+	out.sort()
+	return out
+
+
+## The brand grows with its chain: level 2 from 3 branches, level 3 from 6; every branch shows the brand's level.
+func brand_level(bid: String) -> int:
+	var n := brand_branches(bid).size()
+	return 1 + int(n >= 3) + int(n >= 6)
+
+
+## What the brand opens next: first a kiosk, then shops and kiosks by turns, a flagship once it has a few branches.
+func brand_next_kind(bid: String) -> String:
+	var counts := {"kiosk": 0, "shop": 0, "flag": 0}
+	for uid in brand_branches(bid):
+		counts[str(buildings[uid].id).trim_prefix(bid + "_")] += 1
+	var n: int = counts.kiosk + counts.shop + counts.flag
+	if n == 0:
+		return "kiosk"
+	if n >= Data.BRAND_FLAG_BRANCHES and level >= int(Data.B[bid + "_flag"].lvl) and counts.flag <= n / 6:
+		return "flag"
+	return "shop" if counts.shop <= counts.kiosk else "kiosk"
+
+
+## The brand opens a branch at x, y (free for the city, pays a higher daily tax). Returns its uid or 0.
+func open_branch(bid: String, kind: String, x: int, y: int) -> int:
+	if not brands.has(bid) or not kind in Data.BRAND_KINDS:
+		return 0
+	var uid := place_private(bid + "_" + kind, x, y, str(brands[bid].owner))
+	if uid > 0:
+		sync_brand(bid)
+		save_game()
+	return uid
+
+
+## Every branch shows the brand's current level (a growing chain renovates all its places).
+func sync_brand(bid: String) -> void:
+	var lv := brand_level(bid)
+	var changed: Array[int] = []
+	for uid in brand_branches(bid):
+		if int(buildings[uid].lvl) != lv:
+			buildings[uid].lvl = lv
+			changed.append(uid)
+	if changed.is_empty():
+		return
+	recalc()
+	for uid in changed:
+		building_updated.emit(uid)
+
+
 ## Turn a building to face another side; the door and the lot turn with it.
 func rotate_building(uid: int) -> void:
 	if not buildings.has(uid):
@@ -1925,6 +1998,8 @@ func demolish(uid: int) -> void:
 	buildings.erase(uid)
 	recalc()
 	building_removed.emit(uid)
+	if Data.brand_of(b.id) != "":
+		sync_brand(Data.brand_of(b.id))
 	sfx("demolish")
 	save_game()
 
