@@ -137,8 +137,12 @@ func _ready() -> void:
 			toast(Loc.t("offline"))
 		if Game.tutorial < 99:
 			tutorial.start.call_deferred()
-		elif Game.settings.get("news", "") != Data.NEWS_VERSION:
-			get_tree().create_timer(2.6).timeout.connect(panels.whats_new)
+		else:
+			var news_due: bool = Game.settings.get("news", "") != Data.NEWS_VERSION
+			if Game.daily_roll():
+				get_tree().create_timer(2.6).timeout.connect(func(): panels.daily(panels.whats_new if news_due else Callable()))
+			elif news_due:
+				get_tree().create_timer(2.6).timeout.connect(panels.whats_new)
 
 
 func _fit() -> void:
@@ -552,7 +556,8 @@ func _build_side() -> void:
 	side_buttons.add_theme_constant_override("h_separation", 4)
 	safe.add_child(side_buttons)
 	for spec in [["mail", "orange", func(): panels.inbox()], ["finance", "green", func(): panels.finance()],
-			["mission", "blue", func(): panels.missions()], ["law", "purple", func(): panels.city_info()]]:
+			["mission", "blue", func(): panels.missions()], ["law", "purple", func(): panels.city_info()],
+			["trophy", "orange", func(): panels.achievements()]]:
 		var b := round_btn(spec[0], spec[1], spec[2], 34)
 		b.name = (spec[0] as String).capitalize() + "Button"
 		side_buttons.add_child(b)

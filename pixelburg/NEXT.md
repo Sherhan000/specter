@@ -14,7 +14,15 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
-## Сделано в последней сессии (пункт 28 — митинги)
+## Пункт 30 (ежедневные награды и достижения)
+- scripts/ach.gd (class Ach): LIST ~50 достижений [id, счётчик, имя, текст с %s, пороги уровней, вес награды], value(key) считает прогресс из Game, check() выдаёт награды за достигнутые уровни.
+  Награда уровня: монеты 250·вес·(t+1)², изумруды = номер уровня (одноуровневые — 1).
+- Game.ach (в сохранении, ключ "ach", SAVE_VERSION не менялся): got, last, streak, best, logins, pending, cycle. daily_roll() — новый реальный день (серия +1, пропуск сбрасывает),
+  daily_claim() — награда дня (7-й день: 5 изумрудов + монеты). check_ach() вызывается каждый час и в конце дня, тост с наградой.
+- UI: panels.daily() (окно 7 дней, открывается при входе, затем «Что нового»), panels.achievements() (кнопка-кубок в боковом ряду). Иконки старые (trophy, calendar).
+- В ROADMAP новые 30 и 31 (праздники); прежние 30–37 сдвинуты на 34–41 (32–33 — другой чат). logic_test: проверки достижений и серии входа.
+
+## Пункт 28 (ранее — митинги)
 - Data: PROTEST_* и ANGER_* (недовольство 0..100: ограбление мэром +35, арест +25, снос дома с жильцами +10, выселение +8, налог выше 15% — +0.5/ч за каждый %, счастье < 35 — +1.5/ч, нарушенные правила +0.3/ч;
   спад 1/ч; при 60 и населении ≥ 80 — митинг на 8 ч, перерыв 36 ч). Причины: Data.PROTEST_CAUSES (rob, tax, demolish, mood, rules).
 - game.gd: Game.protest (ключ "protest" в сохранении, SAVE_VERSION не менялся; _empty_protest), сигнал protest_changed("start"/"end"/"force"), add_anger, anger, protest_active, protest_cause,
