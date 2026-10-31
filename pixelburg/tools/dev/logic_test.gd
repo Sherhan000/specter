@@ -708,6 +708,90 @@ func _ready() -> void:
 		dr.step(0.5, 1.0)
 		check(not dr.visible and dr.angle == 0.0, "door shut again")
 
+	# ------------------------------------------------ multi-storey car parks
+	for pid in ["parking_deck", "parking_tower", "parking_green", "parking_spiral"]:
+		check(Data.B.has(pid) and Data.ORDER.has(pid) and Data.B[pid].svc == "parking" and int(Data.B[pid].park) > 0, "%s is a car park in the list" % pid)
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % pid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % pid), "%s has its own sprites" % pid)
+	check(Data.B.has("parking") and not Data.B.parking.has("park"), "the old open car park stays as it was")
+	check(Data.stat("parking_spiral", "park", 3) > Data.stat("parking_spiral", "park", 1), "car park holds more cars at a higher level")
+	var lf: Life = city.life
+	var gpos := Vector2i(-1, -1)
+	for yy in range(c - 14, c + 14):
+		for xx in range(c - 14, c + 14):
+			if gpos.x < 0 and Game.place_problem("parking_deck", xx, yy) == "" and Game._touches_road(xx, yy, 2):
+				var probe := Game._add_building("parking_deck", xx, yy, true)
+				Game.recalc()
+				if probe != 0 and lf.garage_spots(probe).is_empty():
+					Game.demolish(probe)
+				elif probe != 0:
+					gpos = Vector2i(xx, yy)
+					Game.demolish(probe)
+	var gar := Game._add_building("parking_deck", gpos.x, gpos.y, true) if gpos.x >= 0 else 0
+	check(gar != 0, "car park can be placed by a road")
+	if gar != 0:
+		Game.recalc()
+		lf.buildings_changed()
+		var gsp := lf.garage_spots(gar)
+		check(gsp.size() == Life.garage_capacity(gar) and gsp.size() == int(Data.B.parking_deck.park), "car park has %d places" % gsp.size())
+		check(gsp.size() > 1 and lf._spot_by_key(gsp[1][0]) == gsp[1], "car park places are found by their key")
+		var gacc := lf._sidewalk_access(gar)
+		check(lf.spot_sidewalk(gsp[0]).tile == gacc.tile, "drivers walk out of the car park gate")
+		# a car inside is out of sight and counted in the card
+		var gcar := lf._make_car("sedan")
+		gcar.park_at(gsp[0])
+		lf.spots[gsp[0][0]] = gcar
+		check(not gcar.visible and lf.garage_used(gar) == 1, "car parked inside the car park is hidden (%d inside)" % lf.garage_used(gar))
+		check(gcar.door_point().distance_to(Game.entry_point(gar)) < 2.5, "driver gets in at the car park door")
+		# streets around full: a resident's car goes to the car park
+		var blocker := lf._make_car("hatch")
+		var blocked: Array = []
+		for dy in range(-3, 4):
+			for dx in range(-3, 4):
+				for sp in lf.spots_of(gacc.tile + Vector2i(dx, dy)):
+					if not lf.spots.has(sp[0]):
+						lf.spots[sp[0]] = blocker
+						blocked.append(sp[0])
+		var fsp := lf.find_spot(gar, null)
+		check(fsp.size() > 4 and fsp[3] == gar and fsp[0] != gsp[0][0], "with the street full a car gets a free place in the car park")
+		for k in blocked:
+			lf.spots.erase(k)
+		# a car drives in from down the road and disappears inside
+		var gtile := lf._spot_tile(gsp[1][0])
+		var gbefore: Vector2i = gtile - Vector2i(gsp[1][2])
+		var from := Vector2i(-1, -1)
+		for t in Game.net:
+			var md := absi(t.x - gtile.x) + absi(t.y - gtile.y)
+			if from.x < 0 and md >= 3 and md <= 8 and lf.car_path(t, gbefore).size() > 1:
+				from = t
+		var incar := lf._make_car("suv")
+		var started := from.x >= 0 and incar.drive_to_spot(gsp[1], from)
+		check(started, "car sets off to the car park")
+		if started:
+			lf.spots[gsp[1][0]] = incar
+			# run the traffic like Life._process does, in 0.05 s steps
+			for i in 3600:
+				if incar.state == "parked":
+					break
+				lf._rebuild_bins()
+				if i % 10 == 0:
+					lf._update_lights()
+				for car in lf.cars:
+					if is_instance_valid(car) and car.moving():
+						car.drive(0.05)
+			check(incar.state == "parked" and incar.spot == gsp[1] and not incar.visible, "car drove into the car park and parked inside (%s)" % incar.state)
+		# and drives out again
+		var out := lf.car_path(gtile, from if from.x >= 0 else gbefore)
+		if out.size() > 1:
+			gcar.start_route(out, null)
+			check(gcar.state == "unparking" and gcar.visible and gcar.modulate.a < 0.1, "car comes out of the car park gate")
+			for i in 40:
+				gcar.drive(0.05)
+			check(gcar.state == "driving" and gcar.modulate.a == 1.0, "car is back on the street")
+			lf.spots.erase(gsp[0][0])
+		Game.demolish(gar)
+		check(lf.garage_used(gar) == 0 and (not is_instance_valid(incar) or incar.state == "gone"), "cars leave a car park that was pulled down")
+		blocker.queue_free()
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

@@ -19,6 +19,8 @@ const BRAKE := 2.6
 const RING_R := 0.19            ## roundabout: ring lane radius minus the lane offset, in tiles
 const RING_YIELD := 1.9         ## radians upstream of an entry where ring traffic has priority
 const ARM_DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+const GARAGE_SLOT := 10         ## spot keys with k >= this are places inside a multi-storey car park
+const GARAGE_REACH := 8.0       ## how far (tiles) from the destination a car park is still worth driving to
 ## sidewalk corners of a road tile: NW, NE, SW, SE
 const CORNERS := [Vector2(0.075, 0.075), Vector2(0.925, 0.075), Vector2(0.075, 0.925), Vector2(0.925, 0.925)]
 const COLORS := [Color("c8342a"), Color("2a5aa8"), Color("e8e8ea"), Color("a8acb0"), Color("2a2c30"), Color("3a7a4a"),
@@ -85,6 +87,7 @@ func roads_changed() -> void:
 			spots.erase(k)
 			if c is Car and is_instance_valid(c) and c.state == "parked":
 				c.lose_spot()
+	_check_garages()
 	for c in cars:
 		if is_instance_valid(c):
 			c.check_path()
@@ -96,12 +99,14 @@ func roads_changed() -> void:
 
 func buildings_changed() -> void:
 	_dirty = true
+	_check_garages()
 
 
 ## A building was picked up and put down elsewhere: routes, car spots and doors that
 ## pointed at the old place must follow it, or people walk into an empty lot.
 func building_moved(uid: int) -> void:
 	_dirty = true
+	_check_garages()
 	var acc := _sidewalk_access(uid)
 	for w in walkers.duplicate():
 		if not is_instance_valid(w) or w.done or w.person == null or w.pts.is_empty():
@@ -667,11 +672,101 @@ func find_spot(uid: int, for_car: Car) -> Array:
 				if dist < best_d:
 					best_d = dist
 					best = sp
+	# a free place in a car park nearby: people like a covered place and don't mind a short walk
+	if for_car != null and for_car.role == "delivery":
+		return best
+	for g in Game.buildings:
+		if not Data.B[Game.buildings[g].id].has("park"):
+			continue
+		var gs := garage_spots(g)
+		if gs.is_empty():
+			continue
+		var gd: float = _sidewalk_access(g).point.distance_to(acc.point)
+		if gd > GARAGE_REACH or gd * 0.4 + 0.3 >= best_d:
+			continue
+		for sp in gs:
+			var holder: Variant = spots.get(sp[0], null)
+			if holder == null or holder == for_car or not is_instance_valid(holder):
+				best_d = gd * 0.4 + 0.3
+				best = sp
+				break
 	return best
+
+
+# ====================================================================== car parks
+## Cars that fit into a multi-storey car park (0 for other buildings).
+static func garage_capacity(uid: int) -> int:
+	if not Game.buildings.has(uid):
+		return 0
+	var b: Dictionary = Game.buildings[uid]
+	if not Data.B[b.id].has("park"):
+		return 0
+	return Data.stat(b.id, "park", int(b.lvl))
+
+
+## Places inside a car park: [key "x,y,side,k,uid", point inside the gate, heading along the street,
+## car park uid, heading into the gate]. The car pulls up along the kerb, turns in and disappears inside.
+func garage_spots(uid: int, need_work := true) -> Array:
+	var out := []
+	var cap := garage_capacity(uid)
+	if cap <= 0 or (need_work and not Game.works(uid)):
+		return out
+	var acc := _sidewalk_access(uid)
+	if acc.is_empty():
+		return out
+	var side: int = acc.side
+	var t: Vector2i = acc.tile
+	var d := Vector2(ARM_DIRS[side])
+	var h := Vector2(d.y, -d.x)    # right-hand traffic: the gate is on our right
+	if not Game.net.has(t - Vector2i(h)):
+		h = -h
+		if not Game.net.has(t - Vector2i(h)):
+			return out
+	var p: Vector2 = acc.point + d * 0.3
+	for k in cap:
+		out.append(["%d,%d,%d,%d,%d" % [t.x, t.y, side, GARAGE_SLOT + k, uid], p, h, uid, d])
+	return out
+
+
+## Cars inside a car park (parked or about to be).
+func garage_used(uid: int) -> int:
+	var n := 0
+	for k in spots:
+		var parts: PackedStringArray = k.split(",")
+		if parts.size() > 4 and int(parts[4]) == uid and is_instance_valid(spots[k]):
+			n += 1
+	return n
+
+
+## Places in car parks that were pulled down, moved or cut off from the road: the cars inside leave.
+func _check_garages() -> void:
+	for k in spots.keys():
+		if k.split(",").size() < 5 or not _spot_by_key(k).is_empty():
+			continue
+		var c: Variant = spots[k]
+		spots.erase(k)
+		if c is Car and is_instance_valid(c):
+			if c.home_spot == k:
+				c.home_spot = ""
+			if c.state == "parked" and not c.spot.is_empty() and c.spot[0] == k:
+				c.vanish()
+
+
+## Waypoints between a car park's gate on the sidewalk and its door (for a driver walking in to the car).
+func garage_walk(sp: Array) -> Array:
+	var acc := _sidewalk_access(sp[3])
+	if acc.is_empty():
+		return []
+	var door: Vector2 = city.views[sp[3]].door_grid() if city.views.has(sp[3]) else acc.entry
+	return [{"p": acc.entry}, {"p": door, "door": sp[3]}]
 
 
 ## Sidewalk point next to a parked car (where the driver gets in and out).
 func spot_sidewalk(sp: Array) -> Dictionary:
+	if sp.size() > 3:
+		var gacc := _sidewalk_access(sp[3])
+		if not gacc.is_empty():
+			return gacc
 	var t := _spot_tile(sp[0])
 	var side := int(sp[0].split(",")[2])
 	var p: Vector2 = sp[1]
@@ -962,6 +1057,10 @@ func _start_trip(p: Person, dest: int, stay: float) -> void:
 	var lead := [{"p": door_from, "door": p.where}, {"p": from_acc.entry}]
 	route = lead + route
 	if drive:
+		if car.spot.size() > 3:
+			var gw := garage_walk(car.spot)
+			if not gw.is_empty():
+				route.append(gw[0])
 		route.append({"p": car.door_point(), "car": car})
 	else:
 		var door_to: Vector2 = city.views[dest].door_grid() if city.views.has(dest) else to_acc.entry
@@ -994,6 +1093,8 @@ func walker_in_car(w: Walker, car: Car) -> void:
 	p.walker = null
 	p.driving = true
 	car.driver = p
+	if car.spot.size() > 3 and city.views.has(car.spot[3]):
+		city.views[car.spot[3]].open_door()
 	var dest: int = p.dest
 	var sp := find_spot(dest, car) if dest != p.home or car.home_spot == "" else _spot_by_key(car.home_spot)
 	if sp.is_empty():
@@ -1022,6 +1123,12 @@ func walker_in_car(w: Walker, car: Car) -> void:
 
 
 func _spot_by_key(key: String) -> Array:
+	var parts := key.split(",")
+	if parts.size() > 4:
+		for sp in garage_spots(int(parts[4]), false):
+			if sp[0] == key:
+				return sp
+		return []
 	var t := _spot_tile(key)
 	for sp in spots_of(t):
 		if sp[0] == key:
@@ -1047,7 +1154,14 @@ func car_parked(car: Car) -> void:
 	if route.is_empty():
 		route = [{"p": car.door_point()}, {"p": acc.point}]
 	var door_to: Vector2 = city.views[dest].door_grid() if city.views.has(dest) else acc.entry
-	route = [{"p": car.door_point()}] + route + [{"p": acc.entry}, {"p": door_to, "enter": dest}]
+	var lead := [{"p": car.door_point()}]
+	if car.spot.size() > 3:
+		var gw := garage_walk(car.spot)
+		if not gw.is_empty():
+			lead = [gw[1], gw[0]]
+			if city.views.has(car.spot[3]):
+				city.views[car.spot[3]].open_door()
+	route = lead + route + [{"p": acc.entry}, {"p": door_to, "enter": dest}]
 	w.start(route)
 
 
@@ -1677,6 +1791,7 @@ class Car extends Node2D:
 	var _glide := 0.0
 	var _glide_from := Vector2.ZERO
 	var _glide_to := Vector2.ZERO
+	var _out_of_garage := false
 	var _t := randf()
 	var base: Sprite2D
 	var paint: Sprite2D
@@ -1723,6 +1838,10 @@ class Car extends Node2D:
 	func door_point() -> Vector2:
 		if spot.is_empty():
 			return g
+		if spot.size() > 3:
+			# in a car park the driver comes and goes through its door
+			var gw := life.garage_walk(spot)
+			return gw[1].p if not gw.is_empty() else Vector2(spot[1])
 		var side := int(spot[0].split(",")[2])
 		return Vector2(spot[1]) + Vector2(ARM_DIRS[side]) * 0.12
 
@@ -1730,8 +1849,9 @@ class Car extends Node2D:
 		spot = sp
 		state = "parked"
 		g = sp[1]
-		heading = sp[2]
+		heading = sp[2] if sp.size() < 5 else sp[4]
 		v = 0.0
+		visible = sp.size() < 5
 		_visual()
 
 	func lose_spot() -> void:
@@ -1788,6 +1908,11 @@ class Car extends Node2D:
 			state = "unparking"
 			_glide = 0.0
 			_glide_from = g
+			_out_of_garage = spot.size() > 4
+			if _out_of_garage:
+				# drive out of the car park gate: line up with the street first
+				heading = spot[2]
+				modulate.a = 0.0
 			_make_first_segment()
 			_glide_to = Life.eval_seg(seg, s)
 		else:
@@ -1885,16 +2010,23 @@ class Car extends Node2D:
 			_glide += delta * 1.1
 			var k := smoothstep(0.0, 1.0, _glide)
 			g = _glide_from.lerp(_glide_to, k)
+			if _out_of_garage:
+				modulate.a = smoothstep(0.0, 0.45, _glide)
 			if _glide >= 1.0:
 				state = "driving"
 				v = 0.2
+				_out_of_garage = false
+				modulate.a = 1.0
 			_visual()
 			return
 		if state == "parking":
 			_glide += delta * 0.9
 			var k2 := smoothstep(0.0, 1.0, _glide)
 			g = _glide_from.lerp(_glide_to, k2)
-			heading = heading.lerp(Vector2(target_spot[2]), k2).normalized()
+			var into_garage := target_spot.size() > 4
+			heading = heading.lerp(Vector2(target_spot[4] if into_garage else target_spot[2]), k2).normalized()
+			if into_garage:
+				modulate.a = 1.0 - smoothstep(0.55, 1.0, _glide)
 			if _glide >= 1.0:
 				_parked()
 			_visual()
@@ -1986,6 +2118,11 @@ class Car extends Node2D:
 		g = spot[1]
 		heading = spot[2]
 		v = 0.0
+		if spot.size() > 4:
+			# inside the car park: out of sight until it drives out again
+			heading = spot[4]
+			visible = false
+			modulate.a = 1.0
 		_visual()
 		if role in ["visitor", "delivery"]:
 			var wait := 25.0 if role == "delivery" else randf_range(60.0, 140.0)

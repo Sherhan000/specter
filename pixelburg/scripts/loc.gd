@@ -310,6 +310,7 @@ const S := {
 	"mood_illness": ["Эпидемия гриппа", "Flu outbreak"],
 	"why_happy": ["Почему жители довольны или нет", "What residents like and dislike"],
 	"radius": ["Радиус действия (клеток)", "Range (tiles)"],
+	"park_places": ["Машин на парковке", "Cars parked"],
 	"r_decor": ["Зелень и декор рядом", "Greenery and decor nearby"],
 	"r_edu": ["Школа рядом", "School nearby"],
 	"r_fire": ["Пожарная часть рядом", "Fire station nearby"],

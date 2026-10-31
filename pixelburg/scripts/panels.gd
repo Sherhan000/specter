@@ -487,6 +487,8 @@ func building_details(uid: int) -> void:
 	_row(v, "land", Loc.t("zone"), ", ".join(d.zones.map(func(z): return Data.zone_name(z))))
 	if d.has("radius") and int(d.radius) > 0 and int(d.radius) < 900:
 		_row(v, "info", Loc.t("radius"), str(d.radius))
+	if d.has("park") and hud.city.life:
+		_row(v, "info", Loc.t("park_places"), "%d / %d" % [hud.city.life.garage_used(uid), Life.garage_capacity(uid)])
 	if d.cat == "home" and Game.home_reasons.has(uid):
 		hud.title(Loc.t("why_happy"), v, 12)
 		for r in Game.home_reasons[uid]:

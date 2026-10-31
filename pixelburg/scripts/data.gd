@@ -84,6 +84,7 @@ const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick",
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Многоэтажные парковки, у каждой свой вид: бетонная с открытыми этажами, автоматическая башня со стеллажами, зелёная с растениями и солнечной крышей и круглая со спиральным пандусом — машины жителей заезжают внутрь и паркуются, в карточке видно, сколько мест занято", "Multi-storey car parks, each with its own look: an open concrete deck garage, an automated tower with car racks, a green garage with plants and a solar roof and a round one with a spiral ramp - residents' cars drive in and park there, and the card shows how many places are taken"],
 	["Кольцо на перекрёстке: нажмите на перекрёсток и выберите «Кольцо» — машины объезжают островок с фонтаном по кругу и уступают тем, кто уже на кольце, светофор и электричество не нужны", "Roundabouts: tap a crossing and choose Roundabout - cars circle an island with a fountain and give way to those already on the ring, no traffic light or power needed"],
 	["В настройках можно увеличить или уменьшить кнопки и иконки (от 80% до 150%) — подстройте интерфейс под свой телефон, выбор сохраняется", "In the settings you can make the buttons and icons bigger or smaller (80% to 150%) - fit the interface to your phone, the choice is saved"],
 	["Два новых вида заправки, у каждой свой вид: электрозаправка с солнечными панелями на навесе и электромобилями на зарядке и большая заправка у трассы с колонками, магазином, кафе, автомойкой и стелой с ценами", "Two new kinds of filling stations, each with its own look: an EV charging station with a solar roof and electric cars plugged in, and a big highway fuel stop with pumps, a shop, a cafe, a car wash and a price pylon"],
@@ -332,6 +333,15 @@ const B := {
 		"jobs": 3, "upkeep": 40, "svc": "metro", "radius": 14, "happy": 6},
 	"parking": {"name": ["Парковка", "Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 900, "lvl": 4, "time": 30,
 		"jobs": 1, "upkeep": 6, "svc": "parking", "radius": 6, "happy": 2},
+	# multi-storey car parks: "park" = cars that fit inside (× level multiplier); residents' cars drive in and park there
+	"parking_deck": {"name": ["Многоэтажная парковка", "Multi-Storey Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 4500, "lvl": 7, "time": 80,
+		"jobs": 3, "upkeep": 18, "svc": "parking", "radius": 8, "happy": 2, "park": 10},
+	"parking_tower": {"name": ["Автоматическая башня-парковка", "Automated Parking Tower"], "cat": "service", "zones": ["city", "leisure"], "size": 1, "cost": 5200, "lvl": 10, "time": 90,
+		"jobs": 2, "upkeep": 22, "svc": "parking", "radius": 6, "happy": 2, "park": 6},
+	"parking_green": {"name": ["Зелёная парковка", "Green Car Park"], "cat": "service", "zones": ["city", "leisure"], "size": 2, "cost": 8500, "lvl": 9, "time": 100,
+		"jobs": 4, "upkeep": 24, "svc": "parking", "radius": 9, "happy": 4, "park": 9},
+	"parking_spiral": {"name": ["Круглая парковка-спираль", "Spiral Car Park"], "cat": "service", "zones": ["city", "industry", "leisure"], "size": 2, "cost": 12000, "gems": 2, "lvl": 13, "time": 140,
+		"jobs": 4, "upkeep": 34, "svc": "parking", "radius": 10, "happy": 3, "park": 14},
 	# ------------------------------------------------ leisure businesses (tickets)
 	"museum": {"name": ["Музей", "Museum"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 8000, "lvl": 12, "time": 180,
 		"jobs": 6, "income": 140, "cycle": 200, "upkeep": 50, "radius": 22, "happy": 8},
@@ -406,7 +416,7 @@ const ORDER := ["house_small", "house_american", "house_tajik", "cottage", "hous
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
 	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "factory", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "airport",
+	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
 	"museum", "zoo", "funfair", "stadium",
 	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
