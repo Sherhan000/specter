@@ -14,6 +14,13 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
+## Пункт 31 (сезонные праздники)
+- scripts/holidays.gd (class Holidays): LIST (navruz — весна 1–2 день сезона, cityday — лето 2–3, halloween — осень 3–4, newyear — зима 3–4; сезон = 4 дня, год = 16), at(day), key(day), награда.
+- Game.hol (сохранение "hol"): key, built, treats, done. _holiday_tick() в _end_of_day: новый праздник — сброс заданий и тост, каждый день +6 настроения (why "holiday").
+  Задания: построить 2 здания за праздник (hol_note_built в place) и угостить жителей (hol_treat, стоит 120·уровень). hol_claim() — награда раз в год.
+- scripts/holiday_view.gd (HolidayView в city): временные спрайты assets/holidays/*.png на свободных клетках у дорог, гирлянды/флажки на зданиях, фейерверки вечером в День города (рисуются кодом).
+  Графика — tools/art/holidays.py (pycairo, только новое). Панель panels.holiday(), кнопка-календарь в боковом ряду видна только в праздник. fix_imports: assets/holidays в mipmaps.
+- logic_test: проверки праздников; ui_test делает скриншоты h_*.
 ## Ночная серия (пункты 42+ в ROADMAP, делались подряд)
 - 42 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
 - Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).

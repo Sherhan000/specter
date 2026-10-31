@@ -41,6 +41,21 @@ func _ready() -> void:
 		await _shot("u0_tutorial_hint")
 		get_tree().quit()
 		return
+	await _wait(1.0)
+	hud.close_modal()
+	for hd in [[1, "navruz"], [7, "cityday"], [11, "halloween"], [15, "newyear"]]:
+		Game.day = hd[0]
+		Game.day_time = 0.85 if hd[1] == "cityday" else 0.45
+		city.holiday_view.refresh()
+		await _wait(0.8)
+		await _shot("h_" + hd[1])
+	hud.panels.holiday()
+	await _wait(0.5)
+	await _shot("h_panel")
+	hud.close_modal()
+	Game.day = 1
+	Game.day_time = 0.4
+	city.holiday_view.refresh()
 	hud.toggle_build_menu()
 	await _wait(0.6)
 	await _shot("u1_build")
