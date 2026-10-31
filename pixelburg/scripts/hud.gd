@@ -17,6 +17,7 @@ const MIN_UI_W := 540.0
 var root: Control
 var safe: Control
 var level_label: Label
+var rank_label: Label
 var xp_bar: ColorRect
 var pill_labels := {}
 var pills := {}
@@ -508,6 +509,7 @@ func _build_top() -> void:
 	xp_bg.color = Color("1a1622")
 	xp_bg.custom_minimum_size = Vector2(36, 3)
 	lvbox.add_child(xp_bg)
+	rank_label = text("", lvbox, 9, Color("f8c840"))
 	xp_bar = ColorRect.new()
 	xp_bar.color = Color("f8c840")
 	xp_bar.size = Vector2(0, 3)
@@ -1439,6 +1441,7 @@ func _process(delta: float) -> void:
 
 func _update() -> void:
 	level_label.text = str(Game.level)
+	rank_label.text = Game.rank_name()
 	xp_bar.size.x = roundf(36.0 * Game.xp / Data.xp_for_level(Game.level))
 	pill_labels.coins.text = Loc.num(Game.coins)
 	pill_labels.coins.add_theme_color_override("font_color", Color("ff7a6a") if Game.coins < 0 else Color("fff8e8"))

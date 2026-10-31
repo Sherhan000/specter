@@ -281,6 +281,7 @@ func city_info() -> void:
 		Color("b83a2a") if Game.water_ratio < 0.9 else Color("3a2a1e"))
 	_row(cv, "happy", Loc.t("happy"), "%d%% → %d%%" % [int(Game.happy), int(Game.happy_target)])
 	_row(cv, "reputation", Loc.t("rep"), str(int(Game.rep)))
+	_row(cv, "star", Loc.t("pf_rank"), Game.rank_name())
 	if Events.election_day > 0 and not Events.flags.get("election_done", false):
 		_row(cv, "calendar", Loc.t("ci_election") % Events.election_day, "%d%%" % int(Events.election_score()),
 			Color("2a7a2a") if Events.election_score() >= 50 else Color("b83a2a"))
@@ -673,6 +674,7 @@ func profile() -> void:
 	var p: Dictionary = Game.profile
 	var t := "%s: %s\n%s: %s\n%s: %s" % [Loc.t("pf_name"), p.name, Loc.t("pf_age"), str(p.age),
 		Loc.t("pf_gender"), Loc.t("pf_f") if p.gender == "f" else Loc.t("pf_m") if p.gender == "m" else "-"]
+	t += "\n%s: %s (+%d%%)" % [Loc.t("pf_rank"), Game.rank_name(), Data.RANKS[Game.rank][4]]
 	hud.popup(Loc.t("profile"), t + "\n\n" + Loc.t("pf_local"), [[Loc.t("pf_delete"), "red", func():
 		hud.confirm(Loc.t("pf_delete_q"), func():
 			Game.delete_personal_data()

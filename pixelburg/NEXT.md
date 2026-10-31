@@ -14,6 +14,10 @@
 - Исторические места (поле "hist" — доход от туристов в день × уровень): castle, khujand_fortress (одна на город), mausoleum, pagoda, ancient_temple (fun), minaret, triumph_arch (decor); графика tools/art/b_history.py.
 - Фонари: classic, modern, lantern; фонарь над входом дома (поле "hlamp" здания, house_lamp_view.gd). «Что нового» показывается раз после обновления (Data.NEWS_VERSION).
 
+## Ночная серия (пункты 40+ в ROADMAP, делались подряд)
+- 40 Звания мэра: Data.RANKS/rank_for, Game.rank (в сохранении, только растёт), check_rank() (add_xp и конец дня), rank_bonus() множит налоги бизнеса и туризм, Events.rank_up (письмо kind "rank"), HUD rank_label, профиль и «Сведения о городе».
+- Скриншоты: tools/dev/night_shot.gd (SHOT_DIR=/tmp/shots xvfb-run -a godot --rendering-driver opengl3 res://tools/dev/night_shot.tscn).
+
 ## Сделано (пункт 39 в ROADMAP = «п.33» пользователя — режим фото)
 - Кнопка-фотоаппарат (новая иконка assets/ui/icons/camera.png) в правой колонке HUD → scripts/photo_mode.gd (PhotoMode, создаётся в city.gd как city.photo): HUD скрыт, city.photo_mode блокирует тапы по зданиям,
   камера свободная как обычно (палец/щипок/колесо). Фильтры (шейдер по экрану): как есть, день, закат, ночь, ч/б. Затвор: прячет кнопки, снимает viewport, PNG → Pictures/Pixelburg на Android

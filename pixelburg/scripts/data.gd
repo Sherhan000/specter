@@ -107,9 +107,33 @@ const ROAD_DECO := {
 const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
 const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
+## Mayor ranks: [min level, min reputation, ru, en, income bonus %]. Rank only goes up (the best one reached is kept).
+const RANKS := [
+	[1, 0, "Староста деревни", "Village Elder", 0],
+	[3, 30, "Глава посёлка", "Town Head", 2],
+	[6, 40, "Городской голова", "City Head", 4],
+	[10, 45, "Градоначальник", "Governor", 6],
+	[15, 50, "Мэр города", "City Mayor", 8],
+	[20, 55, "Мэр большого города", "Big City Mayor", 10],
+	[28, 60, "Мэр-реформатор", "Reform Mayor", 12],
+	[36, 65, "Мэр столицы", "Capital Mayor", 15],
+	[45, 70, "Мэр мегаполиса", "Metropolis Mayor", 20],
+]
+
+
+static func rank_for(lvl: int, rep: float) -> int:
+	var r := 0
+	for i in RANKS.size():
+		if lvl >= RANKS[i][0] and rep >= RANKS[i][1]:
+			r = i
+	return r
+
+
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["Звания мэра: от «Старосты деревни» до «Мэра мегаполиса» — звание растёт с уровнем и репутацией и никогда не пропадает. За каждое новое звание — награда и прибавка к доходу города (до +20%), приходит письмо. Звание видно в панели сверху, в профиле и в сведениях о городе.",
+	 "Mayor ranks: from «Village Elder» to «Metropolis Mayor» — the rank grows with your level and reputation and is never lost. Every new rank brings a reward and a bonus to the city's income (up to +20%), plus a letter. The rank is shown in the top bar, in the profile and in the city info."],
 	["Режим фото: кнопка с фотоаппаратом справа убирает весь интерфейс — остаётся только город. Камеру можно двигать и приближать пальцами, а фильтры «День», «Закат», «Ночь» и «Ч/б» меняют настроение кадра. Кнопка-затвор сохраняет снимок в галерею телефона (папка Pictures/Pixelburg), на компьютере — в папку user://photos. Крестик слева сверху возвращает в игру",
 	 "Photo mode: the camera button on the right hides the whole interface so only the city is left. Move and zoom the camera with your fingers, and the Day, Sunset, Night and B&W filters set the mood of the shot. The shutter button saves the picture to the phone's gallery (Pictures/Pixelburg folder), on a computer to user://photos. The cross at the top left takes you back to the game"],
 	["Стихийные события с выбором: иногда на город обрушивается наводнение (у реки и моря), землетрясение, снежная буря зимой или нашествие туристов. Приходит письмо с тремя вариантами: дорого и надёжно, дёшево и рискованно или ничего не делать. Пожарные и больница снижают ущерб. Вода заливает берег, по земле идут трещины и трясётся экран, снег заметает улицы, а у достопримечательностей собираются толпы туристов. Повреждённые дома чинятся в их карточке",

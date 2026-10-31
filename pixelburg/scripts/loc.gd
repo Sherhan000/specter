@@ -462,6 +462,7 @@ const S := {
 	"profile": ["Профиль", "Profile"],
 	"pf_title": ["Знакомство", "About you"],
 	"pf_intro": ["Как к вам обращаться? Эти данные остаются только на вашем устройстве.", "How should we address you? This stays only on your device."],
+	"pf_rank": ["Звание", "Rank"],
 	"pf_name": ["Имя", "Name"],
 	"pf_name_ph": ["Ваше имя", "Your name"],
 	"pf_age": ["Возраст", "Age"],

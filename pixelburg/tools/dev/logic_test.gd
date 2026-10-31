@@ -1383,6 +1383,20 @@ func _ready() -> void:
 	for ph_f in PhotoMode.FILTERS:
 		check(PhotoMode.NAMES.has(ph_f), "photo filter %s has a name" % ph_f)
 
+	# ------------------------------------------------ mayor ranks
+	var rk_keep := [Game.level, Game.rep, Game.rank, Game.coins, Game.gems]
+	check(Data.rank_for(1, 100.0) == 0 and Data.rank_for(10, 45.0) == 3 and Data.rank_for(45, 70.0) == 8, "rank by level and reputation")
+	Game.rank = 0
+	Game.level = 6
+	Game.rep = 50.0
+	var rk_inbox := Events.inbox.size()
+	Game.check_rank()
+	check(Game.rank == 2 and Events.inbox.size() > rk_inbox and Events.inbox[0].kind == "rank", "promotion raises the rank and sends a letter")
+	Game.rep = 0.0
+	Game.check_rank()
+	check(Game.rank == 2 and Game.rank_bonus() > 1.0 and Game.rank_name() != "", "rank is never lost and gives a bonus")
+	Game.level = rk_keep[0]; Game.rep = rk_keep[1]; Game.rank = rk_keep[2]; Game.coins = rk_keep[3]; Game.gems = rk_keep[4]
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

@@ -41,6 +41,7 @@ var gems := 0
 var goods := 0
 var xp := 0
 var level := 1
+var rank := 0   ## best mayor rank reached (index in Data.RANKS)
 var beach: Array = []        ## owned beach segments (0..7, one per plot row)
 var flights: Array = []      ## bought airport routes (Data.COUNTRIES ids)
 var arrivals := {}           ## country -> travellers who flew in, all time
@@ -300,6 +301,7 @@ func new_game() -> void:
 	day_time = 0.29
 	tax = Data.TAX_DEFAULT
 	rep = 50.0
+	rank = 0
 	happy = 60.0
 	peak_pop = 0
 	caught = []
@@ -408,7 +410,7 @@ func to_dict() -> Dictionary:
 		"day": day, "day_time": day_time, "tax": tax, "rep": rep, "happy": happy, "peak_pop": peak_pop,
 		"caught": caught, "weather": weather, "weather_until": weather_until, "patrol_until": patrol_until, "mood": mood,
 		"ledger": ledger, "today": today, "loan": loan, "deposit": deposit, "garbage": garbage, "tutorial": tutorial, "lost": lost,
-		"events": Events.to_dict(), "power_store": power_store,
+		"events": Events.to_dict(), "power_store": power_store, "rank": rank,
 	}
 
 
@@ -573,6 +575,7 @@ func from_dict(p: Dictionary) -> bool:
 	weather_until = int(p.get("weather_until", 0))
 	patrol_until = int(p.get("patrol_until", 0))
 	power_store = float(p.get("power_store", 0.0))
+	rank = int(p.get("rank", Data.rank_for(level, rep)))
 	mood = p.get("mood", [])
 	ledger = p.get("ledger", [])
 	today = p.get("today", _empty_day())
@@ -721,7 +724,7 @@ func _end_of_day() -> void:
 		var b: Dictionary = buildings[uid]
 		if b.priv != "" and b.built and not b.closed and not b.dmg:
 			biz_tax += int(Data.stat(b.id, "income", b.lvl) * 3 * tax / 10.0 * (Data.BRAND_TAX if Data.brand_of(b.id) != "" else 1.0))
-	biz_tax = int(biz_tax * law_mult("biz") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
+	biz_tax = int(biz_tax * rank_bonus() * law_mult("biz") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 	if biz_tax > 0:
 		_earn("taxes", biz_tax)
 	if is_connected_to_highway():
@@ -735,7 +738,7 @@ func _end_of_day() -> void:
 			elif Data.B[b.id].get("landmark", false) and _works(uid):
 				tour += 400 * b.lvl
 			tour += hist_tourists(uid)
-		tour = int(tour * law_mult("tour") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
+		tour = int(tour * rank_bonus() * law_mult("tour") * (Data.JAIL_TAX_MULT if in_jail() else 1.0))
 		if tour > 0:
 			_earn("tourism", tour)
 		if goods > 400:
@@ -754,6 +757,7 @@ func _end_of_day() -> void:
 	_spend("roads", daily_roads())
 	_spend("laws", int(law_sum("daily")))
 	add_rep(law_sum("rep"))
+	check_rank()
 	if not loan.is_empty():
 		var pay_now: int = mini(int(loan.daily), int(loan.left))
 		_spend("loan", pay_now)
@@ -2120,7 +2124,27 @@ func add_xp(n: int) -> void:
 		gems += 1
 		sfx("levelup")
 		level_up.emit(level)
+	check_rank()
 	changed.emit()
+
+
+func rank_name() -> String:
+	return Loc.pick([Data.RANKS[rank][2], Data.RANKS[rank][3]])
+
+
+func rank_bonus() -> float:
+	return 1.0 + Data.RANKS[rank][4] / 100.0
+
+
+## Promote the mayor when level and reputation allow it (never demotes); sends a letter.
+func check_rank() -> void:
+	var r := Data.rank_for(level, rep)
+	if r > rank:
+		rank = r
+		coins += 500 * r
+		gems += r
+		sfx("levelup")
+		Events.rank_up(r)
 
 
 func can_afford(c: int, g: int) -> bool:
