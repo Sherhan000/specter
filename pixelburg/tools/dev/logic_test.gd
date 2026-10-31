@@ -995,6 +995,71 @@ func _ready() -> void:
 		"adobe house and log cabin may be built on farmland")
 	check(Game.place_problem("house_brick", c + 10, c - 6) == "wrong_zone", "a brick house stays in the city")
 
+	# ------------------------------------------------ 30 more objects: roads, cars and buildings
+	var new_roads := ["gravel", "concrete", "red"]
+	var shader_ids := {}
+	for t in Ground.ROAD_IDS:
+		check(not shader_ids.has(Ground.ROAD_IDS[t]), "road %s has its own shader id" % t)
+		shader_ids[Ground.ROAD_IDS[t]] = true
+	for t in Ground.PAVE_IDS:
+		check(not shader_ids.has(Ground.PAVE_IDS[t]), "paving %s does not clash with a road id" % t)
+	for t in new_roads:
+		check(Data.ROAD_ORDER.has(t) and Data.ROADS[t].cost > 0 and Ground.ROAD_IDS.has(t) and Ground.ROAD_IDS[t] > 15, "new road type %s" % t)
+	check(Ground.STREETS.has("concrete") and Ground.STREETS.has("red") and not Ground.STREETS.has("gravel"), "concrete and red streets have sidewalks, gravel does not")
+	var rtile := Vector2i(-1, -1)
+	for rc in Game.roads:
+		if Game.roads[rc] in Data.ROAD_ORDER:
+			rtile = rc
+			break
+	check(rtile.x >= 0, "a city road to repaint")
+	if rtile.x >= 0:
+		var rt0: String = Game.roads[rtile]
+		for t in new_roads:
+			Game.coins = 100000
+			var one: Array[Vector2i] = [rtile]
+			check(Game.build_roads(one, t) and Game.roads[rtile] == t, "%s road can be built" % t)
+			city.ground.update_roads(Game.net)
+			check(city.ground.road_img.get_pixelv(rtile).r8 == Ground.ROAD_IDS[t], "%s road is drawn by the ground shader" % t)
+			check(Life.lane_for(t, "sedan") > 0.0, "cars have a lane on %s road" % t)
+		var back: Array[Vector2i] = [rtile]
+		Game.build_roads(back, rt0)
+		city.ground.update_roads(Game.net)
+	var new_cars := ["micro", "minivan", "cabrio", "retro", "limo", "icecream", "mixer"]
+	for k in new_cars:
+		check(Assets.units().cars.has(k) and Assets.tex("units/car_%s" % k) != null, "car sprite %s" % k)
+		check(Life.RESIDENT_CARS.has(k) or Life.THROUGH_CARS.has(k) or Life.VISITOR_CARS.has(k), "%s drives in the city" % k)
+		var nc = city.life._make_car(k)
+		check(nc != null and nc.kind == k, "%s car can be made" % k)
+		city.life.cars.erase(nc)
+		nc.queue_free()
+	check(Assets.units().cars.limo.fixed and Assets.units().cars.mixer.fixed and not Assets.units().cars.micro.fixed, "limo and mixer keep their paint, small cars get colours")
+	var new_bld := {"bookshop": "shop", "barber": "shop", "ice_cream": "shop", "car_wash": "shop", "auto_repair": "shop", "car_dealer": "shop",
+		"police_post": "service", "clinic": "service", "bowling": "fun", "mini_golf": "fun", "open_stage": "fun", "skate_park": "fun",
+		"gazebo": "decor", "clock_tower": "decor", "flag_pole": "decor", "art_sculpture": "decor", "bike_rental": "decor", "picnic": "decor",
+		"textile_mill": "ind", "car_plant": "ind"}
+	check(new_bld.size() + new_roads.size() + new_cars.size() == 30, "thirty new objects")
+	for hid in new_bld:
+		check(Data.B.has(hid) and Data.ORDER.has(hid) and Data.B[hid].cat == new_bld[hid], "%s is in the %s tab" % [hid, new_bld[hid]])
+		check(FileAccess.file_exists("res://assets/buildings/%s_1_0.png" % hid) and FileAccess.file_exists("res://assets/buildings/%s_3_3.png" % hid), "%s has its own sprites" % hid)
+		if not "city" in Data.B[hid].zones:
+			check(Data.B[hid].zones == ["industry"] and Game.place_problem(hid, c + 3, c - 1) != "", "%s stays out of the city" % hid)
+			continue
+		var bpos := Vector2i(-1, -1)
+		var bs: int = Data.B[hid].size
+		for yy in range(c - 18, c + 18):
+			for xx in range(c - 18, c + 18):
+				if bpos.x < 0 and Game.place_problem(hid, xx, yy) == "" and Game._touches_road(xx, yy, bs):
+					bpos = Vector2i(xx, yy)
+		var bu := Game._add_building(hid, bpos.x, bpos.y, true) if bpos.x >= 0 else 0
+		check(bu != 0, "%s can be built in the city" % hid)
+		if bu != 0:
+			Game.recalc()
+			check(Game.buildings[bu].id == hid, "%s stands in the city" % hid)
+			Game.demolish(bu)
+	check(Data.B.police_post.svc == "police" and Data.B.clinic.svc == "health", "police post and clinic count as police and health")
+	check(Life.FOOD.has("ice_cream") and Life.SHOPS.has("car_wash") and Life.OUTINGS.has("bowling") and Life.OUTINGS.has("gazebo"), "residents use the new places")
+	check(Life.JOB_KINDS.get("car_plant", "") == "builder" and Life.JOB_KINDS.get("clinic", "") == "doctor", "new workplaces dress their workers")
+
 	# ------------------------------------------------ losing
 	Game.peak_pop = 200
 	for uid in Game.buildings:

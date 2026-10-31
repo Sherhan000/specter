@@ -1078,9 +1078,14 @@ func recalc() -> void:
 			h += 1
 		elif rt == "bike":
 			h += 2
+		elif rt == "red":
+			h += 1
 		elif rt == "dirt":
 			h -= 2
 			reasons.append(["r_dirt", -2])
+		elif rt == "gravel":
+			h -= 1
+			reasons.append(["r_dirt", -1])
 		if b.link > 0 and buildings.has(b.link):
 			h += 3
 			reasons.append(["r_link", 3])

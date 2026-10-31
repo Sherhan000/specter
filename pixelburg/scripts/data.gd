@@ -66,6 +66,9 @@ const ROADS := {
 	"brick": {"name": ["Кирпичная улица", "Brick street"], "cost": 35, "upkeep": 0.9, "row": 9, "speed": 0.85},
 	"bus_lane": {"name": ["Улица с автобусной полосой", "Bus lane street"], "cost": 40, "upkeep": 0.8, "row": 10, "speed": 1.05},
 	"bike": {"name": ["Улица с велодорожкой", "Bike lane street"], "cost": 38, "upkeep": 0.7, "row": 11, "speed": 0.95},
+	"gravel": {"name": ["Щебёнка", "Gravel road"], "cost": 9, "upkeep": 0.3, "row": 12, "speed": 0.8},
+	"concrete": {"name": ["Бетонка из плит", "Concrete plates"], "cost": 22, "upkeep": 0.4, "row": 13, "speed": 0.95},
+	"red": {"name": ["Красная улица", "Red street"], "cost": 32, "upkeep": 0.6, "row": 14, "speed": 1.0},
 	"highway": {"name": ["Трасса", "Highway"], "cost": 0, "upkeep": 0.0, "row": 5, "speed": 1.6},
 	"country": {"name": ["Загородная дорога", "Country road"], "cost": 0, "upkeep": 0.0, "row": 6, "speed": 1.25},
 }
@@ -102,11 +105,12 @@ const ROAD_DECO := {
 	"bollards": {"name": ["Столбики", "Bollards"], "cost": 6, "happy": 0},
 }
 const ROAD_DECO_ORDER := ["railing", "planters", "bollards"]
-const ROAD_ORDER := ["dirt", "asphalt", "stone", "boulevard", "avenue", "brick", "bus_lane", "bike"]
+const ROAD_ORDER := ["dirt", "gravel", "asphalt", "concrete", "stone", "red", "boulevard", "avenue", "brick", "bus_lane", "bike"]
 
 ## "What's new" shown once after an update. Bump NEWS_VERSION and rewrite NEWS with every release.
 const NEWS_VERSION := "1.4.0"
 const NEWS := [
+	["30 новых объектов, у каждого свой вид. Дороги: щебёнка, бетонка из плит и красная улица. Машины: малолитражка, минивэн, кабриолет, ретро-седан, лимузин, фургон с мороженым и бетономешалка. Здания: книжный, парикмахерская, кафе-мороженое, автомойка, автосервис, автосалон, пост полиции, поликлиника, боулинг, мини-гольф, летняя сцена, скейт-парк, беседка, часовая башня, флагшток, арт-объект, прокат велосипедов, место для пикника, текстильная фабрика и автозавод", "30 new objects, each with its own look. Roads: gravel, concrete plates and a red street. Cars: a city mini, a minivan, a convertible, a retro sedan, a limousine, an ice-cream van and a concrete mixer. Buildings: a bookshop, a barber shop, an ice-cream parlour, a car wash, an auto repair shop, a car dealership, a police post, a clinic, a bowling alley, mini golf, an open-air stage, a skate park, a gazebo, a clock tower, a flagpole, an art sculpture, a bike rental, a picnic spot, a textile mill and a car plant"],
 	["Новые недорогие дома для начала игры, у каждого свой вид: бревенчатая изба с резными наличниками и поленницей, глинобитный дом с тандыром, кирпичный домик с живой изгородью, домик-шалаш со стеклянным фасадом и костровищем, дом из морских контейнеров, белый средиземноморский дом с террасой на крыше и дом на две семьи", "New cheap homes for the early game, each with its own look: a log cabin with carved window frames and a woodpile, an adobe house with a tandoor oven, a brick house behind a hedge, an A-frame cabin with a glass front and a fire pit, a shipping-container house, a whitewashed Mediterranean house with a roof terrace and a duplex for two families"],
 	["Крепость Худжанда — одна на город (4x4): кирпичные стены с круглыми зубцами, башни, высокий портал ворот со стрельчатой аркой, музей во дворе, а перед ней парк Камоли Худжанди с фонтаном, чинарами и памятником поэту. Привлекает больше всего туристов", "The Khujand Fortress, one per city (4x4): brick walls with rounded battlements, towers, a tall gate portal with a pointed arch, a museum in the courtyard and in front the Kamoli Khujandi park with a fountain, plane trees and the poet's statue. Draws the most tourists of all"],
 	["Замок и исторические объекты, у каждого свой вид: каменный замок со рвом, башнями и донжоном, мавзолей с бирюзовым куполом, пятиярусная пагода, руины античного храма (с уровнем его восстанавливают), кирпичный минарет и триумфальная арка. Они радуют жителей и привлекают туристов", "A castle and historic sights, each with its own look: a stone castle with a moat, towers and a keep, a mausoleum with a turquoise dome, a five-tier pagoda, ruins of an ancient temple (restored as it levels up), a brick minaret and a triumphal arch. They cheer residents up and draw tourists"],
@@ -247,6 +251,18 @@ const B := {
 		"jobs": 3, "use": 10, "income": 62, "cycle": 110, "upkeep": 15},
 	"pharmacy": {"name": ["Аптека", "Pharmacy"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 1400, "lvl": 5, "time": 45,
 		"jobs": 3, "use": 9, "income": 72, "cycle": 110, "upkeep": 16},
+	"bookshop": {"name": ["Книжный магазин", "Bookshop"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 900, "lvl": 4, "time": 35,
+		"jobs": 2, "use": 8, "income": 50, "cycle": 110, "upkeep": 12},
+	"barber": {"name": ["Парикмахерская", "Barber Shop"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 600, "lvl": 3, "time": 25,
+		"jobs": 2, "use": 6, "income": 38, "cycle": 100, "upkeep": 9},
+	"ice_cream": {"name": ["Кафе-мороженое", "Ice Cream Parlour"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 700, "lvl": 3, "time": 25,
+		"jobs": 2, "use": 8, "income": 44, "cycle": 100, "upkeep": 10},
+	"car_wash": {"name": ["Автомойка", "Car Wash"], "cat": "shop", "zones": ["city"], "size": 1, "cost": 1300, "lvl": 5, "time": 40,
+		"jobs": 2, "use": 10, "income": 66, "cycle": 110, "upkeep": 14},
+	"auto_repair": {"name": ["Автосервис", "Auto Repair"], "cat": "shop", "zones": ["city", "industry"], "size": 1, "cost": 1600, "lvl": 6, "time": 45,
+		"jobs": 4, "use": 10, "income": 80, "cycle": 120, "upkeep": 18},
+	"car_dealer": {"name": ["Автосалон", "Car Dealership"], "cat": "shop", "zones": ["city"], "size": 2, "cost": 6500, "lvl": 10, "time": 140,
+		"jobs": 8, "use": 20, "income": 260, "cycle": 180, "upkeep": 60},
 	"pizzeria": {"name": ["Пиццерия", "Pizzeria"], "cat": "shop", "zones": ["city", "leisure"], "size": 1, "cost": 1800, "lvl": 6, "time": 50,
 		"jobs": 4, "use": 12, "income": 85, "cycle": 120, "upkeep": 20},
 	"gas_station": {"name": ["Заправка", "Gas Station"], "cat": "shop", "zones": ["city", "industry", "farm"], "size": 1, "cost": 2200, "lvl": 7, "time": 55,
@@ -309,8 +325,12 @@ const B := {
 		"jobs": 8, "out": 50, "cycle": 100, "upkeep": 20, "poll": 6},
 	"workshop": {"name": ["Мастерская", "Workshop"], "cat": "ind", "zones": ["industry"], "size": 2, "cost": 3000, "lvl": 7, "time": 90,
 		"jobs": 10, "out": 75, "cycle": 120, "upkeep": 30, "poll": 6},
+	"textile_mill": {"name": ["Текстильная фабрика", "Textile Mill"], "cat": "ind", "zones": ["industry"], "size": 2, "cost": 5000, "lvl": 9, "time": 130,
+		"jobs": 14, "out": 120, "cycle": 160, "upkeep": 50, "poll": 7},
 	"factory": {"name": ["Фабрика", "Factory"], "cat": "ind", "zones": ["industry"], "size": 2, "cost": 7000, "lvl": 10, "time": 150,
 		"jobs": 20, "out": 160, "cycle": 180, "upkeep": 70, "poll": 10},
+	"car_plant": {"name": ["Автозавод", "Car Plant"], "cat": "ind", "zones": ["industry"], "size": 3, "cost": 16000, "gems": 4, "lvl": 15, "time": 260,
+		"jobs": 30, "out": 380, "cycle": 220, "upkeep": 120, "poll": 12},
 	"logistics": {"name": ["Логистический центр", "Logistics Hub"], "cat": "ind", "zones": ["industry"], "size": 3, "cost": 15000, "gems": 5, "lvl": 16, "time": 240,
 		"jobs": 25, "out": 280, "cycle": 220, "upkeep": 110, "poll": 6},
 	# ------------------------------------------------ services (jobs, coverage radius, happiness, salaries)
@@ -324,6 +344,8 @@ const B := {
 		"jobs": 5, "upkeep": 45, "svc": "fire", "radius": 20, "happy": 5},
 	"police": {"name": ["Полиция", "Police"], "cat": "service", "zones": ["city", "industry"], "size": 2, "cost": 4500, "lvl": 6, "time": 110,
 		"jobs": 6, "upkeep": 50, "svc": "police", "radius": 20, "happy": 7},
+	"police_post": {"name": ["Пост полиции", "Police Post"], "cat": "service", "zones": ["city", "industry"], "size": 1, "cost": 1500, "lvl": 4, "time": 50,
+		"jobs": 2, "upkeep": 18, "svc": "police", "radius": 10, "happy": 3},
 	"watchtower": {"name": ["Дозорная башня", "Watchtower"], "cat": "service", "zones": ["city", "industry"], "size": 1, "cost": 2200, "lvl": 5, "time": 70,
 		"jobs": 2, "upkeep": 20, "svc": "patrol", "radius": 10, "happy": 2},
 	"gym": {"name": ["Спорткомплекс", "Sports Centre"], "cat": "service", "zones": ["city"], "size": 2, "cost": 3000, "lvl": 7, "time": 90,
@@ -336,6 +358,8 @@ const B := {
 		"jobs": 5, "upkeep": 45, "svc": "law", "radius": 0, "happy": 3},
 	"hospital": {"name": ["Больница", "Hospital"], "cat": "service", "zones": ["city"], "size": 2, "cost": 8000, "lvl": 9, "time": 180,
 		"jobs": 12, "upkeep": 90, "svc": "health", "radius": 24, "happy": 9},
+	"clinic": {"name": ["Поликлиника", "Clinic"], "cat": "service", "zones": ["city"], "size": 1, "cost": 1800, "lvl": 4, "time": 55,
+		"jobs": 3, "upkeep": 22, "svc": "health", "radius": 12, "happy": 4},
 	"maternity": {"name": ["Роддом", "Maternity Hospital"], "cat": "service", "zones": ["city"], "size": 2, "cost": 6500, "lvl": 8, "time": 150,
 		"jobs": 8, "upkeep": 60, "svc": "health", "radius": 18, "happy": 8},
 	"town_hall": {"name": ["Ратуша", "Town Hall"], "cat": "service", "zones": ["city"], "size": 3, "cost": 15000, "gems": 10, "lvl": 13, "time": 240,
@@ -392,6 +416,14 @@ const B := {
 		"jobs": 7, "income": 120, "cycle": 180, "upkeep": 60, "radius": 28, "happy": 10},
 	"funfair": {"name": ["Парк аттракционов", "Funfair"], "cat": "fun", "zones": ["leisure"], "size": 3, "cost": 12000, "gems": 4, "lvl": 12, "time": 200,
 		"jobs": 10, "income": 200, "cycle": 200, "upkeep": 90, "radius": 28, "happy": 12},
+	"bowling": {"name": ["Боулинг", "Bowling Alley"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 5500, "lvl": 9, "time": 120,
+		"jobs": 6, "income": 150, "cycle": 180, "upkeep": 45, "radius": 16, "happy": 7},
+	"mini_golf": {"name": ["Мини-гольф", "Mini Golf"], "cat": "fun", "zones": ["leisure", "city"], "size": 2, "cost": 3000, "lvl": 7, "time": 80,
+		"jobs": 3, "income": 90, "cycle": 160, "upkeep": 25, "radius": 14, "happy": 6},
+	"open_stage": {"name": ["Летняя сцена", "Open-Air Stage"], "cat": "fun", "zones": ["leisure", "city"], "size": 2, "cost": 4500, "lvl": 8, "time": 100,
+		"jobs": 5, "income": 120, "cycle": 180, "upkeep": 40, "radius": 20, "happy": 8},
+	"skate_park": {"name": ["Скейт-парк", "Skate Park"], "cat": "fun", "zones": ["city", "leisure"], "size": 2, "cost": 1800, "lvl": 5, "time": 60,
+		"jobs": 1, "income": 30, "cycle": 160, "upkeep": 12, "radius": 12, "happy": 5},
 	"stadium": {"name": ["Стадион", "Stadium"], "cat": "fun", "zones": ["leisure", "city"], "size": 3, "cost": 18000, "gems": 6, "lvl": 16, "time": 260,
 		"jobs": 12, "income": 320, "cycle": 260, "upkeep": 120, "radius": 32, "happy": 14},
 	# historic sights: tickets like a museum, and "hist" = extra tourists a day (× level) once a road reaches them
@@ -432,6 +464,18 @@ const B := {
 		"happy": 3, "radius": 4, "upkeep": 1},
 	"bench": {"name": ["Скверик", "Small Square"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 150, "lvl": 2, "time": 5,
 		"happy": 3, "radius": 5, "upkeep": 1},
+	"gazebo": {"name": ["Беседка", "Gazebo"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 600, "lvl": 3, "time": 15,
+		"happy": 5, "radius": 6, "upkeep": 2},
+	"picnic": {"name": ["Место для пикника", "Picnic Spot"], "cat": "decor", "zones": ["city", "leisure", "farm"], "size": 1, "cost": 300, "lvl": 2, "time": 8,
+		"happy": 4, "radius": 6, "upkeep": 1},
+	"flag_pole": {"name": ["Флагшток", "Flagpole"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 400, "lvl": 2, "time": 8,
+		"happy": 3, "radius": 6, "upkeep": 1},
+	"bike_rental": {"name": ["Прокат велосипедов", "Bike Rental"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 800, "lvl": 4, "time": 15,
+		"happy": 4, "radius": 8, "upkeep": 3},
+	"art_sculpture": {"name": ["Арт-объект", "Art Sculpture"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 2500, "lvl": 7, "time": 40,
+		"happy": 9, "radius": 8, "upkeep": 3},
+	"clock_tower": {"name": ["Часовая башня", "Clock Tower"], "cat": "decor", "zones": ["city"], "size": 1, "cost": 3500, "lvl": 8, "time": 60,
+		"happy": 12, "radius": 10, "upkeep": 5},
 	"playground": {"name": ["Детская площадка", "Playground"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 400, "lvl": 3, "time": 10,
 		"happy": 5, "radius": 5, "upkeep": 2},
 	"fountain": {"name": ["Фонтан", "Fountain"], "cat": "decor", "zones": ["city", "leisure"], "size": 1, "cost": 1200, "lvl": 5, "time": 30,
@@ -471,14 +515,14 @@ const B := {
 		"happy": 1, "radius": 2, "upkeep": 0},
 }
 const ORDER := ["house_small", "house_adobe", "house_log", "house_brick", "house_american", "house_tajik", "house_aframe", "house_container", "house_med", "cottage", "house_duplex", "house_asian", "dacha", "bungalow", "townhouse", "khrushchevka", "villa", "dorm", "apartments", "panel_block", "condo", "highrise", "round_tower", "tower", "deco_tower", "stack_tower", "sky_villa", "twin_towers", "sky_home", "dushanbe_home",
-	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "pizzeria", "gas_station", "ev_station", "gas_highway", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
+	"bakery", "cafe", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "ice_cream", "food_trucks", "chaikhana", "drive_thru", "flowershop", "pharmacy", "bookshop", "barber", "pizzeria", "gas_station", "ev_station", "gas_highway", "car_wash", "auto_repair", "car_dealer", "boutique", "supermarket", "market_stall", "market", "bazaar", "office", "restaurant",
 	"cinema", "hotel", "mall", "sky_office", "sky_heli", "dushanbe_tower",
 	"hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand",
-	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "factory", "logistics",
+	"farm", "apiary", "orchard", "chicken_farm", "greenhouse", "melon_field", "warehouse", "ranch", "vineyard", "windmill", "fish_farm", "dairy", "sawmill", "workshop", "textile_mill", "factory", "car_plant", "logistics",
 	"solar_panel", "power_plant", "water_station",
-	"kindergarten", "school", "post_office", "fire_station", "police", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
-	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "stadium",
-	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "playground", "fountain", "park", "pond", "plaza", "statue", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
+	"kindergarten", "school", "post_office", "fire_station", "police", "police_post", "watchtower", "gym", "sport_tower", "bank", "library", "court", "hospital", "clinic", "maternity", "town_hall", "bus_stop", "bus_stop_simple", "bus_stop_modern", "bus_stop_ad", "bus_stop_village", "tv_studio", "tv_center", "tv_tower", "newsstand", "newspaper", "garbage_depot", "recycling_plant", "metro_station", "parking", "parking_deck", "parking_tower", "parking_green", "parking_spiral", "airport",
+	"museum", "ancient_temple", "mausoleum", "pagoda", "castle", "khujand_fortress", "zoo", "funfair", "bowling", "mini_golf", "open_stage", "skate_park", "stadium",
+	"tree", "tree_birch", "tree_pine", "tree_poplar", "tree_apple", "tree_autumn", "tree_willow", "tree_sakura", "tree_palm", "tree_chinar", "flowerbed", "lamp", "bench", "gazebo", "picnic", "flag_pole", "bike_rental", "playground", "fountain", "park", "pond", "plaza", "statue", "art_sculpture", "clock_tower", "triumph_arch", "minaret", "site_small", "site_house", "site_crane", "beach_umbrella", "lifeguard_tower", "beach_bar"]
 ## Flight routes bought in the airport. pax: travellers per flight, spend: coins each one leaves in the city,
 ## flag: stripes (top to bottom), cost/lvl: price of the route.
 const COUNTRIES := {
@@ -509,7 +553,7 @@ const LANDMARK_HOMES := 42   ## homes of the quarter (as in the project) that br
 const LANDMARK_RADIUS := 16  ## homes this close to the tower are happier
 const HOTELS := ["hotel_boutique", "hotel_resort", "hotel_palace", "hotel_sail", "hotel_grand"]
 ## shop types residents may open on their own (business proposals)
-const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar"]
+const PRIVATE_KINDS := ["bakery", "cafe", "flowershop", "pizzeria", "boutique", "pharmacy", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "bookshop", "barber", "ice_cream"]
 const ANIMALS := ["deer", "rabbit", "fox", "boar", "wolf", "bear"]
 ## lots people walk through (their props are drawn as part of the building)
 const WALKABLE := ["park", "plaza", "bench", "fountain", "statue", "playground", "pond", "flowerbed", "zoo", "funfair"]

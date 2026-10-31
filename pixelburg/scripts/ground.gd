@@ -4,10 +4,10 @@ extends Node2D
 ## textures: terrain weights (static), road tiles and zones / ownership (rebuilt on change).
 
 const ROAD_IDS := {"dirt": 1, "asphalt": 2, "stone": 3, "highway": 4, "country": 5, "town": 6, "boulevard": 7,
-	"avenue": 8, "brick": 9, "bus_lane": 10, "bike": 11}
+	"avenue": 8, "brick": 9, "bus_lane": 10, "bike": 11, "gravel": 16, "concrete": 17, "red": 18}
 ## paving on the grass (Game.paves), drawn by the same shader after the roads
 const PAVE_IDS := {"slabs": 12, "terracotta": 13, "mosaic": 14, "path": 15}
-const STREETS := ["asphalt", "stone", "town", "boulevard", "avenue", "brick", "bus_lane", "bike"]
+const STREETS := ["asphalt", "stone", "town", "boulevard", "avenue", "brick", "bus_lane", "bike", "concrete", "red"]
 ## arm bits: north (-y) 1, east (+x) 2, south (+y) 4, west (-x) 8
 const ARM_DIRS := [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 

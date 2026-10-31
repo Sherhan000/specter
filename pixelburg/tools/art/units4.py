@@ -31,6 +31,15 @@ CARS = {
     "fire": dict(L=80, W=24, H=28, cab=(0.75, 0.97), belt=14, hood=18, trunk=26, truck=True, paint="c8282a", bar=True, ladder=True),
     "garbage": dict(L=72, W=23, H=30, cab=(0.78, 0.97), belt=14, hood=18, trunk=30, truck=True, paint="3a8a4a"),
     "delivery": dict(L=60, W=21, H=27, cab=(0.7, 0.92), belt=12, hood=14, trunk=27, truck=True, paint="f4f2ee", stripe="e8a830"),
+    # newer kinds
+    "micro": dict(L=32, W=16, H=15, cab=(0.1, 0.78), belt=8.5, hood=8.0, trunk=12.5),
+    "minivan": dict(L=50, W=19.5, H=19, cab=(0.06, 0.8), belt=11.0, hood=10.5, trunk=17.5),
+    "cabrio": dict(L=44, W=18.5, H=10.5, cab=(0.36, 0.6), belt=8.6, hood=8.0, trunk=8.5),
+    "retro": dict(L=50, W=19, H=15, cab=(0.34, 0.64), belt=10.0, hood=10.5, trunk=10.5, stripe="d8dce0"),
+    "limo": dict(L=66, W=19, H=14, cab=(0.2, 0.74), belt=9.5, hood=9.5, trunk=10.0, paint="1e1e24", stripe="b8bcc4"),
+    "icecream": dict(L=50, W=20, H=23, cab=(0.05, 0.85), belt=12.0, hood=13.0, trunk=23.0, van=True, paint="f8f0f4",
+                     stripe="f08ab0", roofsign=True),
+    "mixer": dict(L=74, W=23, H=30, cab=(0.76, 0.97), belt=15, hood=18, trunk=30, truck=True, paint="e8a830", drum=True),
 }
 SIREN = {"police": ("e8342a", "3a6ae8"), "ambulance": ("e8342a", "3a6ae8"), "fire": ("e8342a", "f8b030")}
 
@@ -68,6 +77,10 @@ def _car_fields(spec, theta, s):
     if spec.get("truck"):
         body = np.where(un > c1, hood, np.where(un >= c0, top * 0.82, trunk))
         body = np.where((un > c0 - 0.03) & (un < c0), 0.0, body)  # gap between cab and box
+        if spec.get("drum"):
+            rr = np.clip(1 - (v / (W / 2)) ** 2, 0, 1) ** 0.5
+            tilt = 0.7 + 0.3 * np.clip(un / max(c0, 0.01), 0, 1)
+            body = np.where(un < c0 - 0.03, (6 * s + (top - 6 * s) * rr) * tilt, body)
     # roof rounded edges
     edge = np.clip((W / 2 - np.abs(v)) / (2.0 * s), 0, 1)
     body = body - (1 - edge) * 1.5 * s
@@ -151,6 +164,10 @@ def _car_color(spec, theta, s, paint, local, wheel_m, mode):
             boxm = un < spec["cab"][0] - 0.03
             if spec.get("paint") is None:
                 pass
+        if spec.get("drum"):
+            dm = (un < c0 - 0.03) & (wz > 7 * s)
+            rgb[dm] = np.where((np.mod(u / s * 0.5 + v / s * 0.8, 6) < 1.2)[..., None], C("8a8c90"), C("d8dce0"))[dm]
+            tag &= ~dm
         if mode == "white":
             rgb[tag] = np.array([238, 238, 238.0])
         return rgb, ns, em
@@ -517,6 +534,16 @@ def gen_props(out):
         cv.face_y(c - 6, c - 20, c + 20, 4, 24, glass)
         cv.box(c - 22, c - 8, 26, c + 22, c + 4, 27.5, flat("2a5aa8"), flat("2a5aa8"), flat("2a5aa8"))
     _prop("bus_stop", stop, out, meta)
+    return meta
+
+
+def gen_new_cars(out, kinds):
+    """Render only the given car kinds and merge them into the existing units meta."""
+    path = os.path.join(out, "meta.json")
+    meta = json.load(open(path))
+    np.seterr(all="ignore")
+    meta["cars"].update(gen_cars(out, kinds))
+    json.dump(meta, open(path, "w"), separators=(",", ":"))
     return meta
 
 

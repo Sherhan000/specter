@@ -2,6 +2,7 @@
 """Generates Pixelburg's art into assets/.
 
 Run from the project root:  python3 tools/gen_assets.py [buildings] [nature] [units] [ground] [sky] [only=id,id]
+                      python3 tools/gen_assets.py cars only=kind,kind   (render only these vehicles into units)
 Without arguments everything is generated. Needs Pillow, numpy, scipy and pycairo.
 """
 import json
@@ -17,7 +18,7 @@ sys.path.insert(0, os.path.join(HERE, "art"))
 ROOT = os.path.dirname(HERE)
 A = os.path.join(ROOT, "assets")
 
-MODULES = ["b_homes", "b_shops", "b_work", "b_civic", "b_towers", "b_houses2", "b_market", "b_beach", "b_airport", "b_food", "b_farm", "b_trees", "b_fuel", "b_parking", "b_history", "b_houses3"]
+MODULES = ["b_homes", "b_shops", "b_work", "b_civic", "b_towers", "b_houses2", "b_market", "b_beach", "b_airport", "b_food", "b_farm", "b_trees", "b_fuel", "b_parking", "b_history", "b_houses3", "b_city30"]
 
 
 def d(*p):
@@ -98,6 +99,10 @@ if __name__ == "__main__":
         import nature4
         nature4.gen(d("nature"))
         print("nature", round(time.time() - t, 1))
+    if "cars" in args and only:
+        import units4
+        units4.gen_new_cars(d("units"), only)
+        print("cars", round(time.time() - t, 1))
     if every or "units" in args:
         import units4
         units4.gen(d("units"))

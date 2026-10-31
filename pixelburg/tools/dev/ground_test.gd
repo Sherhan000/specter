@@ -1,5 +1,6 @@
 extends Node2D
-## Dev only: renders the ground shader with a sample street layout. SHOT_DIR = output folder.
+## Dev only: renders the ground shader with a sample street layout. SHOT_DIR = output folder,
+## SHOT_ROADS = optional swaps of the sample road types, e.g. "asphalt=concrete,stone=red,dirt=gravel".
 
 var cam: Camera2D
 var ground: Ground
@@ -28,6 +29,11 @@ func _ready() -> void:
 	net[Vector2i(c - 8, c + 5)] = "dirt"
 	for i in range(Data.LAND1 - 6, Data.LAND1):
 		net[Vector2i(c, i)] = "asphalt"
+	for sw in OS.get_environment("SHOT_ROADS").split(",", false):
+		var ab: PackedStringArray = sw.split("=")
+		for k in net:
+			if net[k] == ab[0] and k.y < Data.HIGHWAY_Y - 2:
+				net[k] = ab[1]
 	ground.update_roads(net)
 	ground.update_info()
 	cam = Camera2D.new()

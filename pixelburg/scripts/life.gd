@@ -33,12 +33,18 @@ const JOB_KINDS := {
 	"sawmill": "builder", "workshop": "builder", "power_plant": "builder", "water_station": "builder", "solar_panel": "builder", "factory": "builder", "logistics": "builder",
 	"bakery": "chef", "cafe": "chef", "pizzeria": "chef", "restaurant": "chef", "coffee_kiosk": "chef", "shawarma": "chef",
 	"donut_shop": "chef", "burger_bar": "chef", "food_trucks": "chef", "chaikhana": "chef", "drive_thru": "chef", "post_office": "postman",
+	"ice_cream": "chef", "police_post": "police", "clinic": "doctor", "textile_mill": "builder", "car_plant": "builder", "auto_repair": "builder",
 	"bank": "business", "court": "businesswoman", "town_hall": "business", "office": "business", "mall": "businesswoman",
 }
-const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru"]
-const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway"]
+## Car kinds by role: residents' own cars, traffic passing through town, visitors from other towns.
+const RESIDENT_CARS := ["sedan", "hatch", "sedan", "suv", "hatch", "pickup", "sedan", "van", "sports", "micro", "minivan", "cabrio", "retro"]
+const THROUGH_CARS := ["sedan", "truck", "bus", "suv", "van", "hatch", "sedan", "delivery", "mixer", "icecream", "minivan", "limo"]
+const VISITOR_CARS := ["sedan", "suv", "hatch", "van", "minivan", "cabrio", "retro", "limo", "micro"]
+const FOOD := ["bakery", "cafe", "pizzeria", "restaurant", "mall", "coffee_kiosk", "shawarma", "donut_shop", "burger_bar", "food_trucks", "chaikhana", "drive_thru", "ice_cream"]
+const SHOPS := ["supermarket", "market", "market_stall", "bazaar", "bakery", "boutique", "flowershop", "pharmacy", "mall", "gas_station", "ev_station", "gas_highway", "bookshop", "barber", "car_wash", "auto_repair", "car_dealer"]
 const OUTINGS := ["park", "plaza", "pond", "fountain", "bench", "playground", "statue", "zoo", "funfair", "museum", "castle", "khujand_fortress", "mausoleum", "pagoda", "ancient_temple", "minaret", "triumph_arch",
-	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks"]
+	"stadium", "cinema", "restaurant", "library", "gym", "cafe", "chaikhana", "food_trucks",
+	"bowling", "mini_golf", "open_stage", "skate_park", "gazebo", "picnic", "clock_tower", "art_sculpture", "ice_cream"]
 
 var city: Node
 var car_grid := AStarGrid2D.new()
@@ -604,8 +610,8 @@ static func tangent_seg(seg: Array, t: float, fallback: Vector2) -> Vector2:
 static func lane_for(type: String, kind: String) -> float:
 	match type:
 		"highway":
-			return 0.35 if kind in ["truck", "bus", "garbage", "delivery"] else 0.12
-		"dirt":
+			return 0.35 if kind in ["truck", "bus", "garbage", "delivery", "mixer"] else 0.12
+		"dirt", "gravel":
 			return 0.09
 		"boulevard":
 			return 0.125
@@ -901,7 +907,7 @@ func _assign_cars() -> void:
 		var sp := find_spot(home, null)
 		if sp.is_empty():
 			continue
-		var car := _make_car(["sedan", "hatch", "sedan", "suv", "hatch", "pickup", "sedan", "van", "sports"].pick_random())
+		var car := _make_car(RESIDENT_CARS.pick_random())
 		car.owner_home = home
 		car.home_spot = sp[0]
 		car.park_at(sp)
@@ -1311,7 +1317,7 @@ func _ambient() -> void:
 		if a != b:
 			var path := car_path(a, b)
 			if path.size() > 10:
-				var kind: String = ["sedan", "truck", "bus", "suv", "van", "hatch", "sedan", "delivery"].pick_random()
+				var kind: String = THROUGH_CARS.pick_random()
 				var c := _make_car(kind)
 				c.role = "through"
 				c.start_route(path, null)
@@ -1324,7 +1330,7 @@ func _ambient() -> void:
 				places.append(uid)
 		if not places.is_empty():
 			var dest: int = places.pick_random()
-			var c := _make_car(["sedan", "suv", "hatch", "van"].pick_random())
+			var c := _make_car(VISITOR_CARS.pick_random())
 			c.role = "visitor"
 			c.visit = dest
 			var sp := find_spot(dest, c)
