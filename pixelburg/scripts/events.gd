@@ -228,7 +228,7 @@ func _apply(act: String, m: Dictionary) -> void:
 
 # ====================================================================== hourly / daily
 func on_hour(h: int) -> void:
-	if Game.lost or Game.tutorial < 99:
+	if Game.lost or Game.tutorial < 99 or Game.visiting != "":
 		return
 	_expire()
 	var now := Game.abs_hour()
@@ -255,7 +255,7 @@ func on_hour(h: int) -> void:
 
 
 func on_day(d: int) -> void:
-	if Game.lost:
+	if Game.lost or Game.visiting != "":
 		return
 	if (Game.rules.get("pollution", false) or Game.rules.get("garbage", false)) and _rng.randf() < 0.6:
 		post("complaint", "zina", ["Жалоба", "Complaint"],
