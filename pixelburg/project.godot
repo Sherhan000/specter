@@ -9,7 +9,7 @@ config/name_localized={
 "ru": "Пиксельбург"
 }
 config/description="Cozy pixel-art city builder"
-config/version="1.3.0"
+config/version="1.4.0"
 run/main_scene="res://scenes/main.tscn"
 config/quit_on_go_back=false
 config/auto_accept_quit=false
