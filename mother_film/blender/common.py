@@ -4,6 +4,7 @@ from mathutils import Vector
 
 FPS = 24
 RES = (1920, 804)        # 2.39:1 - the final cut is letterboxed anyway, so the bars are not rendered
+FINAL_SCALE = 75         # rendered at 1440x603 and upscaled in the edit (4 CPU cores, no GPU)
 
 
 def reset():
@@ -31,7 +32,7 @@ def setup_cycles(sc, samples=96, scale=100, threads=0, denoise=True, noise=0.03)
     try:
         c.denoiser = 'OPENIMAGEDENOISE'
         c.denoising_input_passes = 'RGB_ALBEDO_NORMAL'
-        c.denoising_prefilter = 'ACCURATE'
+        c.denoising_prefilter = 'FAST'
     except Exception as e:
         print('denoiser:', e)
     c.max_bounces = 5
@@ -139,3 +140,38 @@ def apply_modifier(ob, name):
 def args():
     a = sys.argv
     return a[a.index('--') + 1:] if '--' in a else []
+
+
+def preview(sc, path, target=(0, 0, 0.8), dist=4.0, views=('front', 'side', 'top', 'q'), res=(420, 420), samples=12):
+    """Quick neutral-lit contact sheet of the scene from several directions (for checking poses)."""
+    import numpy as np
+    saved = (sc.camera, sc.render.resolution_x, sc.render.resolution_y, sc.cycles.samples, sc.render.resolution_percentage)
+    w = sc.world.node_tree.nodes['Background']
+    old = (tuple(w.inputs[0].default_value), w.inputs[1].default_value)
+    w.inputs[0].default_value = (0.5, 0.5, 0.5, 1); w.inputs[1].default_value = 1.0
+    sun = light(sc, 'SUN', (0, 0, 10), 2.5, rot=(40, 0, 30), name='_pv')
+    sc.render.resolution_x, sc.render.resolution_y = res; sc.render.resolution_percentage = 100; sc.cycles.samples = samples
+    dirs = {'front': (0, -1, 0.1), 'back': (0, 1, 0.1), 'side': (1, 0, 0.1), 'left': (-1, 0, 0.1), 'top': (0, -0.05, 1),
+            'q': (0.7, -0.7, 0.45), 'q2': (-0.7, -0.7, 0.45)}
+    t = Vector(target); files = []
+    for v in views:
+        d = Vector(dirs[v]).normalized()
+        cam = camera(sc, t + d * dist, t, lens=50, name='_pvcam')
+        f = f'{path}_{v}.png'
+        render_still(sc, f); files.append(f)
+        bpy.data.objects.remove(cam)
+    bpy.data.objects.remove(sun)
+    w.inputs[0].default_value = old[0]; w.inputs[1].default_value = old[1]
+    sc.camera, sc.render.resolution_x, sc.render.resolution_y, sc.cycles.samples, sc.render.resolution_percentage = saved
+    try:
+        from PIL import Image
+        ims = [Image.open(f) for f in files]
+        sheet = Image.new('RGB', (res[0] * len(ims), res[1]))
+        for i, im in enumerate(ims):
+            sheet.paste(im, (i * res[0], 0))
+        sheet.save(path + '.jpg', quality=88)
+        for f in files:
+            os.remove(f)
+    except Exception as e:
+        print('sheet:', e)
+    return path + '.jpg'

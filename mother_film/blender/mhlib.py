@@ -169,6 +169,9 @@ def make_armature(name, V_mh, collection=None):
     return ob
 
 
+_AX = {'X': Vector((1, 0, 0)), 'Y': Vector((0, 1, 0)), 'Z': Vector((0, 0, 1))}
+
+
 class Human:
     """A morphed, rigged MakeHuman figure. `parts` are extra helper groups kept as separate objects."""
 
@@ -211,29 +214,48 @@ class Human:
     def pb(self, bone):
         return self.arm.pose.bones[bone]
 
-    def rot(self, bone, axis, deg):
-        """Rotate pose bone about an armature-space axis through the bone head (accumulates)."""
+    def rot(self, bone, axis, deg, world=False):
+        """Rotate a pose bone about an axis through its head (accumulates).
+        The axis is given in armature axes *as if the parent were still in rest pose* (so 'knee bends about X'
+        stays true whatever the hip does). world=True uses the armature axes as they are now."""
         pb = self.arm.pose.bones[bone]
         bpy.context.view_layer.update()
         M = pb.matrix.copy()
         h = M.translation.copy()
-        ax = {'X': Vector((1, 0, 0)), 'Y': Vector((0, 1, 0)), 'Z': Vector((0, 0, 1))}.get(axis, axis)
-        R = Matrix.Rotation(math.radians(deg), 4, Vector(ax))
+        ax = _AX[axis].copy() if isinstance(axis, str) else Vector(axis)
+        if not world and pb.parent:
+            D = pb.parent.matrix @ pb.parent.bone.matrix_local.inverted()
+            ax = D.to_3x3() @ ax
+        R = Matrix.Rotation(math.radians(deg), 4, ax.normalized())
         pb.matrix = Matrix.Translation(h) @ R @ Matrix.Translation(-h) @ M
         bpy.context.view_layer.update()
+
+    def flex(self, bone, deg):
+        """Swing a bone towards the character's front (negative: backwards), whatever its rest direction."""
+        b = self.arm.data.bones[bone]
+        d = (b.tail_local - b.head_local).normalized()
+        ax = d.cross(Vector((0, -1, 0)))
+        if ax.length < 1e-3:
+            ax = Vector((-1, 0, 0))
+        self.rot(bone, ax.normalized(), deg)
+
+    def flex2(self, bone, deg):
+        self.flex(bone + '.L', deg); self.flex(bone + '.R', deg)
+
+    def twist(self, bone, deg):
+        b = self.arm.data.bones[bone]
+        self.rot(bone, (b.tail_local - b.head_local).normalized(), deg)
+
+    def both(self, bone, axis, deg):
+        """Same anatomical rotation on .L and .R (mirrored across the sagittal plane)."""
+        ax = _AX[axis].copy() if isinstance(axis, str) else Vector(axis)
+        self.rot(bone + '.L', ax, deg)
+        self.rot(bone + '.R', Vector((ax.x, -ax.y, -ax.z)), deg)
 
     def pose(self, spec):
         """spec: list of (bone, axis, deg). Bones ending with '.' are applied to both sides, mirrored."""
         for bone, axis, deg in spec:
             self.rot(bone, axis, deg)
-
-    def mirror(self, bone_l, axis, deg):
-        """Apply to .L and mirrored to .R (mirror across YZ plane)."""
-        self.rot(bone_l + '.L', axis, deg)
-        ax = {'X': Vector((1, 0, 0)), 'Y': Vector((0, 1, 0)), 'Z': Vector((0, 0, 1))}.get(axis, axis)
-        ax = Vector(ax)
-        s = 1 if abs(ax.x) > 0.5 else -1     # rotation about X keeps sign; about Y/Z flips
-        self.rot(bone_l + '.R', Vector((ax.x, ax.y, ax.z)), deg * s)
 
     def reset_pose(self):
         for pb in self.arm.pose.bones:

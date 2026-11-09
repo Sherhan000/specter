@@ -1,28 +1,45 @@
-"""Procedural clay materials (Cycles). One node tree, many tints: terracotta skin, buff robe, pale slip, dark stone.
-Texture coordinates come from the `rest_position` attribute so surface detail sticks to deforming figures."""
-import bpy
+"""Clay materials (Cycles). Built on CC0 Poly Haven scans (hand-smoothed clay plaster, cracked mud),
+box-projected from the `rest_position` attribute so the surface detail sticks to deforming figures.
+One node tree, many tints: terracotta skin, buff robe, pale slip, dark stone."""
+import bpy, os
+
+TEX = os.environ.get('TEX_DIR', '/home/user/assets/tex')
 
 TINTS = {
-    'terracotta': ((0.42, 0.185, 0.105), (0.30, 0.12, 0.07)),
-    'umber':      ((0.20, 0.105, 0.065), (0.12, 0.06, 0.04)),
-    'buff':       ((0.50, 0.36, 0.24), (0.36, 0.24, 0.15)),
-    'slip':       ((0.66, 0.58, 0.47), (0.50, 0.42, 0.32)),
-    'white':      ((0.74, 0.71, 0.64), (0.58, 0.54, 0.47)),
-    'grey':       ((0.27, 0.235, 0.20), (0.17, 0.145, 0.125)),
-    'dark':       ((0.075, 0.062, 0.055), (0.04, 0.034, 0.03)),
-    'earth':      ((0.30, 0.19, 0.12), (0.20, 0.12, 0.075)),
+    'terracotta': ((0.42, 0.185, 0.105), (0.27, 0.105, 0.06)),
+    'umber':      ((0.17, 0.09, 0.055), (0.09, 0.045, 0.03)),
+    'buff':       ((0.47, 0.33, 0.21), (0.31, 0.20, 0.12)),
+    'slip':       ((0.62, 0.53, 0.42), (0.44, 0.36, 0.27)),
+    'white':      ((0.72, 0.69, 0.62), (0.54, 0.50, 0.43)),
+    'grey':       ((0.25, 0.215, 0.185), (0.15, 0.13, 0.11)),
+    'dark':       ((0.07, 0.058, 0.05), (0.035, 0.03, 0.026)),
+    'earth':      ((0.28, 0.175, 0.11), (0.17, 0.10, 0.065)),
+    'rock':       ((0.20, 0.15, 0.12), (0.10, 0.075, 0.06)),
 }
 
 
-def clay(name, tint='terracotta', wet=0.25, cracks=0.0, bump=1.0, scale=1.0, coords='rest', stroke=1.0,
-         grain=1.0, sss=0.0):
-    """wet: 0 dry matte .. 1 dripping. cracks: 0..1 dried-mud crackle. scale: texture scale multiplier."""
+def image(name, colorspace='Non-Color'):
+    for ext in ('jpg', 'png'):
+        p = f'{TEX}/{name}.{ext}'
+        if os.path.exists(p):
+            im = bpy.data.images.load(p, check_existing=True)
+            im.colorspace_settings.name = colorspace
+            return im
+    raise FileNotFoundError(name)
+
+
+def clay(name, tint='terracotta', wet=0.25, cracks=0.0, bump=1.0, scale=2.2, coords='rest', tex='clay_plaster',
+         crackable=None, crack_scale=None, sss=0.0, variation=1.0):
+    """wet: 0 dry matte .. 1 dripping. cracks: 0..1 dried-mud crackle (animatable when crackable).
+    scale: texture tiles per metre."""
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
     N = nt.nodes; L = nt.links
     bsdf = N['Principled BSDF']
     c1, c2 = TINTS[tint] if isinstance(tint, str) else tint
+    if crackable is None:
+        crackable = cracks > 0
 
     def node(t, **kw):
         n = N.new(t)
@@ -48,120 +65,104 @@ def clay(name, tint='terracotta', wet=0.25, cracks=0.0, bump=1.0, scale=1.0, coo
                 L.new(x, n.inputs[i])
         return n.outputs[0]
 
+    def mix(kind, fac, a, b):
+        n = N.new('ShaderNodeMixRGB'); n.blend_type = kind
+        for i, x in enumerate((fac, a, b)):
+            if isinstance(x, (int, float)):
+                n.inputs[i].default_value = x
+            elif isinstance(x, tuple):
+                n.inputs[i].default_value = (*x, 1)
+            else:
+                L.new(x, n.inputs[i])
+        return n.outputs[0]
+
     v_wet = val(wet, 'wet'); v_cr = val(cracks, 'cracks'); v_bump = val(bump, 'bump')
 
     if coords == 'rest':
-        a = node('ShaderNodeAttribute', attribute_name='rest_position')
-        co = a.outputs['Vector']
+        co = node('ShaderNodeAttribute', attribute_name='rest_position').outputs['Vector']
     elif coords == 'object':
         co = node('ShaderNodeTexCoord').outputs['Object']
     else:
         co = node('ShaderNodeNewGeometry').outputs['Position']
-    mp = node('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (scale, scale, scale)
-    L.new(co, mp.inputs['Vector']); co = mp.outputs['Vector']
 
-    def noise(sc, detail=3.0, rough=0.55, vec=None, dist=0.0):
-        n = node('ShaderNodeTexNoise'); n.inputs['Scale'].default_value = sc
-        n.inputs['Detail'].default_value = detail; n.inputs['Roughness'].default_value = rough
-        n.inputs['Distortion'].default_value = dist
-        L.new(vec or co, n.inputs['Vector'])
-        return n
+    def tex_lookup(img, sc, rot=(0, 0, 0), off=(0, 0, 0)):
+        mp = node('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (sc, sc, sc)
+        mp.inputs['Rotation'].default_value = rot; mp.inputs['Location'].default_value = off
+        L.new(co, mp.inputs['Vector'])
+        t = node('ShaderNodeTexImage'); t.image = image(img); t.projection = 'BOX'; t.projection_blend = 0.3
+        L.new(mp.outputs['Vector'], t.inputs['Vector'])
+        return t.outputs['Color']
 
-    big = noise(3.5, 4.0, 0.6)             # tonal blotches
-    mid = noise(28, 3.0, 0.5)              # lumps
-    fine = noise(420, 2.0, 0.6)            # grain
-    # finger strokes: stretched noise
-    st = node('ShaderNodeMapping'); st.inputs['Scale'].default_value = (55, 55, 7)
-    st.inputs['Rotation'].default_value = (0.5, 0.3, 0.7)
-    L.new(co, st.inputs['Vector'])
-    strokes = noise(1.0, 2.0, 0.5, vec=st.outputs['Vector'], dist=0.6)
-    # fingerprints-ish ridges
-    wv = node('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = 18; wv.inputs['Distortion'].default_value = 6
-    wv.inputs['Detail'].default_value = 2; wv.inputs['Detail Scale'].default_value = 1.2
-    L.new(co, wv.inputs['Vector'])
-    # cracks (dry mud): voronoi distance to edge
-    vo = node('ShaderNodeTexVoronoi'); vo.feature = 'DISTANCE_TO_EDGE'; vo.inputs['Scale'].default_value = 26
-    wn = noise(9, 2.0, 0.5)
-    wm = N.new('ShaderNodeMixRGB'); wm.blend_type = 'LINEAR_LIGHT'; wm.inputs[0].default_value = 0.06
-    L.new(co, wm.inputs[1]); L.new(wn.outputs['Color'], wm.inputs[2]); L.new(wm.outputs[0], vo.inputs['Vector'])
-    vo2 = node('ShaderNodeTexVoronoi'); vo2.feature = 'DISTANCE_TO_EDGE'; vo2.inputs['Scale'].default_value = 85
-    L.new(wm.outputs[0], vo2.inputs['Vector'])
-    cr1 = node('ShaderNodeMapRange'); cr1.inputs[1].default_value = 0.0; cr1.inputs[2].default_value = 0.035
-    L.new(vo.outputs['Distance'], cr1.inputs[0])
-    cr2 = node('ShaderNodeMapRange'); cr2.inputs[1].default_value = 0.0; cr2.inputs[2].default_value = 0.05
-    L.new(vo2.outputs['Distance'], cr2.inputs[0])
-    crack = math('MINIMUM', cr1.outputs[0], math('ADD', cr2.outputs[0], 0.35, clamp=True))   # 0 in crack, 1 elsewhere
-    crack_m = math('MULTIPLY', math('SUBTRACT', 1.0, crack), v_cr.outputs[0])                 # 0..cracks
+    fine = tex_lookup(tex + '_disp', scale)                                   # hand strokes
+    big = tex_lookup(tex + '_disp', scale * 0.21, rot=(0.6, 0.4, 1.1), off=(0.37, 0.11, 0.73))   # tonal blotches
 
     # ---- colour
-    ramp = node('ShaderNodeMapRange'); ramp.inputs[1].default_value = 0.3; ramp.inputs[2].default_value = 0.7
-    L.new(big.outputs['Fac'], ramp.inputs[0])
-    col = N.new('ShaderNodeMixRGB'); col.inputs[1].default_value = (*c2, 1); col.inputs[2].default_value = (*c1, 1)
-    L.new(ramp.outputs[0], col.inputs[0])
-    geo = node('ShaderNodeNewGeometry')
-    pt = node('ShaderNodeMapRange'); pt.inputs[1].default_value = 0.42; pt.inputs[2].default_value = 0.52
-    pt.inputs[3].default_value = 0.55; pt.inputs[4].default_value = 1.0
-    L.new(geo.outputs['Pointiness'], pt.inputs[0])
-    col2 = N.new('ShaderNodeMixRGB'); col2.blend_type = 'MULTIPLY'; col2.inputs[0].default_value = 1.0
-    L.new(col.outputs[0], col2.inputs[1]); L.new(pt.outputs[0], col2.inputs[2])
-    # dry dusty highlights on strokes when dry; darker when wet
-    dry = math('SUBTRACT', 1.0, v_wet.outputs[0], clamp=True)
-    dust = N.new('ShaderNodeMixRGB'); dust.blend_type = 'SCREEN'
-    L.new(math('MULTIPLY', math('MULTIPLY', strokes.outputs['Fac'], dry), 0.22), dust.inputs[0])
-    L.new(col2.outputs[0], dust.inputs[1]); dust.inputs[2].default_value = (0.75, 0.62, 0.5, 1)
-    wetdark = N.new('ShaderNodeMixRGB'); wetdark.blend_type = 'MULTIPLY'
-    L.new(math('MULTIPLY', v_wet.outputs[0], 0.55), wetdark.inputs[0])
-    L.new(dust.outputs[0], wetdark.inputs[1]); wetdark.inputs[2].default_value = (0.5, 0.42, 0.4, 1)
-    crk = N.new('ShaderNodeMixRGB'); crk.blend_type = 'MULTIPLY'
-    L.new(crack_m, crk.inputs[0]); L.new(wetdark.outputs[0], crk.inputs[1]); crk.inputs[2].default_value = (0.25, 0.2, 0.18, 1)
-    L.new(crk.outputs[0], bsdf.inputs['Base Color'])
+    ramp = node('ShaderNodeMapRange'); ramp.inputs[1].default_value = 0.5 - 0.22 / max(variation, 1e-3)
+    ramp.inputs[2].default_value = 0.5 + 0.22 / max(variation, 1e-3)
+    L.new(big, ramp.inputs[0])
+    col = mix('MIX', ramp.outputs[0], c2, c1)
+    cav = node('ShaderNodeMapRange'); cav.inputs[1].default_value = 0.25; cav.inputs[2].default_value = 0.7
+    cav.inputs[3].default_value = 0.62; cav.inputs[4].default_value = 1.06
+    L.new(fine, cav.inputs[0])
+    col = mix('MULTIPLY', 1.0, col, cav.outputs[0])
+    col = mix('MULTIPLY', math('MULTIPLY', v_wet.outputs[0], 0.6), col, (0.5, 0.42, 0.4))
+    height = fine
+    if crackable:
+        cs = crack_scale or scale * 0.75
+        cr = tex_lookup('mud_cracked_dry_03_disp', cs, rot=(0.3, 0.9, 0.2))
+        cm = node('ShaderNodeMapRange'); cm.inputs[1].default_value = 0.30; cm.inputs[2].default_value = 0.52
+        cm.inputs[3].default_value = 1.0; cm.inputs[4].default_value = 0.0
+        L.new(cr, cm.inputs[0])
+        crack_m = math('MULTIPLY', cm.outputs[0], v_cr.outputs[0])            # 0..cracks inside crack lines
+        col = mix('MULTIPLY', crack_m, col, (0.22, 0.17, 0.15))
+        # dry flakes are paler
+        col = mix('SCREEN', math('MULTIPLY', math('MULTIPLY', cr, v_cr.outputs[0]), 0.07), col, (0.8, 0.7, 0.6))
+        height = math('ADD', height, math('MULTIPLY', math('MULTIPLY', cr, v_cr.outputs[0]), 2.5))
+        height = math('SUBTRACT', height, math('MULTIPLY', crack_m, 3.0))
+    L.new(col, bsdf.inputs['Base Color'])
 
     # ---- roughness / coat
-    rn = node('ShaderNodeMapRange'); rn.inputs[3].default_value = -0.12; rn.inputs[4].default_value = 0.12
-    L.new(mid.outputs['Fac'], rn.inputs[0])
-    rbase = math('SUBTRACT', 0.86, math('MULTIPLY', v_wet.outputs[0], 0.5))
-    rough = math('ADD', rbase, rn.outputs[0], clamp=True)
-    L.new(rough, bsdf.inputs['Roughness'])
+    rn = node('ShaderNodeMapRange'); rn.inputs[3].default_value = 0.10; rn.inputs[4].default_value = -0.10
+    L.new(fine, rn.inputs[0])
+    rbase = math('SUBTRACT', 0.84, math('MULTIPLY', v_wet.outputs[0], 0.5))
+    L.new(math('ADD', rbase, rn.outputs[0], clamp=True), bsdf.inputs['Roughness'])
     for nm in ('Coat Weight', 'Coat'):
         if nm in bsdf.inputs:
-            L.new(math('MULTIPLY', math('POWER', v_wet.outputs[0], 2.5), 0.8), bsdf.inputs[nm]); break
+            L.new(math('MULTIPLY', math('POWER', v_wet.outputs[0], 2.5), 0.7), bsdf.inputs[nm]); break
     if 'Coat Roughness' in bsdf.inputs:
-        bsdf.inputs['Coat Roughness'].default_value = 0.12
+        bsdf.inputs['Coat Roughness'].default_value = 0.16
     for nm in ('Specular IOR Level', 'Specular'):
         if nm in bsdf.inputs:
-            bsdf.inputs[nm].default_value = 0.25; break
+            bsdf.inputs[nm].default_value = 0.3; break
     if sss and 'Subsurface Weight' in bsdf.inputs:
         bsdf.inputs['Subsurface Weight'].default_value = sss
         bsdf.inputs['Subsurface Radius'].default_value = (0.012, 0.005, 0.003)
-        bsdf.inputs['Subsurface Scale'].default_value = 1.0
 
     # ---- bump
-    h = math('MULTIPLY', mid.outputs['Fac'], 0.9)
-    h = math('ADD', h, math('MULTIPLY', strokes.outputs['Fac'], 0.55 * stroke))
-    h = math('ADD', h, math('MULTIPLY', wv.outputs['Fac'], 0.10 * stroke))
-    h = math('ADD', h, math('MULTIPLY', fine.outputs['Fac'], 0.16 * grain))
-    h = math('SUBTRACT', h, math('MULTIPLY', crack_m, 2.2))
-    bp = node('ShaderNodeBump'); bp.inputs['Distance'].default_value = 0.012
-    L.new(h, bp.inputs['Height'])
-    L.new(math('MULTIPLY', v_bump.outputs[0], 0.5), bp.inputs['Strength'])
+    bp = node('ShaderNodeBump'); bp.inputs['Distance'].default_value = 0.006 * 2.2 / scale
+    L.new(height, bp.inputs['Height'])
+    L.new(math('MULTIPLY', v_bump.outputs[0], 0.85), bp.inputs['Strength'])
     L.new(bp.outputs['Normal'], bsdf.inputs['Normal'])
-    for nm in ('Coat Normal',):
-        if nm in bsdf.inputs:
-            b2 = node('ShaderNodeBump'); b2.inputs['Distance'].default_value = 0.004
-            L.new(h, b2.inputs['Height']); b2.inputs['Strength'].default_value = 0.15
-            L.new(b2.outputs['Normal'], bsdf.inputs[nm])
     return m
 
 
+def add_fade(mat, attr='fade'):
+    """Make a clay material vanish where the point attribute `attr` approaches 1 (cut-out transparency)."""
+    nt = mat.node_tree; N = nt.nodes; L = nt.links
+    out = N['Material Output']; src = out.inputs['Surface'].links[0].from_socket
+    a = N.new('ShaderNodeAttribute'); a.attribute_name = attr
+    tr = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
+    L.new(a.outputs['Fac'], mx.inputs[0]); L.new(src, mx.inputs[1]); L.new(tr.outputs[0], mx.inputs[2])
+    L.new(mx.outputs[0], out.inputs['Surface'])
+
+
 def param(mat, name):
-    """Value node socket ('wet' | 'cracks' | 'bump') for keyframing."""
+    """Value node socket ('wet' | 'cracks' | 'bump')."""
     return mat.node_tree.nodes[name].outputs[0]
 
 
-def key(mat, name, value, frame):
-    s = param(mat, name)
-    s.default_value = value
-    s.keyframe_insert('default_value', frame=frame)
+def setp(mat, name, value):
+    mat.node_tree.nodes[name].outputs[0].default_value = value
 
 
 def emission(name, color, strength):
