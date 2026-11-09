@@ -53,14 +53,33 @@ def target(name):
     return _cache[k]
 
 
-def morph(targets):
-    """targets: {name: weight} -> MH-space vertex array (decimetres, Y up)."""
+def is_expr(name):
+    return 'expression' in _base()['tidx'][name]
+
+
+def face_scale(V):
+    """Size of the face relative to the base mesh (expression targets are authored for the base face)."""
+    b = _base(); sk = b['skel']
+    j = lambda A, n: A[sk['joints'][sk['bones'][n]['head']]].mean(0)
+    d = lambda A: np.linalg.norm(j(A, 'eye.L') - j(A, 'eye.R'))
+    return d(V) / d(b['V'])
+
+
+def morph(targets, expr_scale=None):
+    """targets: {name: weight} -> MH-space vertex array (decimetres, Y up).
+    Expression targets are scaled to the size of the morphed face (a baby's face is much smaller)."""
     V = _base()['V'].copy()
     for n, w in targets.items():
-        if abs(w) < 1e-6:
+        if abs(w) < 1e-6 or is_expr(n):
             continue
         i, d = target(n)
         V[i] += w * d
+    k = face_scale(V) if expr_scale is None else expr_scale
+    for n, w in targets.items():
+        if abs(w) < 1e-6 or not is_expr(n):
+            continue
+        i, d = target(n)
+        V[i] += w * k * d
     return V
 
 
@@ -202,7 +221,7 @@ class Human:
             ob.shape_key_add(name='Basis')
         used = [0] * len(ob.data.vertices)
         ob.data.attributes['mh_index'].data.foreach_get('value', used)
-        d = to_bl(morph(targets) - _base()['V'])
+        d = to_bl(morph(targets, expr_scale=face_scale(self.V_mh)) - _base()['V'])
         sk = ob.shape_key_add(name=name)
         for k, vi in enumerate(used):
             if d[vi].any():
@@ -256,6 +275,33 @@ class Human:
         """spec: list of (bone, axis, deg). Bones ending with '.' are applied to both sides, mirrored."""
         for bone, axis, deg in spec:
             self.rot(bone, axis, deg)
+
+    def ik(self, tip, target, pole=None, chain=4, rigid=(), pole_angle=0.0, name=None):
+        """IK constraint on bone `tip` (its tail reaches `target`, world space). `rigid` bones in the chain
+        keep their rest relation (twist bones). Returns (target_empty, pole_empty)."""
+        sc = bpy.context.scene
+        te = bpy.data.objects.new((name or tip) + '_ik', None); sc.collection.objects.link(te)
+        te.location = target; te.empty_display_size = 0.03
+        pb = self.arm.pose.bones[tip]
+        c = pb.constraints.new('IK'); c.target = te; c.chain_count = chain; c.iterations = 200
+        pe = None
+        if pole is not None:
+            pe = bpy.data.objects.new((name or tip) + '_pole', None); sc.collection.objects.link(pe)
+            pe.location = pole
+            c.pole_target = pe; c.pole_angle = pole_angle
+        for b in rigid:
+            q = self.arm.pose.bones[b]
+            q.lock_ik_x = q.lock_ik_y = q.lock_ik_z = True
+        bpy.context.view_layer.update()
+        return te, pe
+
+    def ik_arm(self, side, target, pole=None, pole_angle=0.0):
+        return self.ik(f'lowerarm02.{side}', target, pole, chain=4,
+                       rigid=(f'upperarm02.{side}', f'lowerarm02.{side}'), pole_angle=pole_angle, name=f'arm{side}')
+
+    def ik_leg(self, side, target, pole=None, pole_angle=0.0):
+        return self.ik(f'lowerleg02.{side}', target, pole, chain=4,
+                       rigid=(f'upperleg02.{side}', f'lowerleg02.{side}'), pole_angle=pole_angle, name=f'leg{side}')
 
     def reset_pose(self):
         for pb in self.arm.pose.bones:
