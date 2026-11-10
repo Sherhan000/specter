@@ -32,12 +32,12 @@ def fetal(h, k=1.0, twist=42, head=1.0):
     h.curl_fingers('L', 60 * k, 30 * k); h.curl_fingers('R', 60 * k, 30 * k)
 
 
-def mother(name='mom', age=0.0, robe_tint='buff', scarf_tint='slip', wet=0.12, shut=1.0, voxel=0.0065):
+def mother(name='mom', age=0.0, robe_tint='buff', scarf_tint='slip', wet=0.12, shut=1.0, voxel=0.0065, hem=0.035, flare=0.38):
     """The mother. age 0 = young, 1 = old. Clay figure in a long dress and headscarf."""
     t = {'macrodetails/caucasian-female-young': 1.0 - age, 'macrodetails/caucasian-female-old': age,
          'macrodetails/universal-female-old-averagemuscle-minweight': 0.0}
     h = M.Human(name, t)
-    h.robe = G.make_robe(h, voxel=voxel)
+    h.robe = G.make_robe(h, voxel=voxel, hem=hem, flare=flare)
     h.scarf = G.make_scarf(h)
     G.strip_body(h)
     G.finish(h, subsurf=1)
@@ -151,6 +151,23 @@ def child(name='kid', age=0.5, tint='slip', wet=0.12):
                                 'eyebrows-right-inner-up': 0.6}, 0.0)
     h.mat = K.clay(name + '_skin', 'terracotta', wet=wet + 0.1, scale=5.0)
     h.robe_mat = K.clay(name + '_robe', tint, wet=wet, scale=4.0)
+    h.hair_mat = K.clay(name + '_hair', 'umber', wet=wet, scale=9.0, bump=1.8)
+    K.assign(h.body, h.mat); K.assign(h.robe, h.robe_mat); K.assign(h.hair, h.hair_mat)
+    return h
+
+
+def son(name='son', wet=0.12, tint='grey'):
+    """The grown son: young man in a long shirt, cropped hair."""
+    h = M.Human(name, {'macrodetails/caucasian-male-young': 1.0})
+    h.robe = G.make_robe(h, hem=0.10, flare=0.16, inflate=0.014, sleeve=0.018, folds=0.008, nfolds=9)
+    h.hair = G.make_hair(h, thick=0.011, rough=0.004)
+    G.strip_body(h, forearm=0.5, shin=1.0)
+    G.finish(h, subsurf=1)
+    h.shut = h.add_shape('shut', EYES_SHUT, 1.0)
+    h.grief = h.add_shape('grief', {'eyebrows-left-inner-up': 1.0, 'eyebrows-right-inner-up': 1.0, 'mouth-depression': 0.5,
+                                    'mouth-compression': 0.4}, 0.7)
+    h.mat = K.clay(name + '_skin', 'terracotta', wet=wet + 0.1, scale=3.0)
+    h.robe_mat = K.clay(name + '_robe', tint, wet=wet, scale=2.2)
     h.hair_mat = K.clay(name + '_hair', 'umber', wet=wet, scale=9.0, bump=1.8)
     K.assign(h.body, h.mat); K.assign(h.robe, h.robe_mat); K.assign(h.hair, h.hair_mat)
     return h

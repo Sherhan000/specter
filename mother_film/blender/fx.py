@@ -510,3 +510,163 @@ def emit_plane(name, size, loc, rot, color=(1, 1, 1), strength=1.0, gradient=Tru
     ob.data.materials.append(m)
     ob.visible_shadow = False
     return ob, e
+
+
+class Rain:
+    """Rain as additive streaks: N thin quads falling through a box, wrapped vertically.
+    update(frame, intensity 0..1, speed m/s). Streak length follows speed (motion blur at 1/48 s)."""
+
+    def __init__(self, sc, n, lo, hi, width=0.004, seed=0, color=(0.75, 0.82, 1.0), strength=2.0, slant=(0.06, 0.0),
+                 facing=(0, -1, 0)):
+        rs = np.random.RandomState(seed)
+        self.lo = np.array(lo, float); self.hi = np.array(hi, float); self.n = n
+        self.p0 = self.lo + rs.uniform(0, 1, (n, 3)) * (self.hi - self.lo)
+        self.sp = rs.uniform(0.8, 1.2, n); self.w = width * rs.uniform(0.6, 1.4, n)
+        self.slant = np.array([slant[0], slant[1], 0.0])
+        f = np.array(facing, float); self.side = np.cross([0, 0, 1.0], f); self.side /= np.linalg.norm(self.side)
+        me = bpy.data.meshes.new('rain')
+        me.from_pydata([(0, 0, 0)] * (4 * n), [], [(4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3) for i in range(n)])
+        self.ob = bpy.data.objects.new('rain', me); sc.collection.objects.link(self.ob)
+        self.mat = glow_mat('rain', color, strength)
+        self.ob.data.materials.append(self.mat)
+        self.ob.visible_shadow = False; self.ob.visible_diffuse = False; self.ob.visible_glossy = False
+
+    def update(self, frame, intensity=1.0, speed=8.0, t=None):
+        t = frame / 24.0 if t is None else t
+        H = self.hi[2] - self.lo[2]
+        p = self.p0.copy()
+        p[:, 2] = self.lo[2] + np.mod(self.p0[:, 2] - self.lo[2] - speed * self.sp * t, H)
+        p[:, :2] += (self.slant[:2] * (self.hi[2] - p[:, 2])[:, None])
+        L = np.maximum(0.012, speed * self.sp / 48.0)
+        d = np.array([-self.slant[0], -self.slant[1], 1.0]); d /= np.linalg.norm(d)
+        top = p + d * L[:, None]
+        s = self.side * self.w[:, None] * 0.5
+        V = np.stack([p - s, p + s, top + s, top - s], 1)
+        k = int(self.n * (1 - min(1.0, max(0.0, intensity))))
+        if k:
+            V[:k] = 0
+        self.ob.data.vertices.foreach_set('co', V.reshape(-1)); self.ob.data.update()
+
+
+def rays(sc, center, n, length, width, seed=0, color=(1.0, 0.7, 0.25), spread=1.25, name='rays'):
+    """Fan of soft light rays rising from a point (additive ribbons). Returns (object, strength socket, setter)."""
+    rs = np.random.RandomState(seed); c = np.array(center, float)
+    dirs = []
+    for i in range(n):
+        a = (i + rs.uniform(-0.3, 0.3)) / n * 2 * math.pi
+        el = rs.uniform(math.pi / 2 - spread, math.pi / 2 - 0.15)
+        dirs.append(np.array([math.cos(a) * math.cos(el), math.sin(a) * math.cos(el) * 0.5, math.sin(el)]))
+    Ls = length * rs.uniform(0.5, 1.0, n); Ws = width * rs.uniform(0.5, 1.5, n)
+    mat = glow_mat(name, color, 0.0, falloff=1.6)
+
+    def paths(k):
+        return [(np.array([c, c + d * (L * k * 0.5), c + d * (L * k)]), w * 0.3, w * (0.4 + k)) for d, L, w in zip(dirs, Ls, Ws)]
+    ob = ribbon(name, paths(1.0), mat)
+    base = co(ob).copy()
+
+    def set_(strength, grow=1.0):
+        mat.node_tree.nodes['strength'].outputs[0].default_value = strength
+        set_co(ob, c + (base - c) * grow)
+        ob.hide_render = strength <= 1e-4
+    return ob, set_
+
+
+def storm_sky(name, size, loc, bolt_uv=(0.44, 0.55), color=(0.55, 0.68, 1.0), ambient=0.05, seed=3):
+    """Emissive storm-cloud backdrop lit from within by lightning. Returns (object, flash socket)."""
+    H, W = 384, 1024
+    yy, xx = np.mgrid[0:H, 0:W]
+    cl = fbm2(xx / 150.0, yy / 70.0, seed=seed, octaves=6) * 0.5 + 0.5
+    cl = np.clip((cl - 0.25) * 1.6, 0, 1) ** 1.5
+    bx, by = bolt_uv[0] * W, bolt_uv[1] * H
+    glow = np.exp(-(((xx - bx) / (0.22 * W)) ** 2 + ((yy - by) / (0.6 * H)) ** 2)) + 0.12
+    img = float_image(name, np.stack([cl, glow * (0.12 + 0.88 * cl ** 1.5), cl * 0 + 1], 2))
+    bpy.ops.mesh.primitive_plane_add(size=1)
+    sky = bpy.context.object; sky.name = name
+    sky.scale = (size[0], size[1], 1); sky.rotation_euler = (math.radians(90), 0, 0); sky.location = loc
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; N = nt.nodes
+    for n in list(N):
+        if n.type != 'OUTPUT_MATERIAL':
+            N.remove(n)
+    tex = N.new('ShaderNodeTexImage'); tex.image = img; tex.extension = 'EXTEND'
+    sep = N.new('ShaderNodeSeparateColor'); nt.links.new(tex.outputs['Color'], sep.inputs[0])
+    fl = N.new('ShaderNodeValue'); fl.name = 'flash'
+    m1 = N.new('ShaderNodeMath'); m1.operation = 'MULTIPLY'; nt.links.new(sep.outputs[1], m1.inputs[0]); nt.links.new(fl.outputs[0], m1.inputs[1])
+    m2 = N.new('ShaderNodeMath'); m2.operation = 'MULTIPLY_ADD'; nt.links.new(sep.outputs[0], m2.inputs[0])
+    m2.inputs[1].default_value = ambient; nt.links.new(m1.outputs[0], m2.inputs[2])
+    em = N.new('ShaderNodeEmission'); em.inputs[0].default_value = (*color, 1)
+    nt.links.new(m2.outputs[0], em.inputs['Strength']); nt.links.new(em.outputs[0], N['Material Output'].inputs['Surface'])
+    sky.data.materials.append(m)
+    sky.visible_shadow = False
+    return sky, fl.outputs[0]
+
+
+def rain_curtain(name, size, loc, seed=0, strength=0.25, color=(0.7, 0.8, 1.0), tiles=(6, 2)):
+    """Distant rain: a big additive sheet of vertical streaks that scrolls downward. Returns (object, set(t, k))."""
+    rs = np.random.RandomState(seed)
+    H, W = 512, 512
+    img = np.zeros((H, W))
+    for _ in range(900):
+        x = rs.randint(0, W); y = rs.randint(0, H); L = rs.randint(20, 90); v = rs.uniform(0.2, 1.0)
+        ys = (y + np.arange(L)) % H
+        img[ys, x] = np.maximum(img[ys, x], v * np.sin(np.linspace(0, math.pi, L)))
+    im = float_image(name, np.stack([img, img, img], 2))
+    bpy.ops.mesh.primitive_plane_add(size=1)
+    ob = bpy.context.object; ob.name = name
+    ob.scale = (size[0], size[1], 1); ob.rotation_euler = (math.radians(90), 0, 0); ob.location = loc
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; N = nt.nodes
+    for n in list(N):
+        if n.type != 'OUTPUT_MATERIAL':
+            N.remove(n)
+    tc = N.new('ShaderNodeTexCoord'); mp = N.new('ShaderNodeMapping'); mp.name = 'map'
+    mp.inputs['Scale'].default_value = (tiles[0], tiles[1], 1); mp.inputs['Rotation'].default_value = (0, 0, 0.08)
+    nt.links.new(tc.outputs['UV'], mp.inputs['Vector'])
+    tex = N.new('ShaderNodeTexImage'); tex.image = im; nt.links.new(mp.outputs[0], tex.inputs['Vector'])
+    st = N.new('ShaderNodeValue'); st.name = 'strength'; st.outputs[0].default_value = strength
+    mu = N.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'
+    nt.links.new(tex.outputs['Color'], mu.inputs[0]); nt.links.new(st.outputs[0], mu.inputs[1])
+    e = N.new('ShaderNodeEmission'); e.inputs[0].default_value = (*color, 1); nt.links.new(mu.outputs[0], e.inputs['Strength'])
+    tr = N.new('ShaderNodeBsdfTransparent'); add = N.new('ShaderNodeAddShader')
+    nt.links.new(e.outputs[0], add.inputs[0]); nt.links.new(tr.outputs[0], add.inputs[1])
+    nt.links.new(add.outputs[0], N['Material Output'].inputs['Surface'])
+    ob.data.materials.append(m)
+    ob.visible_shadow = False; ob.visible_diffuse = False; ob.visible_glossy = False
+
+    def set_(t, k=1.0, speed=1.6):
+        mp.inputs['Location'].default_value = (seed * 0.37, t * speed, 0)
+        st.outputs[0].default_value = strength * k
+    return ob, set_
+
+
+def village(name, n, xr, yr, height_fn, seed=0, lit=0.45):
+    """Scatter of small flat-roofed clay houses, some with glowing windows. One mesh for walls, one for windows."""
+    rs = np.random.RandomState(seed)
+    bm = bmesh.new(); wm = bmesh.new()
+    for i in range(n):
+        x = rs.uniform(*xr); y = rs.uniform(*yr)
+        w, d, h = rs.uniform(1.0, 2.2), rs.uniform(1.0, 2.0), rs.uniform(0.9, 2.2)
+        z = float(height_fn(np.array([[x]]), np.array([[y]]))[0, 0])
+        r = bmesh.ops.create_cube(bm, size=1.0)
+        rot = Matrix.Rotation(rs.uniform(-0.3, 0.3), 4, 'Z')
+        Mx = Matrix.Translation((x, y, z + h / 2 - 0.15)) @ rot @ Matrix.Diagonal((w, d, h, 1))
+        bmesh.ops.transform(bm, matrix=Mx, verts=r['verts'])
+        if rs.uniform() < 0.3:
+            r2 = bmesh.ops.create_icosphere(bm, subdivisions=2, radius=min(w, d) * 0.42)
+            bmesh.ops.transform(bm, matrix=Matrix.Translation((x, y, z + h - 0.15)) @ Matrix.Diagonal((1, 1, 0.75, 1)), verts=r2['verts'])
+        if rs.uniform() < lit:
+            for k in range(rs.randint(1, 3)):
+                q = bmesh.ops.create_grid(wm, x_segments=1, y_segments=1, size=0.11)
+                off = Vector((rs.uniform(-0.3, 0.3) * w, -d / 2 - 0.012, rs.uniform(-0.15, 0.25) * h))
+                Mw = Matrix.Translation((x, y, z + h / 2 - 0.15)) @ rot @ Matrix.Translation(off) @ Matrix.Rotation(math.radians(90), 4, 'X') \
+                    @ Matrix.Diagonal((1.0, 1.5, 1, 1))
+                bmesh.ops.transform(wm, matrix=Mw, verts=q['verts'])
+    bmesh.ops.bevel(bm, geom=list(bm.edges), offset=0.05, segments=2, affect='EDGES')
+    me = bpy.data.meshes.new(name); bm.to_mesh(me); bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    ob = bpy.data.objects.new(name, me); bpy.context.scene.collection.objects.link(ob)
+    me2 = bpy.data.meshes.new(name + '_win'); wm.to_mesh(me2); wm.free()
+    win = bpy.data.objects.new(name + '_win', me2); bpy.context.scene.collection.objects.link(win)
+    win.data.materials.append(K.emission(name + '_win', (1.0, 0.55, 0.2), 14.0))
+    return ob, win
