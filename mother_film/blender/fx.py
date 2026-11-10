@@ -1,7 +1,7 @@
 """Shared scene effects: audio envelope, fog volume, dust motes, rain, clay ground, mesh utilities."""
 import bpy, bmesh, json, os, math
 import numpy as np
-from mathutils import Vector
+from mathutils import Vector, Matrix
 import clay as K
 import common as C
 
@@ -439,3 +439,74 @@ def text(name, body, size, loc, rot, mat, extrude=0.002):
     ob.location = loc; ob.rotation_euler = rot
     ob.data.materials.append(mat)
     return ob
+
+
+def tree(name, loc, kind, seed=0, height=3.2):
+    """Hand-modelled clay tree. kind: 'blossom' | 'olive' | 'ochre' | 'bare'."""
+    rs = np.random.RandomState(seed)
+    trunk_m = K.clay(name + '_trunk', 'umber', wet=0.1, coords='object', scale=1.5, bump=1.6)
+    h0 = height * 0.5
+    prof = [(0.0, 0.0), (0.22, 0.0), (0.15, 0.25), (0.11, h0 * 0.6), (0.09, h0), (0.0, h0 + 0.02)]
+    obs = [lathe(name + '_trunk', prof, loc, trunk_m, segments=16)]
+    P = co(obs[0]); P[:, 0] += 0.06 * np.sin(P[:, 2] * 2.1 + seed); P[:, 1] += 0.05 * np.cos(P[:, 2] * 1.7 + seed)
+    set_co(obs[0], P)
+    bm = bmesh.new()
+    top = Vector((0.06 * math.sin(h0 * 2.1 + seed), 0.05 * math.cos(h0 * 1.7 + seed), h0))
+    # boughs
+    tips = []
+    for i in range(7):
+        a = rs.uniform(0, 6.28); el = rs.uniform(0.5, 1.2)
+        d = Vector((math.cos(a) * math.cos(el), math.sin(a) * math.cos(el) * 0.8, math.sin(el)))
+        L = height * rs.uniform(0.25, 0.42)
+        tip = top + d * L; tips.append(tip)
+        r = bmesh.ops.create_cone(bm, cap_ends=True, segments=8, radius1=0.055, radius2=0.018, depth=L)
+        M_ = Matrix.Translation((top + tip) / 2) @ d.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+        bmesh.ops.transform(bm, matrix=M_, verts=r['verts'])
+    me = bpy.data.meshes.new(name + '_boughs'); bm.to_mesh(me); bm.free()
+    b = bpy.data.objects.new(name + '_boughs', me); bpy.context.scene.collection.objects.link(b)
+    b.location = loc; b.data.materials.append(trunk_m); obs.append(b)
+    if kind != 'bare':
+        bm = bmesh.new()
+        n = {'blossom': 16, 'olive': 22, 'ochre': 11}[kind]
+        for i in range(n):
+            c = tips[i % len(tips)] + Vector(rs.normal(size=3)) * 0.28
+            r = bmesh.ops.create_icosphere(bm, subdivisions=2, radius=rs.uniform(0.28, 0.5) * (0.8 if kind == 'ochre' else 1))
+            bmesh.ops.transform(bm, matrix=Matrix.Translation(c), verts=r['verts'])
+        me = bpy.data.meshes.new(name + '_crown'); bm.to_mesh(me); bm.free()
+        c_ = bpy.data.objects.new(name + '_crown', me); bpy.context.scene.collection.objects.link(c_)
+        m = c_.modifiers.new('rm', 'REMESH'); m.mode = 'VOXEL'; m.voxel_size = 0.05; m.use_smooth_shade = True
+        C.apply_modifier(c_, 'rm')
+        Pc = co(c_); Nc = vnormals(c_)
+        set_co(c_, Pc + Nc * (vnoise(Pc, 7.0, seed, 5) * 0.06)[:, None])
+        for p in c_.data.polygons:
+            p.use_smooth = True
+        c_.location = loc
+        c_.data.materials.append(K.clay(name + '_crown', kind, wet=0.05, coords='object', scale=1.2, bump=1.8))
+        obs.append(c_)
+    return obs
+
+
+def emit_plane(name, size, loc, rot, color=(1, 1, 1), strength=1.0, gradient=True):
+    """Emissive backdrop with a vertical gradient (brighter at the horizon). Returns (object, emission node)."""
+    bpy.ops.mesh.primitive_plane_add(size=1)
+    ob = bpy.context.object; ob.name = name
+    ob.scale = (size[0], size[1], 1); ob.rotation_euler = [math.radians(a) for a in rot]; ob.location = loc
+    m = bpy.data.materials.new(name); m.use_nodes = True
+    nt = m.node_tree; N = nt.nodes
+    for n in list(N):
+        if n.type != 'OUTPUT_MATERIAL':
+            N.remove(n)
+    e = N.new('ShaderNodeEmission'); e.inputs[0].default_value = (*color, 1); e.inputs[1].default_value = strength
+    if gradient:
+        tc = N.new('ShaderNodeTexCoord'); sp = N.new('ShaderNodeSeparateXYZ'); nt.links.new(tc.outputs['UV'], sp.inputs[0])
+        mr = N.new('ShaderNodeMapRange'); mr.inputs[1].default_value = 0.0; mr.inputs[2].default_value = 1.0
+        mr.inputs[3].default_value = 1.0; mr.inputs[4].default_value = 0.12
+        nt.links.new(sp.outputs['Y'], mr.inputs[0])
+        st = N.new('ShaderNodeValue'); st.name = 'strength'; st.outputs[0].default_value = strength
+        mu = N.new('ShaderNodeMath'); mu.operation = 'MULTIPLY'
+        nt.links.new(mr.outputs[0], mu.inputs[0]); nt.links.new(st.outputs[0], mu.inputs[1])
+        nt.links.new(mu.outputs[0], e.inputs[1])
+    nt.links.new(e.outputs[0], N['Material Output'].inputs['Surface'])
+    ob.data.materials.append(m)
+    ob.visible_shadow = False
+    return ob, e

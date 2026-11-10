@@ -42,9 +42,9 @@ def mother(name='mom', age=0.0, robe_tint='buff', scarf_tint='slip', wet=0.12, s
     G.strip_body(h)
     G.finish(h, subsurf=1)
     h.shut = h.add_shape('shut', EYES_SHUT, shut)
-    h.mat = K.clay(name + '_skin', 'terracotta', wet=wet + 0.1, scale=3.0, crackable=True)
-    h.robe_mat = K.clay(name + '_robe', robe_tint, wet=wet, scale=2.2, crackable=True)
-    h.scarf_mat = K.clay(name + '_scarf', scarf_tint, wet=wet, scale=2.6, crackable=True)
+    h.mat = K.clay(name + '_skin', 'terracotta', wet=wet + 0.1, scale=3.0, crackable=True, crack_scale=7.0)
+    h.robe_mat = K.clay(name + '_robe', robe_tint, wet=wet, scale=2.2, crackable=True, crack_scale=4.5)
+    h.scarf_mat = K.clay(name + '_scarf', scarf_tint, wet=wet, scale=2.6, crackable=True, crack_scale=5.0)
     K.assign(h.body, h.mat); K.assign(h.robe, h.robe_mat); K.assign(h.scarf, h.scarf_mat)
     return h
 
@@ -110,3 +110,47 @@ def sit_cradle(m):
     m.rot('spine05', 'X', 6); m.rot('spine03', 'X', 8); m.rot('spine01', 'X', 6)
     m.rot('neck01', 'X', 10); m.rot('head', 'X', 14); m.rot('head', 'Y', -8); m.rot('head', 'Z', -14)
     m.curl_fingers('L', 22, 8); m.curl_fingers('R', 22, 8)
+
+
+def add_eyes(h, tint='terracotta'):
+    """Clay eyeballs with a carved dark pupil (needed when the lids open)."""
+    import numpy as np
+    obs = []
+    for g in ('helper-l-eye', 'helper-r-eye'):
+        o = h.helper(g); obs.append(o)
+        mat = K.clay(h.name + '_eye_' + g[7], tint, wet=0.55, scale=20.0)
+        ys = np.array([v.co.y for v in o.data.vertices]); y0 = ys.min()
+        nt = mat.node_tree; N = nt.nodes; L = nt.links
+        at = N.new('ShaderNodeAttribute'); at.attribute_name = 'rest_position'
+        sp = N.new('ShaderNodeSeparateXYZ'); L.new(at.outputs['Vector'], sp.inputs[0])
+        mr = N.new('ShaderNodeMapRange'); mr.inputs[1].default_value = y0 + 0.0016; mr.inputs[2].default_value = y0 + 0.0024
+        mr.inputs[3].default_value = 1.0; mr.inputs[4].default_value = 0.0
+        L.new(sp.outputs['Y'], mr.inputs[0])
+        bs = N['Principled BSDF']; src = bs.inputs['Base Color'].links[0].from_socket
+        mx = N.new('ShaderNodeMixRGB'); mx.inputs[2].default_value = (0.012, 0.008, 0.006, 1)
+        L.new(mr.outputs[0], mx.inputs[0]); L.new(src, mx.inputs[1]); L.new(mx.outputs[0], bs.inputs['Base Color'])
+        K.assign(o, mat)
+        try:
+            o.add_rest_position_attribute = True
+        except Exception:
+            pass
+    h.eyes = obs
+    return obs
+
+
+def child(name='kid', age=0.5, tint='slip', wet=0.12):
+    """Small boy (age 0 = baby proportions, 1 = MakeHuman 'child'). Tunic to the knees, cropped hair."""
+    t = {'macrodetails/caucasian-male-baby': 1.0 - age, 'macrodetails/caucasian-male-child': age}
+    h = M.Human(name, t)
+    h.robe = G.make_robe(h, hem=h.height * 0.30, flare=0.22, inflate=0.010, sleeve=0.012, voxel=0.005, folds=0.006, nfolds=9)
+    h.hair = G.make_hair(h, thick=0.008, hairline=0.058 * M.face_scale(h.V_mh), rough=0.003)
+    G.strip_body(h, forearm=1.0, shin=1.0)
+    G.finish(h, subsurf=1)
+    h.shut = h.add_shape('shut', EYES_SHUT, 1.0)
+    h.cry = h.add_shape('cry', {'mouth-open': 1.0, 'mouth-retraction': 0.4, 'eyebrows-left-inner-up': 0.6,
+                                'eyebrows-right-inner-up': 0.6}, 0.0)
+    h.mat = K.clay(name + '_skin', 'terracotta', wet=wet + 0.1, scale=5.0)
+    h.robe_mat = K.clay(name + '_robe', tint, wet=wet, scale=4.0)
+    h.hair_mat = K.clay(name + '_hair', 'umber', wet=wet, scale=9.0, bump=1.8)
+    K.assign(h.body, h.mat); K.assign(h.robe, h.robe_mat); K.assign(h.hair, h.hair_mat)
+    return h

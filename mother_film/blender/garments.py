@@ -175,10 +175,16 @@ def skin(h, ob, src_pos, src_idx, k=4, limit=4, blur=0):
     co = _co(ob)
     n = len(co)
     acc = np.zeros((n, len(bones)), dtype=np.float32)
+    tidx = np.zeros((n, k), dtype=np.int64); tw = np.zeros((n, k))
     for vi in range(n):
         res = kd.find_n(co[vi], k)
-        for _, j, d in res:
+        for q, (_, j, d) in enumerate(res):
             acc[vi] += W[src_idx[j]] / (d * d + 1e-6)
+            tidx[vi, q] = src_idx[j]; tw[vi, q] = 1.0 / (d * d + 1e-6)
+    tw /= tw.sum(1, keepdims=True)
+    if not hasattr(h, 'transfer'):
+        h.transfer = {}
+    h.transfer[ob.name] = (tidx, tw)
     if blur:
         # Laplacian blur of weights over mesh edges (softens seams of nearest transfer)
         e = np.zeros(len(ob.data.edges) * 2, dtype=int); ob.data.edges.foreach_get('vertices', e); e = e.reshape(-1, 2)

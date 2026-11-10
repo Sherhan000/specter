@@ -229,6 +229,36 @@ class Human:
         sk.value = value
         return sk
 
+    def add_morph(self, name, targets, value=0.0, scale_to_height=False):
+        """Shape key `name` on the body AND all garments, morphing the figure to a different set of
+        macro targets (e.g. old age). Garments follow through the mapping stored when they were skinned."""
+        Vn = morph(targets)
+        Vb = to_bl(Vn); Vb[:, 2] -= ground_z(Vb)
+        if scale_to_height:
+            Vb *= self.height / Vb[:N_BODY, 2].max()
+        D = Vb - self.Vb
+        keys = {}
+        for ob in self.objs:
+            me = ob.data
+            if not me.shape_keys:
+                ob.shape_key_add(name='Basis')
+            n = len(me.vertices)
+            co = np.zeros(n * 3); me.vertices.foreach_get('co', co); co = co.reshape(-1, 3)
+            tr = getattr(self, 'transfer', {}).get(ob.name)
+            if tr is not None:
+                idx, w = tr
+                d = (D[idx] * w[:, :, None]).sum(1)
+            elif 'mh_index' in me.attributes:
+                used = np.zeros(n, dtype=np.int32); me.attributes['mh_index'].data.foreach_get('value', used)
+                d = D[used]
+            else:
+                continue
+            sk = ob.shape_key_add(name=name)
+            sk.data.foreach_set('co', (co + d).ravel())
+            sk.value = value
+            keys[ob.name] = sk
+        return keys
+
     # ---- posing ---------------------------------------------------------
     def pb(self, bone):
         return self.arm.pose.bones[bone]

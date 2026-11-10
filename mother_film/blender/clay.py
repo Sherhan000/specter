@@ -15,6 +15,10 @@ TINTS = {
     'dark':       ((0.07, 0.058, 0.05), (0.035, 0.03, 0.026)),
     'earth':      ((0.28, 0.175, 0.11), (0.17, 0.10, 0.065)),
     'rock':       ((0.20, 0.15, 0.12), (0.10, 0.075, 0.06)),
+    'olive':      ((0.22, 0.25, 0.10), (0.12, 0.15, 0.06)),
+    'ochre':      ((0.55, 0.30, 0.08), (0.38, 0.17, 0.05)),
+    'blossom':    ((0.70, 0.50, 0.45), (0.55, 0.36, 0.33)),
+    'snow':       ((0.80, 0.82, 0.85), (0.62, 0.65, 0.70)),
 }
 
 
@@ -101,6 +105,7 @@ def clay(name, tint='terracotta', wet=0.25, cracks=0.0, bump=1.0, scale=2.2, coo
     ramp.inputs[2].default_value = 0.5 + 0.22 / max(variation, 1e-3)
     L.new(big, ramp.inputs[0])
     col = mix('MIX', ramp.outputs[0], c2, c1)
+    col.node.name = 'tint'
     cav = node('ShaderNodeMapRange'); cav.inputs[1].default_value = 0.25; cav.inputs[2].default_value = 0.7
     cav.inputs[3].default_value = 0.62; cav.inputs[4].default_value = 1.06
     L.new(fine, cav.inputs[0])
@@ -154,6 +159,14 @@ def add_fade(mat, attr='fade'):
     tr = N.new('ShaderNodeBsdfTransparent'); mx = N.new('ShaderNodeMixShader')
     L.new(a.outputs['Fac'], mx.inputs[0]); L.new(src, mx.inputs[1]); L.new(tr.outputs[0], mx.inputs[2])
     L.new(mx.outputs[0], out.inputs['Surface'])
+
+
+def set_tint(mat, a, b, t):
+    """Blend the clay tint between two named tints (t = 0..1)."""
+    n = mat.node_tree.nodes['tint']
+    (a1, a2), (b1, b2) = TINTS[a], TINTS[b]
+    n.inputs[2].default_value = (*[x + (y - x) * t for x, y in zip(a1, b1)], 1)
+    n.inputs[1].default_value = (*[x + (y - x) * t for x, y in zip(a2, b2)], 1)
 
 
 def param(mat, name):
