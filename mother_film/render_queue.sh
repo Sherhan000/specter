@@ -6,12 +6,12 @@ Q=render_queue.txt; touch $Q
 BR=$(git rev-parse --abbrev-ref HEAD)
 while true; do
   next=""
-  for s in $(cat $Q); do [ -f clips/$s.mp4 ] && [ ! -f /home/user/render/$s.redo ] || { next=$s; break; }; done
+  for s in $(cat $Q); do [ -s clips/$s.mp4 ] && [ ! -f /home/user/render/$s.redo ] || { next=$s; break; }; done
   if [ -z "$next" ]; then sleep 20; continue; fi
   rm -f /home/user/render/$next.redo
   echo "=== $(date +%H:%M:%S) start $next"
   if nice -n 10 python3 blender/render.py $next 2>&1 | grep --line-buffered -E "^\[|Error|Traceback|error"; then :; fi
-  if [ -f clips/$next.mp4 ]; then
+  if [ -s clips/$next.mp4 ]; then
     for i in 1 2 3 4 5; do
       git add clips/$next.mp4 && git commit -qm "Рендер шота $next
 

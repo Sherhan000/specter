@@ -106,6 +106,6 @@ cd = f'{ROOT}/clips_preview' if a.preview else f'{ROOT}/clips'
 os.makedirs(cd, exist_ok=True)
 out = f'{cd}/{a.shot}.mp4'
 crf = '20' if a.preview else '15'
-subprocess.run(['ffmpeg', '-y', '-v', 'error', '-framerate', '24', '-i', f'{d}/f_%04d.png', '-c:v', 'libx264',
-                '-preset', 'slow', '-crf', crf, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], check=True)
+subprocess.run(['ffmpeg', '-y', '-v', 'error', '-framerate', '24', '-i', f'{d}/f_%04d.png', '-vf', 'crop=trunc(iw/2)*2:trunc(ih/2)*2',
+                '-c:v', 'libx264', '-preset', 'slow', '-crf', crf, '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], check=True)
 print(f'[{a.shot}] encoded {out}')
