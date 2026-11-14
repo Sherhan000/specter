@@ -5,7 +5,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 RES=${1:-4k}; OUT=${2:-final_${RES}.mp4}
-if [ "$RES" = 4k ]; then W=3840; H=2160; MAXR=45M; else W=1920; H=1080; MAXR=14M; fi
+if [ "$RES" = 4k ]; then W=3840; H=2160; MAXR=45M; else W=1920; H=1080; MAXR=10M; fi  # 10M: файл на 60 с остаётся меньше лимита GitHub в 100 МБ
 FPS=24
 FONT=$(fc-match -f '%{file}' 'Liberation Serif:style=Regular' 2>/dev/null || echo /usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf)
 FONTI=$(fc-match -f '%{file}' 'Liberation Serif:style=Italic' 2>/dev/null || echo "$FONT")
