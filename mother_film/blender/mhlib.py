@@ -229,14 +229,24 @@ class Human:
         sk.value = value
         return sk
 
-    def add_morph(self, name, targets, value=0.0, scale_to_height=False):
+    def add_morph(self, name, targets, value=0.0, scale_to_height=False, follow=None):
         """Shape key `name` on the body AND all garments, morphing the figure to a different set of
-        macro targets (e.g. old age). Garments follow through the mapping stored when they were skinned."""
+        macro targets (e.g. old age). Garments follow through the mapping stored when they were skinned.
+        `follow`: bone-name fragments whose vertices must stay centred on their (unmorphed) bones - the
+        skeleton is fitted to the base figure, so a limb that drifts off it smears when its joints bend."""
         Vn = morph(targets)
         Vb = to_bl(Vn); Vb[:, 2] -= ground_z(Vb)
         if scale_to_height:
             Vb *= self.height / Vb[:N_BODY, 2].max()
         D = Vb - self.Vb
+        if follow:
+            corr = np.zeros_like(D)
+            for bone, wl in _base()['weights'].items():
+                if not any(k in bone for k in follow):
+                    continue
+                vi = np.array([v for v, _ in wl]); w = np.array([w_ for _, w_ in wl])
+                corr[vi] += w[:, None] * ((D[vi] * w[:, None]).sum(0) / w.sum())
+            D = D - corr
         keys = {}
         for ob in self.objs:
             me = ob.data

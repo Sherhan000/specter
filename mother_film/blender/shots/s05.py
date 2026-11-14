@@ -24,7 +24,8 @@ def season(x):
 def build(sc, quality):
     C.set_look(sc, 'AgX', 'Medium High Contrast')
     m = cast.mother()
-    old = m.add_morph('old', {'macrodetails/caucasian-female-old': 1.0})
+    old = m.add_morph('old', {'macrodetails/caucasian-female-old': 1.0},
+                      follow=('upperarm', 'lowerarm', 'wrist', 'metacarpal', 'finger'))
     k = cast.child()
     grow = k.add_morph('older', {'macrodetails/caucasian-male-child': 1.0}, scale_to_height=True)
     k.shut.value = 1.0
