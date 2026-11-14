@@ -2,3 +2,6 @@ node_modules
 data
 client/dist
 .env
+mother_film/blender/__pycache__/
+mother_film/blender/shots/__pycache__/
+__pycache__/
