@@ -40,6 +40,17 @@ def build(sc, quality):
     drops = fx.Motes(sc, 500, (0.4, -0.5, 0.0), 3.0, 3.0, size=0.0035, seed=5, color=(0.9, 0.95, 1.0), emit=0.2,
                      drift=(0.0, 0.0, -0.12))
     drops.ob.children[0].data.materials[0].node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.05
+    # a few drops far behind her drift across the open sky late in the shot; that far out of focus they render as
+    # speckled discs (a 1-pixel source spread over thousands of pixels), so they are moved out of sight
+    drops.p0[[265, 314, 475, 491, 498], 0] += 100.0
+    # a crease of the scarf on her shoulder turns inside out late in the push-in (black triangles): relax it locally
+    scarf = bpy.data.objects[m.name + '_scarf']
+    rest = np.array([v.co[:] for v in scarf.data.vertices])
+    dist = np.linalg.norm(rest - np.array((-0.089, -0.156, 1.333)), axis=1)
+    vg = scarf.vertex_groups.new(name='relax')
+    for i in np.nonzero(dist < 0.03)[0]:
+        vg.add([int(i)], float(1 - (dist[i] / 0.03) ** 2), 'REPLACE')
+    relax = scarf.modifiers.new('relax', 'SMOOTH'); relax.vertex_group = 'relax'; relax.iterations = 20; relax.factor = 0.0
     cam = C.camera(sc, face + Vector((0.74, -0.66, -0.36)), face, lens=85, fstop=4.0, name='cam')
     cam0 = cam.location.copy()
     sm = fx.smooth
@@ -63,6 +74,7 @@ def build(sc, quality):
         e.inputs[0].default_value = (0.20 + 0.75 * warm, 0.30 + 0.32 * warm, 0.55 - 0.2 * warm, 1)
         bg.inputs[0].default_value = (0.16 + 0.5 * warm, 0.24 + 0.2 * warm, 0.42 - 0.12 * warm, 1)
         drops.update(f * 0.3)
+        relax.factor = 0.5 * sm(f, 93, 125)
         p = sm(f, 0, FRAMES - 1)
         cam.location = cam0.lerp(fc + (cam0 - face) * 0.78, p)
         C.look_at(cam, fc + Vector((0, 0, -0.012)))
