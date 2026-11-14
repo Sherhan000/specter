@@ -40,7 +40,7 @@ def build(sc, quality):
     drops = fx.Motes(sc, 500, (0.4, -0.5, 0.0), 3.0, 3.0, size=0.0035, seed=5, color=(0.9, 0.95, 1.0), emit=0.2,
                      drift=(0.0, 0.0, -0.12))
     drops.ob.children[0].data.materials[0].node_tree.nodes['Principled BSDF'].inputs['Roughness'].default_value = 0.05
-    cam = C.camera(sc, face + Vector((0.74, -0.66, -0.36)), face, lens=85, fstop=2.2, name='cam')
+    cam = C.camera(sc, face + Vector((0.74, -0.66, -0.36)), face, lens=85, fstop=4.0, name='cam')
     cam0 = cam.location.copy()
     sm = fx.smooth
 

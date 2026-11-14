@@ -86,7 +86,7 @@ def build(sc, quality):
     K.assign(g, K.clay('ground2', 'dark', wet=0.3, coords='object', bump=1.2, cracks=0.6, scale=1.6,
                        tex='brown_mud_02', crack_scale=2.4))
     face = head_w + Vector((0, 0.03, 0.03))
-    camB = C.camera(sc, face + Vector((0.16, -0.26, 0.66)), face, lens=85, fstop=2.8, name='camB')
+    camB = C.camera(sc, face + Vector((0.16, -0.26, 0.66)), face, lens=85, fstop=8, name='camB')
     camB_loc = camB.location.copy()
     kB = C.light(sc, 'AREA', face + Vector((-0.9, 0.5, 1.0)), 0, color=(0.72, 0.82, 1.0), target=face, size=0.5, name='kB')
     fB = C.light(sc, 'AREA', face + Vector((0.8, -0.6, 0.35)), 0, color=(1.0, 0.62, 0.38), target=face, size=0.8, name='fB')
