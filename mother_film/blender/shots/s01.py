@@ -120,7 +120,8 @@ def build(sc, quality):
         fx.hide(ob, f < 46)
         K.setp(mmat, 'cracks', 1.0 - sm(f, 24, 110))
         K.setp(mmat, 'wet', 0.12 + 0.3 * sm(f, 40, 150))
-        br = sm(f, 160, 185) * 0.0018 * math.sin((f - 160) / 24 * 2 * math.pi / 1.7)      # first breaths
+        # first breaths: only ever outwards - shrinking along the normals opens the seams of lids and lips
+        br = sm(f, 160, 185) * 0.0026 * (0.5 - 0.5 * math.cos((f - 160) / 24 * 2 * math.pi / 1.7))
         fx.set_co(ob, P + N * br)
         K.setp(mat, 'wet', 0.3 + 0.15 * sm(f, 120, 200))
         # --- light pulses with the heartbeat in the soundtrack
