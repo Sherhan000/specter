@@ -15,10 +15,10 @@ def make(sc, wet=0.85, eyes=False, eye_tint='terracotta'):
         cast.add_eyes(m, tint=eye_tint)
     s = cast.son(wet=wet)
     Rm = Matrix.Rotation(math.radians(90), 4, 'Z'); Rs = Matrix.Rotation(math.radians(-90), 4, 'Z')
-    th, _ = m.ik_arm('R', (0.5, -0.2, 0.6), (0.3, -0.7, 2.2), math.radians(-90))
+    th, pole = m.ik_arm('R', (0.5, -0.2, 0.6), (0.3, -0.7, 2.2), math.radians(-90))
     hl, _ = s.ik_arm('L', (0.4, -0.15, 0.5), None)
     hr, _ = s.ik_arm('R', (0.4, 0.15, 0.5), None)
-    st = dict(m=m, s=s, hand=th)
+    st = dict(m=m, s=s, hand=th, pole=pole, hl=hl, hr=hr)
 
     def pose_mother(bend=1.0, head=20.0):
         for pb in m.arm.pose.bones:
