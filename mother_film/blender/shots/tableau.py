@@ -7,12 +7,12 @@ import common as C, clay as K, fx, cast
 SX = 0.78
 
 
-def make(sc, wet=0.85, eyes=False):
+def make(sc, wet=0.85, eyes=False, eye_tint='terracotta'):
     m = cast.mother(age=1.0, scarf_tint='white', robe_tint='grey', hem=0.115, flare=0.14, shut=1.0, wet=wet)
     K.setp(m.mat, 'cracks', 0.45); K.setp(m.robe_mat, 'cracks', 0.07); K.setp(m.scarf_mat, 'cracks', 0.04)
     K.set_tint(m.mat, 'terracotta', 'buff', 0.25)
     if eyes:
-        cast.add_eyes(m)
+        cast.add_eyes(m, tint=eye_tint)
     s = cast.son(wet=wet)
     Rm = Matrix.Rotation(math.radians(90), 4, 'Z'); Rs = Matrix.Rotation(math.radians(-90), 4, 'Z')
     th, _ = m.ik_arm('R', (0.5, -0.2, 0.6), (0.3, -0.7, 2.2), math.radians(-90))

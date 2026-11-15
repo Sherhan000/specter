@@ -8,13 +8,14 @@ from shots import tableau
 
 FRAMES = 288
 START = 1056
+OPEN = 0.92         # how far her lids open (1 = wide)
 
 
 def build(sc, quality):
     C.set_look(sc, 'AgX', 'Medium High Contrast')
     bg = sc.world.node_tree.nodes['Background']
     bg.inputs[0].default_value = (0.16, 0.24, 0.42, 1); bg.inputs[1].default_value = 0.22
-    st = tableau.make(sc, wet=0.8, eyes=True)
+    st = tableau.make(sc, wet=0.8, eyes=True, eye_tint='white')
     m = st['m']
     K.setp(m.mat, 'cracks', 0.07)
     smile = m.add_shape('smile', {'mouth-corner-puller': 1.0, 'mouth-elevation': 0.15, 'eye-left-slit': 0.25, 'eye-right-slit': 0.25}, 0.0)
@@ -58,9 +59,12 @@ def build(sc, quality):
     def update(f):
         rise = sm(f, 20, 150)
         look = sm(f, 110, 200)
-        st['pose_mother'](bend=0.6, head=20 - 9 * look + 0.6 * math.sin(f * 0.05))
+        breath = math.sin(f / 24.0 * 2 * math.pi / 3.6)
+        st['pose_mother'](bend=0.6 + 0.035 * breath, head=20 - 9 * look + 0.6 * math.sin(f * 0.05))
         m.rot('eye.L', 'X', 14 - 4 * look); m.rot('eye.R', 'X', 14 - 4 * look)
-        m.shut.value = 1.0 - 0.08 * sm(f, 118, 190)
+        # the light reaches her eyes and she opens them; two slow blinks afterwards
+        blink = max(math.exp(-((f - c) / 2.6) ** 2) for c in (178, 247))
+        m.shut.value = max(1.0 - OPEN * sm(f, 100, 142), blink)
         smile.value = 0.95 * sm(f, 165, 262)
         bpy.context.view_layer.update()
         fc = face_pt()
