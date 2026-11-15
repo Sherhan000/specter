@@ -32,11 +32,11 @@ SHOTS = [
     ('S06A', 54.0,  7.5, ('dip', 1.0),      'Он вернулся и опускается к её ногам'),
     ('S06',  61.5,  5.0, ('cut', 0),        'Её ноги. Золотой свет'),
     ('S07',  66.5,  7.0, ('flash', 0.12),   'Небо плачет'),
-    ('S08',  73.5,  1.0, ('cut', 0),        'Тишина'),
-    ('S09',  74.5, 12.0, ('dissolve', 1.0), 'Рассвет. Она открывает глаза и улыбается'),
-    ('S09B', 86.5,  5.0, ('dissolve', 0.7), 'Он поднимает голову. Её рука у него на голове'),
+    ('S08',  73.5,  3.5, ('cut', 0),        'Тишина'),
+    ('S09',  77.0, 12.0, ('dissolve', 1.0), 'Рассвет. Она открывает глаза и улыбается'),
+    ('S09B', 89.0,  5.0, ('dissolve', 0.7), 'Он поднимает голову. Её рука у него на голове'),
 ]
-T_TITLE, T_CRED, T_END, T_TOTAL = 91.5, 105.0, 136.5, 140.5
+T_TITLE, T_CRED, T_END, T_TOTAL = 94.0, 107.5, 139.0, 143.0
 START = {s[0]: s[1] for s in SHOTS}
 
 # подписи времени: шот, текст, появление и исчезновение (секунды от начала шота)
@@ -76,12 +76,14 @@ CREDITS = [
     ('q', '«Рай — под ногами матерей»'),
 ]
 
-# звук: файл, старт, громкость, обрезка (0 = весь), fade-in, fade-out, шина
+# звук: файл, старт, громкость, обрезка (0 = весь), fade-in, fade-out, шина[, с какой секунды файла брать]
 R = 'audio/raw/'
 def at(shot, dt=0.0):
     return START[shot] + dt
 LAYERS = [
-    (R + 'score_v2.mp3',      0.0,            0.95, 0,   0.02, 2.5, 'music'),
+    # музыка написана одним куском; после бури она обрывается, а тема рассвета вступает после тишины
+    (R + 'score_v2.mp3',      0.0,            0.95, 73.5, 0.02, 0.08, 'music'),
+    (R + 'score_v2.mp3',      at('S09'),      0.95, 63.5, 0.4, 2.5, 'music', 74.5),
     (R + 'sfx_clay.mp3',      0.0,            0.40, 5,   1.5,  1.5, 'amb'),
     (R + 'sfx_thunder.mp3',   at('S02'),      1.30, 5,   0.01, 1.5, 'hit'),
     (R + 'sfx_firstcry.mp3',  at('S02', 0.6), 0.95, 3.4, 0.05, 1.4, 'amb'),
@@ -108,7 +110,7 @@ LAYERS = [
     (R + 'vo_ru/06_left.mp3',    at('S05B', 0.9), 1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/07_return.mp3',  at('S06A', 0.8), 1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/08_heaven.mp3',  at('S06', 1.5),  1.0, 0, 0.01, 0.05, 'vo'),
-    (R + 'vo_ru/09_sky.mp3',     at('S07', 3.7),  1.0, 0, 0.01, 0.05, 'vo'),
+    (R + 'vo_ru/09_sky.mp3',     at('S08', 0.5),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/10_forgive.mp3', at('S09', 1.5),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/11_hello.mp3',   T_TITLE + 5.6,   1.0, 0, 0.01, 0.05, 'vo'),
 ]
@@ -299,13 +301,14 @@ def build_video(tmp):
 
 def build_audio(tmp):
     ins = []; fc = []; bus = {'music': [], 'amb': [], 'hit': [], 'vo': [], 'fall': [], 'room': []}
-    for i, (f, s, vol, trim, fi, fo, b) in enumerate(LAYERS):
+    for i, (f, s, vol, trim, fi, fo, b, *rest) in enumerate(LAYERS):
+        ss = rest[0] if rest else 0.0
         if not os.path.exists(f):
             sys.exit('нет звукового файла ' + f)
         ins += ['-i', f]
         d = trim or dur(f)
         ms = int(round(s * 1000))
-        fc.append(f'[{i}:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim=0:{d},afade=t=in:d={fi},'
+        fc.append(f'[{i}:a]aformat=sample_rates=48000:channel_layouts=stereo,atrim={ss}:{ss + d},asetpts=PTS-STARTPTS,afade=t=in:d={fi},'
                   f'afade=t=out:st={max(0, d - fo)}:d={fo},volume={vol},adelay={ms}|{ms}[a{i}]')
         bus[b].append(f'[a{i}]')
     def mix(names, out, extra=''):

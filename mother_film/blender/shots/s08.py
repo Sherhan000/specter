@@ -1,11 +1,11 @@
-"""S08 (0:43-0:44) Silence. The rain has stopped; the last drops hang in the blue air before dawn."""
+"""S08 Silence. The rain has stopped; the last drops hang in the blue air before dawn. The narrator speaks into it."""
 import bpy, math
 import numpy as np
 from mathutils import Vector, Matrix
 import common as C, clay as K, fx
 from shots import tableau
 
-FRAMES = 24
+FRAMES = 84
 START = 1032
 
 
