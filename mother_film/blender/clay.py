@@ -19,6 +19,7 @@ TINTS = {
     'ochre':      ((0.55, 0.30, 0.08), (0.38, 0.17, 0.05)),
     'blossom':    ((0.70, 0.50, 0.45), (0.55, 0.36, 0.33)),
     'snow':       ((0.80, 0.82, 0.85), (0.62, 0.65, 0.70)),
+    'teal':       ((0.13, 0.25, 0.30), (0.07, 0.15, 0.19)),
 }
 
 
@@ -150,6 +151,40 @@ def clay(name, tint='terracotta', wet=0.25, cracks=0.0, bump=1.0, scale=2.2, coo
     L.new(math('MULTIPLY', v_bump.outputs[0], 0.85), bp.inputs['Strength'])
     L.new(bp.outputs['Normal'], bsdf.inputs['Normal'])
     return m
+
+
+def add_snow(mat, amount=0.0, up_only=True, color=(0.80, 0.83, 0.88)):
+    """Snow settling on a material: a white layer on upward-facing surfaces (or everywhere), with a ragged edge.
+    Returns the Value node that drives it (0 = none, 1 = fully covered)."""
+    nt = mat.node_tree; N = nt.nodes; L = nt.links
+    bs = N['Principled BSDF']
+    v = N.new('ShaderNodeValue'); v.outputs[0].default_value = amount; v.name = v.label = 'snow'
+    ns = N.new('ShaderNodeTexNoise'); ns.inputs['Scale'].default_value = 2.2; ns.inputs['Detail'].default_value = 5.0
+    geo = N.new('ShaderNodeNewGeometry'); L.new(geo.outputs['Position'], ns.inputs['Vector'])
+    def m(op, a, b, clamp=False):
+        n = N.new('ShaderNodeMath'); n.operation = op; n.use_clamp = clamp
+        for i, x in enumerate((a, b)):
+            if isinstance(x, (int, float)):
+                n.inputs[i].default_value = x
+            else:
+                L.new(x, n.inputs[i])
+        return n.outputs[0]
+    # coverage grows from the noise peaks outwards: fac = clamp((amount*1.6 - noise) * 4)
+    fac = m('MULTIPLY', m('SUBTRACT', m('MULTIPLY', v.outputs[0], 1.7), ns.outputs[0]), 4.0, True)
+    if up_only:
+        sp = N.new('ShaderNodeSeparateXYZ'); L.new(geo.outputs['Normal'], sp.inputs[0])
+        fac = m('MULTIPLY', fac, m('MULTIPLY', m('SUBTRACT', sp.outputs['Z'], 0.25), 2.5, True), True)
+    for sock, val in (('Base Color', (*color, 1)), ('Roughness', 0.55)):
+        src = bs.inputs[sock].links[0].from_socket if bs.inputs[sock].links else None
+        if sock == 'Base Color':
+            mx = N.new('ShaderNodeMixRGB'); mx.inputs[2].default_value = val
+            L.new(fac, mx.inputs[0])
+            if src: L.new(src, mx.inputs[1])
+            L.new(mx.outputs[0], bs.inputs[sock])
+        elif src:
+            mr = N.new('ShaderNodeMixRGB'); mr.inputs[2].default_value = (val, val, val, 1)
+            L.new(fac, mr.inputs[0]); L.new(src, mr.inputs[1]); L.new(mr.outputs[0], bs.inputs[sock])
+    return v
 
 
 def add_fade(mat, attr='fade'):
