@@ -1,10 +1,12 @@
-"""S03 (0:13-0:20) 3:07 AM. The young mother rocks her crying child and whispers a prayer."""
+"""S03 3:07 AM. The young mother rocks her crying child and whispers a prayer. Two set-ups: wide past the clock,
+then a close-up as she bows her head and kisses him."""
 import bpy, math
 import numpy as np
 from mathutils import Vector, Quaternion, Matrix
 import common as C, clay as K, fx, cast, mhlib as M, garments as G
 
-FRAMES = 168
+FRAMES = 276
+CUT = 150            # first frame of the close-up
 START = 312
 
 
@@ -23,11 +25,12 @@ def build(sc, quality):
     W = cast.frame_matrix(C0 - zd * 0.33, zd, (0.0, -0.55, 0.8))
     loc = cast.attach_local(W, m, 'spine02')
     cast.attach(b, m, 'spine02', loc)
-    tl, pl = m.ik_arm('L', C0 + zd * 0.15 + Vector((0.0, -0.07, -0.085)), (0.9, 0.1, 0.3), math.radians(90))
-    tr, pr = m.ik_arm('R', C0 - zd * 0.10 + Vector((0.0, -0.09, 0.075)), (-0.9, 0.1, 0.5), math.radians(-125))
+    # her forearms support the bundle from underneath; the hands are tucked under it
+    tl, pl = m.ik_arm('L', C0 + zd * HAND_L[0] + Vector((0.0, HAND_L[1], HAND_L[2])), POLE_L, math.radians(90))
+    tr, pr = m.ik_arm('R', C0 - zd * HAND_R[0] + Vector((0.0, HAND_R[1], HAND_R[2])), POLE_R, math.radians(-90))
     for e in (tl, tr):                                  # hands travel with the child
         mw = e.matrix_world.copy(); e.parent = b.arm; e.matrix_world = mw
-    m.curl_fingers('L', 32, 10); m.curl_fingers('R', 32, 10)
+    m.curl_fingers('L', 55, 25); m.curl_fingers('R', 55, 25)
     whisper = m.add_shape('whisper', {'mouth-open': 0.5, 'mouth-pursing': 0.4}, 0.0)
     base = {pb.name: pb.rotation_quaternion.copy() for pb in m.arm.pose.bones}
 
@@ -68,6 +71,7 @@ def build(sc, quality):
     face = m.arm.matrix_world @ m.pb('head').matrix.translation + Vector((0, -0.08, 0.08))
     cam = C.camera(sc, (-0.62, -2.05, 1.0), (0.05, -0.1, 0.98), lens=40, fstop=1.8, name='cam')
     cam0 = cam.location.copy()
+    camB = C.camera(sc, (0.4, -1.2, 1.1), (0.05, -0.1, 1.0), lens=55, fstop=4.0, name='camB')
     aim0 = Vector((0.05, -0.1, 0.97)); aim1 = Vector((0.08, -0.16, 0.90))
     clock_p = Vector((-0.60, -1.24, 0.92))
     sm = fx.smooth
@@ -80,7 +84,7 @@ def build(sc, quality):
             m.pb(bn).rotation_quaternion = base[bn]
         bpy.context.view_layer.update()
         sway = math.sin(t * 2 * math.pi / 2.5)
-        kiss = sm(f, 112, 156)
+        kiss = sm(f, 186, 250)
         m.rot('spine05', 'Y', 4.2 * sway); m.rot('spine05', 'X', 1.2 * math.sin(t * 2 * math.pi / 1.25 + 0.6))
         m.rot('spine03', 'X', 4 * kiss)
         m.rot('neck01', 'X', 4 * kiss); m.rot('head', 'X', 4 * kiss + 1.0 * math.sin(t * 2.1)); m.rot('head', 'Y', -2.0 * sway)
@@ -88,9 +92,23 @@ def build(sc, quality):
         cast.attach(b, m, 'spine02', loc)
         b.arm.matrix_world = lift @ b.arm.matrix_world
         whisper.value = (0.25 + 0.25 * math.sin(t * 9.0) * math.sin(t * 5.3)) * (1 - kiss)
-        b.cry.value = max(0.12, (0.45 + 0.6 * loud) * (1 - 0.8 * sm(f, 80, 150)))
+        b.cry.value = max(0.12, (0.45 + 0.6 * loud) * (1 - 0.8 * sm(f, 110, 235)))
         # camera: starts on the clock, racks to her, drifts in
-        p = sm(f, 0, FRAMES - 1)
+        if f >= CUT:
+            sc.camera = camB
+            bpy.context.view_layer.update()
+            fh = m.arm.matrix_world @ m.pb('head').matrix.translation + Vector((0, -0.08, 0.06))
+            bh = b.arm.matrix_world @ b.pb('head').matrix.translation
+            aim = fh.lerp(bh, 0.42)
+            q = sm(f, CUT, FRAMES - 1)
+            camB.location = aim + Vector(CAMB) * (1.0 - 0.10 * q)
+            C.look_at(camB, aim)
+            fx.shake(camB, f, 0.0009, seed=4)
+            camB.data.dof.focus_distance = (camB.location - aim).length
+            lamp.data.energy = 230 * (1 + 0.03 * math.sin(t * 13) * math.sin(t * 7.1))
+            return
+        sc.camera = cam
+        p = sm(f, 0, 175)
         cam.location = cam0 + Vector((0.16, 0.56, -0.20)) * p
         C.look_at(cam, aim0.lerp(aim1, p))
         fx.shake(cam, f, 0.0012, seed=3)
@@ -100,3 +118,10 @@ def build(sc, quality):
         lamp.data.energy = 230 * (1 + 0.03 * math.sin(t * 13) * math.sin(t * 7.1))
 
     return dict(frames=FRAMES, update=update)
+
+
+HAND_L = (0.16, 0.02, -0.105)      # along the bundle axis from its centre, sideways (y), up (z)
+HAND_R = (0.12, 0.02, -0.100)
+POLE_L = (0.9, 0.1, 0.3)
+POLE_R = (-0.9, 0.1, 0.3)
+CAMB = (0.52, -1.05, -0.40)

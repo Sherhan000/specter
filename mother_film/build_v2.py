@@ -87,7 +87,7 @@ LAYERS = [
     (R + 'sfx_firstcry.mp3',  at('S02', 0.6), 0.95, 3.4, 0.05, 1.4, 'amb'),
     (R + 'sfx_teething.mp3',  at('S03', 0.2), 0.45, 7,   0.4,  2.0, 'amb'),
     (R + 'sfx_clock.mp3',     at('S03'),      0.22, 8,   0.5,  1.5, 'amb'),
-    (R + 'sfx_fall.mp3',      at('S04', 1.9), 0.90, 4.0, 0.02, 0.8, 'amb'),
+    (R + 'sfx_fall.mp3',      at('S04', 1.78), 0.60, 4.0, 0.02, 0.8, 'fall'),
     (R + 'sfx_aging.mp3',     at('S05'),      0.55, 6,   0.4,  1.5, 'amb'),
     (R + 'sfx_wind.mp3',      at('S05', 4.6), 0.55, 8,   1.2,  2.0, 'amb'),
     (R + 'sfx_clock.mp3',     at('S05B'),     0.50, 8,   1.0,  1.0, 'amb'),
@@ -97,13 +97,13 @@ LAYERS = [
     (R + 'sfx_thunder.mp3',   at('S07', 1.4), 1.40, 5.5, 0.01, 0.05, 'hit'),
     (R + 'sfx_morning.mp3',   at('S09'),      0.32, 9,   1.5,  2.0, 'amb'),
     (R + 'sfx_morning.mp3',   at('S09', 8),   0.30, 9,   2.0,  2.5, 'amb'),
-    (R + 'sfx_ring.mp3',      T_TITLE + 0.6,  0.85, 1.5, 0.01, 0.3, 'hit'),
-    (R + 'sfx_ring.mp3',      T_TITLE + 3.0,  0.85, 1.5, 0.01, 0.3, 'hit'),
-    (R + 'sfx_pickup.mp3',    T_TITLE + 4.7,  4.00, 0,   0.01, 0.2, 'hit'),
+    (R + 'sfx_ring.mp3',      T_TITLE + 0.6,  0.60, 1.5, 0.01, 0.3, 'room'),
+    (R + 'sfx_ring.mp3',      T_TITLE + 3.0,  0.60, 1.5, 0.01, 0.3, 'room'),
+    (R + 'sfx_pickup.mp3',    T_TITLE + 4.7,  3.50, 0,   0.01, 0.2, 'room'),
     (R + 'vo_ru/01_clay.mp3',    at('S01', 1.2),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/02_cry.mp3',     at('S02', 1.6),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/03_night.mp3',   at('S03', 2.3),  1.0, 0, 0.01, 0.05, 'vo'),
-    (R + 'vo_ru/04_fall.mp3',    at('S04', 0.9),  1.0, 0, 0.01, 0.05, 'vo'),
+    (R + 'vo_ru/04_fall.mp3',    at('S04', 0.45), 1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/05_years.mp3',   at('S05', 0.7),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/06_left.mp3',    at('S05B', 0.9), 1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/07_return.mp3',  at('S06A', 0.8), 1.0, 0, 0.01, 0.05, 'vo'),
@@ -112,7 +112,7 @@ LAYERS = [
     (R + 'vo_ru/10_forgive.mp3', at('S09', 1.5),  1.0, 0, 0.01, 0.05, 'vo'),
     (R + 'vo_ru/11_hello.mp3',   T_TITLE + 5.6,   1.0, 0, 0.01, 0.05, 'vo'),
 ]
-MUTE = [(at('S08') - 0.05, at('S09'))]      # тишина перед рассветом: музыка и шумы выключены
+MUTE = (at('S08'), at('S09'))               # тишина перед рассветом: музыка и шумы выключены
 
 
 def run(cmd):
@@ -154,14 +154,14 @@ def spaced(draw, xy, text, f, fill, tracking=0.0, anchor_center=False):
 def caption_png(text, path):
     """Подпись времени: капитель с разрядкой внизу слева, с мягкой тенью."""
     im = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-    f = font(SERIF, 36, 'Medium')
-    x, y = 150, H - BAR - 92
+    f = font(SERIF, 46, 'Medium')
+    x, y = 150, H - BAR - 112
     sh = Image.new('RGBA', (W, H), (0, 0, 0, 0)); ds = ImageDraw.Draw(sh)
     spaced(ds, (x, y + 2), text, f, (0, 0, 0, 230), 0.22)
     sh = sh.filter(ImageFilter.GaussianBlur(7))
     im = Image.alpha_composite(im, sh); im = Image.alpha_composite(im, sh)
     d = ImageDraw.Draw(im)
-    d.line([(x, y - 14), (x + 46, y - 14)], fill=INK + (200,), width=2)
+    d.line([(x, y - 16), (x + 56, y - 16)], fill=INK + (210,), width=2)
     spaced(d, (x, y), text, f, INK + (245,), 0.22)
     im.save(path)
 
@@ -178,9 +178,9 @@ def credits_png(path):
     rows = []; y = 0
     for kind, text in CREDITS:
         if kind == 'h':
-            y += 46; rows.append((text, SERIF, 30, 'SemiBold', 0.26, y, (196, 168, 128, 255))); y += 84
+            y += 46; rows.append((text, SERIF, 34, 'SemiBold', 0.26, y, (196, 168, 128, 255))); y += 92
         elif kind == 'p':
-            rows.append((text, SERIF, 46, 'Regular', 0.01, y, INK + (255,))); y += 70
+            rows.append((text, SERIF, 52, 'Regular', 0.01, y, INK + (255,))); y += 78
         elif kind == 'q':
             y += 30; rows.append((text, ITALIC, 54, 'Italic', 0.01, y, INK + (255,))); y += 90
         else:
@@ -288,17 +288,17 @@ def build_video(tmp):
     grade = (f"[{acc}]eq=contrast=1.03:saturation=1.0,colorbalance=rs=0.015:bs=-0.015:rh=0.01:bh=-0.01,"
              f"vignette=PI/8:enable='lt(t,{T_TITLE})',"
              f"drawbox=x=0:y=0:w=iw:h={BAR}:color=black:t=fill,drawbox=x=0:y=ih-{BAR}:w=iw:h={BAR}:color=black:t=fill,"
-             f"noise=alls=5:allf=t,format=yuv420p[vout]")
+             f"noise=alls=5:allf=t:enable='lt(t,{T_TITLE})',noise=alls=2:allf=t:enable='gte(t,{T_TITLE})',format=yuv420p[vout]")
     fc.append(grade)
     cut = f'{tmp}/cut.mp4'
     enc = ['-c:v', 'libx264', '-preset', 'veryfast' if DRAFT else 'slow', '-crf', '21' if DRAFT else '18', '-tune', 'grain',
-           '-maxrate', '5M', '-bufsize', '10M', '-pix_fmt', 'yuv420p']
+           '-maxrate', '6500k', '-bufsize', '13M', '-pix_fmt', 'yuv420p']
     run(['ffmpeg', '-y', '-v', 'error'] + ins + ['-filter_complex', ';'.join(fc), '-map', '[vout]', '-t', f'{T_TOTAL}'] + enc + [cut])
     return cut, acc_d
 
 
 def build_audio(tmp):
-    ins = []; fc = []; bus = {'music': [], 'amb': [], 'hit': [], 'vo': []}
+    ins = []; fc = []; bus = {'music': [], 'amb': [], 'hit': [], 'vo': [], 'fall': [], 'room': []}
     for i, (f, s, vol, trim, fi, fo, b) in enumerate(LAYERS):
         if not os.path.exists(f):
             sys.exit('нет звукового файла ' + f)
@@ -310,17 +310,25 @@ def build_audio(tmp):
         bus[b].append(f'[a{i}]')
     def mix(names, out, extra=''):
         fc.append(''.join(names) + f'amix=inputs={len(names)}:normalize=0:duration=longest,apad=whole_dur={T_TOTAL},atrim=0:{T_TOTAL}{extra}[{out}]')
-    mute = '+'.join(f'between(t,{a},{b})' for a, b in MUTE)
-    gate = f",volume='if({mute},0,1)':eval=frame"
+    a, b = MUTE                                   # быстрый, но не щёлкающий уход в тишину и мягкий возврат
+    gate = f",volume='min(1,max(0,({a}-t)/0.10)+max(0,(t-{b})/0.35))':eval=frame"
     # голос: срез низа, лёгкая компрессия, теплота
-    mix(bus['vo'], 'vo0', ',highpass=f=75,equalizer=f=220:t=q:w=1.0:g=1.5,equalizer=f=3200:t=q:w=1.2:g=1.5,'
-                          'acompressor=threshold=0.09:ratio=3:attack=12:release=180:makeup=1.6')
-    fc.append('[vo0]asplit=3[vo][sc1][sc2]')
-    mix(bus['music'], 'mus0', gate); mix(bus['amb'], 'amb0', gate); mix(bus['hit'], 'hit', '')
-    # музыка и шумы уходят под голос
-    fc.append('[mus0][sc1]sidechaincompress=threshold=0.035:ratio=5:attack=120:release=700:makeup=1[mus]')
-    fc.append('[amb0][sc2]sidechaincompress=threshold=0.035:ratio=7:attack=80:release=600:makeup=1[amb]')
-    fc.append(f'[mus][amb][hit][vo]amix=inputs=4:normalize=0:duration=longest,volume=1.0,alimiter=limit=0.89,'
+    # голос: срез низа, лёгкая компрессия, теплота и едва слышная «комната», чтобы он сел в музыку
+    mix(bus['vo'], 'vo0', ',highpass=f=75,equalizer=f=220:t=q:w=1.0:g=1.5,equalizer=f=3200:t=q:w=1.2:g=2.0,'
+                          'acompressor=threshold=0.09:ratio=3:attack=12:release=180:makeup=1.8,'
+                          'aecho=0.9:0.9:31|57|93:0.10|0.07|0.04')
+    fc.append('[vo0]asplit=4[vo][sc1][sc2][sc3]')
+    mix(bus['music'], 'mus0', gate)
+    mix(bus['fall'], 'fall', ',equalizer=f=3200:t=q:w=1.0:g=-5')          # резкий детский плач смягчён
+    mix(bus['room'], 'room', ',aecho=0.8:0.8:43|81|127:0.22|0.14|0.08')    # телефон звучит в комнате
+    fc.append("[%s]%samix=inputs=%d:normalize=0:duration=longest,apad=whole_dur=%s,atrim=0:%s%s[amb0]"
+              % (']['.join(x.strip('[]') for x in bus['amb'] + ['fall']), '', len(bus['amb']) + 1, T_TOTAL, T_TOTAL, gate))
+    mix(bus['hit'], 'hit0', gate)
+    # музыка, шумы и удары уходят под голос
+    fc.append('[mus0][sc1]sidechaincompress=threshold=0.02:ratio=8:attack=90:release=650:makeup=1[mus]')
+    fc.append('[amb0][sc2]sidechaincompress=threshold=0.02:ratio=12:attack=60:release=550:makeup=1[amb]')
+    fc.append('[hit0][sc3]sidechaincompress=threshold=0.03:ratio=5:attack=60:release=500:makeup=1[hit]')
+    fc.append(f'[mus][amb][hit][room][vo]amix=inputs=5:normalize=0:duration=longest,volume=1.0,alimiter=limit=0.89,'
               f'loudnorm=I=-15:TP=-1.5:LRA=13,atrim=0:{T_TOTAL},afade=t=out:st={T_TOTAL - 1.5}:d=1.5[out]')
     wav = f'{tmp}/mix.wav'
     run(['ffmpeg', '-y', '-v', 'error'] + ins + ['-filter_complex', ';'.join(fc), '-map', '[out]', '-ar', '48000', '-c:a', 'pcm_s24le', wav])
