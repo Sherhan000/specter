@@ -294,7 +294,7 @@ def build_video(tmp):
     fc.append(grade)
     cut = f'{tmp}/cut.mp4'
     enc = ['-c:v', 'libx264', '-preset', 'veryfast' if DRAFT else 'slow', '-crf', '21' if DRAFT else '18', '-tune', 'grain',
-           '-maxrate', '6500k', '-bufsize', '13M', '-pix_fmt', 'yuv420p']
+           '-maxrate', '5000k', '-bufsize', '10M', '-pix_fmt', 'yuv420p']
     run(['ffmpeg', '-y', '-v', 'error'] + ins + ['-filter_complex', ';'.join(fc), '-map', '[vout]', '-t', f'{T_TOTAL}'] + enc + [cut])
     return cut, acc_d
 
