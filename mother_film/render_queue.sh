@@ -8,14 +8,16 @@ while true; do
   next=""
   for s in $(cat $Q); do [ -s clips/$s.mp4 ] && [ ! -f /home/user/render/$s.redo ] || { next=$s; break; }; done
   if [ -z "$next" ]; then sleep 20; continue; fi
-  rm -f /home/user/render/$next.redo
+  # the .redo marker is removed only once the new clip exists, so a restart mid-shot resumes it
+  touch /home/user/render/$next.start
   echo "=== $(date +%H:%M:%S) start $next"
   if nice -n 10 python3 blender/render.py $next 2>&1 | grep --line-buffered -E "^\[|Error|Traceback|error"; then :; fi
-  if [ -s clips/$next.mp4 ]; then
+  if [ -s clips/$next.mp4 ] && [ clips/$next.mp4 -nt /home/user/render/$next.start ]; then
+    rm -f /home/user/render/$next.redo
     for i in 1 2 3 4 5; do
       git add clips/$next.mp4 && git commit -qm "Рендер шота $next
 
-Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01QzsQUsexmE5szY5rxQDFfp" -- clips/$next.mp4 && break; sleep 5; done
     for i in 2 4 8 16 32; do git push -u origin $BR 2>&1 | tail -1 && break; sleep $i; done
     echo "=== $(date +%H:%M:%S) done $next (pushed)"
