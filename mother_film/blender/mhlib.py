@@ -287,6 +287,9 @@ class Human:
             ax = D.to_3x3() @ ax
         R = Matrix.Rotation(math.radians(deg), 4, ax.normalized())
         pb.matrix = Matrix.Translation(h) @ R @ Matrix.Translation(-h) @ M
+        # a rotation must not scale: rounding in the matrix round trip leaves a little non-uniform scale on the
+        # bone, which compounds frame after frame when only the rotations are reset (eyes stretched into sticks)
+        pb.scale = (1.0, 1.0, 1.0)
         bpy.context.view_layer.update()
 
     def flex(self, bone, deg):
