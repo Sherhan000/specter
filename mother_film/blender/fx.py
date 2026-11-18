@@ -77,10 +77,13 @@ class Motes:
         self.ob.instance_type = 'VERTS'
         self.height = height; self.z0 = center[2]
 
-    def update(self, frame):
+    def update(self, frame, clear=None):
         t = frame / 24.0
         p = self.p0 + self.drift * t * self.sp + self.amp * np.sin(self.ph + self.fr * t * 6.283)
         p[:, 2] = self.z0 + np.mod(p[:, 2] - self.z0, self.height)
+        if clear is not None:                  # (point, radius): no motes this close to the lens, where they
+            c, r = clear                       # turn into big blurred discs that read as stains on the subject
+            p[np.linalg.norm(p - np.array(c), axis=1) < r, 2] = -50.0
         self.ob.data.vertices.foreach_set('co', p.ravel()); self.ob.data.update()
 
 

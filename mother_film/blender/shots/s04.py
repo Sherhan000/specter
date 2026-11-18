@@ -190,6 +190,7 @@ def build(sc, quality):
             faceC.data.energy = 26
             fx.shake(camC, f, 0.0010, seed=11)
             camC.data.dof.focus_distance = abs(camC.location.y) - 0.04
+            motes.update(f * 0.9, clear=(tuple(camC.location), camC.data.dof.focus_distance - 0.3))
 
     return dict(frames=FRAMES, update=update)
 
